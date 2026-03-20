@@ -46,7 +46,7 @@
 				if (!res.ok) throw new Error(data.message || "Error loading webtoon data");
 
 				allImages = allImages.concat(data.images);
-				totalImages = data.total;
+				totalImages = data.totalImages;
 				hasMorePages = data.hasMore;
 				page++;
 
@@ -312,9 +312,8 @@
 	onmousemove={handleMouseMove}
 	onscroll={(e) => { 
 		const t = e.currentTarget;
-		const max = t.scrollHeight - t.clientHeight;
-		if (max > 0) {
-			smoothPercent = (t.scrollTop / max) * 100;
+		if (totalImages > 0) {
+			smoothPercent = ((currentImageIndex + 1) / totalImages) * 100;
 		}
 	}}
 	onwheel={(e) => {
