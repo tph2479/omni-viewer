@@ -64,15 +64,14 @@
 	const maxTranslateY = $derived(Math.max(0, (effectiveImageHeight * zoomLevel - (typeof window !== 'undefined' ? window.innerHeight : 0)) / 2));
 	const needsHorizontalPan = $derived(effectiveImageWidth * zoomLevel > (typeof window !== 'undefined' ? window.innerWidth : 0));
 	const needsVerticalPan = $derived(effectiveImageHeight * zoomLevel > (typeof window !== 'undefined' ? window.innerHeight : 0));
-	const canPanHorizontal = $derived(needsHorizontalPan || isWheelPanningH || zoomLevel > 1);
 
 	$effect.pre(() => {
-		if (canPanHorizontal) {
+		if (needsHorizontalPan || isWheelPanningH) {
 			translateX = Math.max(-maxTranslateX, Math.min(maxTranslateX, translateX));
 		} else {
 			translateX = 0;
 		}
-		if (needsVerticalPan || zoomLevel > 1) {
+		if (needsVerticalPan) {
 			translateY = Math.max(-maxTranslateY, Math.min(maxTranslateY, translateY));
 		} else {
 			translateY = 0;
@@ -287,8 +286,8 @@
 		
 		if (!hasDeltaX && !hasDeltaY) return;
 		
-		const willPanH = hasDeltaX && canPanHorizontal;
-		const willPanV = hasDeltaY && (needsVerticalPan || zoomLevel > 1);
+		const willPanH = hasDeltaX && (needsHorizontalPan || isWheelPanningH);
+		const willPanV = hasDeltaY && needsVerticalPan;
 		
 		if (!willPanH && !willPanV) return;
 		
@@ -312,7 +311,7 @@
 	}
 
 	function startDrag(event: MouseEvent) {
-		if (canPanHorizontal || needsVerticalPan || zoomLevel > 1) {
+		if (needsHorizontalPan || needsVerticalPan) {
 			event.preventDefault(); 
 			isDragging = true;
 			startDragX = event.clientX - translateX;
@@ -411,44 +410,44 @@
 			case 'Escape': closeModal(); break;
 			case 'ArrowRight': 
 				event.preventDefault(); 
-				if (canPanHorizontal) translateX -= 30;
+				if (needsHorizontalPan && translateX > -maxTranslateX + 1) translateX -= 30;
 				else nextImage(); 
 				break;
 			case 'ArrowLeft': 
 				event.preventDefault(); 
-				if (canPanHorizontal) translateX += 30;
+				if (needsHorizontalPan && translateX < maxTranslateX - 1) translateX += 30;
 				else prevImage(); 
 				break;
 			case 'ArrowUp':
-				if (zoomLevel > 1) { event.preventDefault(); translateY += 30; }
+				if (needsVerticalPan) { event.preventDefault(); translateY += 30; }
 				break;
 			case 'ArrowDown':
-				if (zoomLevel > 1) { event.preventDefault(); translateY -= 30; }
+				if (needsVerticalPan) { event.preventDefault(); translateY -= 30; }
 				break;
 			case 'PageUp':
 				event.preventDefault();
-				if (zoomLevel > 1) { 
-					translateY -= window.innerHeight * 0.8; 
+				if (needsVerticalPan && translateY < maxTranslateY - 1) { 
+					translateY += window.innerHeight * 0.8; 
 				} else {
 					prevImage();
 				}
 				break;
 			case 'PageDown':
 				event.preventDefault();
-				if (zoomLevel > 1) { 
-					translateY += window.innerHeight * 0.8; 
+				if (needsVerticalPan && translateY > -maxTranslateY + 1) { 
+					translateY -= window.innerHeight * 0.8; 
 				} else {
 					nextImage();
 				}
 				break;
 			case 'Home':
-				if (zoomLevel > 1) {
+				if (needsVerticalPan) {
 					event.preventDefault();
 					translateY = maxTranslateY;
 				}
 				break;
 			case 'End':
-				if (zoomLevel > 1) {
+				if (needsVerticalPan) {
 					event.preventDefault();
 					translateY = -maxTranslateY;
 				}
