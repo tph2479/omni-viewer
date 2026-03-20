@@ -11,7 +11,8 @@ import { createHash } from 'node:crypto';
 import { Readable } from 'node:stream';
 
 sharp.concurrency(1);
-sharp.cache({ items: 500, memory: 256, files: 100 });
+// Disable internal cache to free RAM immediately after each image is processed
+sharp.cache(false);
 sharp.simd(true);
 
 const THUMB_CACHE_DIR = path.resolve('.thumbnails');
@@ -44,21 +45,17 @@ async function ensureHeicConverted(inputPath: string, mtimeMs: number, logCtx: s
 	const outputPath = path.join(THUMB_CACHE_DIR, `full-${hash}.webp`);
 
 	if (forceRegenerate) {
-		console.log(`[HEIC ${logCtx}] Force regenerating cache: ${inputPath}`);
 		try { fs.unlinkSync(outputPath); } catch(e) {}
 	}
 
-	// Check map first to avoid races
 	if (ongoingGenerations.has(outputPath)) {
 		await ongoingGenerations.get(outputPath);
 		if (fs.existsSync(outputPath)) return outputPath;
 	}
 
-	// Check disk - but verify it's not a tiny broken file
 	if (fs.existsSync(outputPath)) {
 		const stat = fs.statSync(outputPath);
 		if (stat.size > 128) return outputPath;
-		console.warn(`[HEIC ${logCtx}] Cache file exists but too small (${stat.size}B), regenerating: ${outputPath}`);
 		try { fs.unlinkSync(outputPath); } catch(e) {}
 	}
 
@@ -77,9 +74,7 @@ async function ensureHeicConverted(inputPath: string, mtimeMs: number, logCtx: s
 		if (signalForWait?.aborted) return;
 		activeGenerations++;
 
-		console.log(`[HEIC ${logCtx}] Starting conversion: ${inputPath}`);
 		try {
-			// Double check if another request finished it while we were waiting in queue
 			if (fs.existsSync(outputPath) && fs.statSync(outputPath).size > 128) return;
 
 			let fullBuffer: Buffer;
@@ -106,21 +101,19 @@ async function ensureHeicConverted(inputPath: string, mtimeMs: number, logCtx: s
 					.rotate()
 					.webp({ quality: 85, effort: 4 })
 					.toFile(outputPath);
-				console.log(`[HEIC ${logCtx}] Converted successfully (Sharp): ${outputPath}`);
+				(fullBuffer as any) = null;
 			} catch (sharpErr) {
-				console.warn(`[HEIC ${logCtx}] Sharp failed, trying fallback:`, sharpErr);
-				// Cleanup potentially broken file from sharp failure before fallback
 				try { if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath); } catch(e) {}
-				
 				const heicImport = await import('heic-convert');
 				const heicConvert = (heicImport.default || heicImport) as any;
 				let converted: any = await heicConvert({ buffer: fullBuffer, format: 'JPEG', quality: 0.9 });
+				(fullBuffer as any) = null;
 				if (Array.isArray(converted)) converted = converted[0].data;
 				await sharp(Buffer.from(converted))
 					.rotate()
 					.webp({ quality: 85, effort: 4 })
 					.toFile(outputPath);
-				console.log(`[HEIC ${logCtx}] Converted successfully (fallback): ${outputPath}`);
+				(converted as any) = null;
 			}
 			
 			if (mtimeMs) {
@@ -129,7 +122,7 @@ async function ensureHeicConverted(inputPath: string, mtimeMs: number, logCtx: s
 				await fsp.utimes(outputPath, atime, mtime).catch(() => {});
 			}
 		} catch (err) {
-			console.error(`[HEIC ${logCtx}] Conversion Error:`, err);
+			console.error(`[Conversion Error]`, err);
 			throw err;
 		} finally {
 			activeGenerations--;
@@ -147,7 +140,7 @@ async function ensureHeicConverted(inputPath: string, mtimeMs: number, logCtx: s
 	return outputPath;
 }
 
-async function generateThumbnail(inputPath: string, outputPath: string, mtimeMs: number, signal?: AbortSignal) {
+async function generateThumbnail(inputPath: string, outputPath: string, mtimeMs: number, logCtx: string, signal?: AbortSignal) {
 	if (ongoingGenerations.has(outputPath)) return ongoingGenerations.get(outputPath);
 
 	const generationPromise = (async () => {
@@ -198,7 +191,7 @@ async function generateThumbnail(inputPath: string, outputPath: string, mtimeMs:
 					const [zipPath, internalPath] = inputPath.split('::');
 					const subExt = path.extname(internalPath).toLowerCase();
 					if (subExt === '.heic' || subExt === '.heif') {
-						sharpInput = await ensureHeicConverted(inputPath, mtimeMs, 'thumb-zip', signal);
+						sharpInput = await ensureHeicConverted(inputPath, mtimeMs, logCtx, signal);
 					} else {
 						const zip = await yauzl.open(path.resolve(zipPath));
 						try {
@@ -214,7 +207,7 @@ async function generateThumbnail(inputPath: string, outputPath: string, mtimeMs:
 									}
 									stream.destroy();
 									if (isHeifBuffer(Buffer.concat(chunks))) {
-										sharpInput = await ensureHeicConverted(inputPath, mtimeMs, 'thumb-zip-magic', signal);
+										sharpInput = await ensureHeicConverted(inputPath, mtimeMs, logCtx, signal);
 									} else {
 										const fullStream = await e.openReadStream();
 										const fullChunks: Buffer[] = [];
@@ -237,7 +230,7 @@ async function generateThumbnail(inputPath: string, outputPath: string, mtimeMs:
 						} catch (e) {}
 					}
 					if (isHeif) {
-						sharpInput = await ensureHeicConverted(inputPath, mtimeMs, 'thumb-local', signal);
+						sharpInput = await ensureHeicConverted(inputPath, mtimeMs, logCtx, signal);
 					}
 				}
 				
@@ -248,11 +241,14 @@ async function generateThumbnail(inputPath: string, outputPath: string, mtimeMs:
 							.resize(200, 200, { fit: 'cover', fastShrinkOnLoad: true })
 							.webp({ quality: 65, effort: 0 })
 							.toFile(outputPath);
+						(sharpInput as any) = null;
 					} catch (sharpErr) {
-						console.error(`[Sharp Thumb Error] ${inputPath}:`, sharpErr);
+						(sharpInput as any) = null;
+						console.error(`[Sharp Thumb Error]`, sharpErr);
 						if (!fs.existsSync(outputPath)) throw sharpErr;
 					}
 				}
+				(sharpInput as any) = null;
 			}
 			if (mtimeMs && !signal?.aborted) {
 				const atime = Date.now() / 1000;
@@ -260,7 +256,7 @@ async function generateThumbnail(inputPath: string, outputPath: string, mtimeMs:
 				await fsp.utimes(outputPath, atime, mtime).catch(() => { });
 			}
 		} catch (err) {
-			console.error(`[Thumbnail Error] ${inputPath}:`, err);
+			console.error(`[Thumbnail Error]`, err);
 			throw err;
 		} finally {
 			activeGenerations--;
@@ -316,14 +312,14 @@ export async function GET({ url, request }: RequestEvent) {
 						const convertedPath = await ensureHeicConverted(normalizedPath, stat.mtimeMs, rid, request.signal, isRetry);
 						const meta = await sharp(convertedPath).metadata();
 						width = meta.width || 0; height = meta.height || 0;
-					} catch (e) { console.error(`[GET ${rid}] Zip HEIC Meta error:`, e); }
+					} catch (e) {}
 				}
 				return json({ name: internalPath, path: normalizedPath, size: stat.size, lastModified: stat.mtimeMs, width, height });
 			}
 
 			if (isThumbnail) {
 				const thumbPath = await getThumbnailPath(normalizedPath, stat.mtimeMs);
-				if (!fs.existsSync(thumbPath)) await generateThumbnail(normalizedPath, thumbPath, stat.mtimeMs, request.signal);
+				if (!fs.existsSync(thumbPath)) await generateThumbnail(normalizedPath, thumbPath, stat.mtimeMs, rid, request.signal);
 				const headers = { 'Content-Type': 'image/webp', 'Cache-Control': 'public, max-age=31536000, immutable' };
 				// @ts-ignore
 				if (global.Bun) return new Response(Bun.file(thumbPath), { headers });
@@ -355,14 +351,13 @@ export async function GET({ url, request }: RequestEvent) {
 			} finally { zip.close().catch(() => {}); }
 		}
 
-		// Local file
-		if (!isHeic && !isThumbnail && !getMetadataOnly && ['jpg', 'jpeg', 'png', 'webp'].includes(ext)) {
+		if (!isHeic && !isThumbnail && ['jpg', 'jpeg', 'png', 'webp'].includes(ext)) {
 			try {
 				const header = Buffer.alloc(12);
 				const fd = fs.openSync(absolutePath, 'r');
 				fs.readSync(fd, header, 0, 12, 0);
 				fs.closeSync(fd);
-				if (isHeifBuffer(header)) { isHeic = true; console.log(`[GET ${rid}] HEIC detected by magic for ${ext}`); }
+				if (isHeifBuffer(header)) isHeic = true;
 			} catch(e) {}
 		}
 
@@ -375,14 +370,14 @@ export async function GET({ url, request }: RequestEvent) {
 					const meta = await sharp(metaPath).metadata();
 					width = meta.width || 0; height = meta.height || 0;
 					if (meta.orientation && meta.orientation >= 5) [width, height] = [height, width];
-				} catch (e) { console.error(`[GET ${rid}] Meta error:`, e); }
+				} catch (e) {}
 			}
 			return json({ name: path.basename(absolutePath), path: normalizedPath, size: stat.size, lastModified: stat.mtimeMs, width, height });
 		}
 
 		if (isThumbnail) {
 			const thumbPath = await getThumbnailPath(absolutePath, stat.mtimeMs);
-			if (!fs.existsSync(thumbPath)) await generateThumbnail(absolutePath, thumbPath, stat.mtimeMs, request.signal);
+			if (!fs.existsSync(thumbPath)) await generateThumbnail(absolutePath, thumbPath, stat.mtimeMs, rid, request.signal);
 			const headers = { 'Content-Type': 'image/webp', 'Cache-Control': 'public, max-age=31536000, immutable' };
 			// @ts-ignore
 			if (global.Bun) return new Response(Bun.file(thumbPath), { headers });
@@ -397,7 +392,6 @@ export async function GET({ url, request }: RequestEvent) {
 			servePath = await ensureHeicConverted(absolutePath, stat.mtimeMs, rid, request.signal, isRetry);
 			serveStat = await fsp.stat(servePath);
 			contentType = 'image/webp';
-			console.log(`[GET ${rid}] Serving HEIC as WebP: ${serveStat.size} bytes`);
 		}
 
 		const range = request.headers.get('range');

@@ -116,8 +116,13 @@
 			const imgH = renderedWidth * (naturalHeight / naturalWidth);
 			const fitWidth = isRotated ? imgH : renderedWidth;
 			const fitHeight = isRotated ? renderedWidth : imgH;
-			const fitWidthZoom = window.innerWidth / fitWidth;
-			const fitHeightZoom = window.innerHeight / fitHeight;
+			
+			const isDesktop = window.innerWidth >= 768;
+			const targetW = isDesktop ? 0.8 : 1.0;
+			const targetH = isDesktop ? 0.9 : 1.0;
+			
+			const fitWidthZoom = (window.innerWidth * targetW) / fitWidth;
+			const fitHeightZoom = (window.innerHeight * targetH) / fitHeight;
 			zoomLevel = Math.min(fitWidthZoom, fitHeightZoom);
 		}
 	}
@@ -471,15 +476,17 @@
 		}
 	});
     
-	let lastMetadataPath = $state('');
+	let lastMetadataPath = '';
+	let metadataRetryCount = $state(0);
 
 	$effect(() => {
-		if (isModalOpen && currentItem && currentItem.path !== lastMetadataPath) {
+		if (isModalOpen && currentItem && (currentItem.path !== lastMetadataPath || metadataRetryCount > 0)) {
+			const isMetadataRetry = currentItem.path === lastMetadataPath && metadataRetryCount > 0;
 			const currentPath = currentItem.path;
 			lastMetadataPath = currentPath;
-
-			// If basic metadata is already in the item, use it as initial
-			if (currentItem.width && currentItem.height && currentMetadata === null) {
+			
+			// If not a retry, we can use existing dimensions as initial state to avoid flickering
+			if (!isMetadataRetry && currentItem.width && currentItem.height && currentMetadata === null) {
 				currentMetadata = {
 					name: currentItem.name,
 					path: currentPath,
@@ -488,15 +495,15 @@
 					size: currentItem.size || 0,
 					lastModified: currentItem.lastModified || 0
 				};
-				return;
 			}
 
 			const controller = new AbortController();
 			isMetadataLoading = true;
-			fetch(`/api/image?path=${encodeURIComponent(currentPath)}&metadata=true`, { signal: controller.signal })
+			const retryParam = isMetadataRetry ? '&retry=true' : '';
+			
+			fetch(`/api/image?path=${encodeURIComponent(currentPath)}&metadata=true${retryParam}`, { signal: controller.signal })
 				.then(res => res.json())
 				.then(data => {
-					// Only update if we are still on the same image
 					if (currentPath === currentItem.path) {
 						currentMetadata = { ...data, path: currentPath };
 						currentItem.width = data.width;
@@ -507,12 +514,17 @@
 					if (err.name !== 'AbortError') console.error('Metadata fetch error:', err);
 				})
 				.finally(() => {
-					if (currentPath === currentItem.path) isMetadataLoading = false;
+					if (currentPath === currentItem.path) {
+						isMetadataLoading = false;
+						if (isMetadataRetry) metadataRetryCount = 0;
+					}
 				});
 
 			return () => controller.abort();
 		} else if (!isModalOpen) {
 			currentMetadata = null;
+			lastMetadataPath = '';
+			metadataRetryCount = 0;
 		}
 	});
 
@@ -704,6 +716,7 @@
 							onclick={(e) => e.stopPropagation()}
 							ondblclick={(e) => { e.stopPropagation(); toggleZoom(); }}
 							onerror={(e) => handleImageError(e, currentItem.path)}
+							onimg-retry={() => metadataRetryCount++}
 							alt={currentItem.name}
 						/>
 					{/key}

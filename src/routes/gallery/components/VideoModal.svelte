@@ -225,8 +225,10 @@
 		releaseVideo();
 	});
 
+	let lastMetadataPath = '';
 	$effect(() => {
-		if (isModalOpen && currentItem) {
+		if (isModalOpen && currentItem && currentItem.path !== lastMetadataPath) {
+			lastMetadataPath = currentItem.path;
 			const controller = new AbortController();
 			isMetadataLoading = true;
 			fetch(`/api/image?path=${encodeURIComponent(currentItem.path)}&metadata=true`, { signal: controller.signal })

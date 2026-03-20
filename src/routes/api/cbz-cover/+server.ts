@@ -15,6 +15,18 @@ if (!fs.existsSync(THUMB_CACHE_DIR)) {
 	fs.mkdirSync(THUMB_CACHE_DIR, { recursive: true });
 }
 
+const HEIF_BRANDS = new Set(['heic', 'heix', 'hevc', 'mif1', 'msf1', 'heis', 'hevm', 'hevx', 'mif2', 'msf2', 'avif', 'avif', 'avis']);
+function isHeifBuffer(buf: Buffer): boolean {
+	if (buf.length < 12) return false;
+	if (buf[0] !== 0x00 || buf[1] !== 0x01 || buf[2] !== 0x00) { // Some HEIC/AVIF start with 00 00 00
+		if (!(buf[0] === 0x00 && buf[1] === 0x00 && buf[2] === 0x00)) return false;
+	}
+	const ftyp = buf.slice(4, 8).toString('ascii');
+	if (ftyp !== 'ftyp') return false;
+	const brand = buf.slice(8, 12).toString('ascii').trim().toLowerCase();
+	return HEIF_BRANDS.has(brand);
+}
+
 export async function GET({ url, request }: RequestEvent) {
 	const cbzParam = url.searchParams.get('path');
 	if (!cbzParam) throw error(400, 'Missing path parameter');
@@ -70,16 +82,14 @@ export async function GET({ url, request }: RequestEvent) {
 		let buffer: any = Buffer.concat(chunks);
 		let sharpInput: any = buffer;
 
-		// Check magic bytes for HEIC
-		const headerText = buffer.subarray(0, 32).toString('ascii');
-		const isHeic = headerText.includes('ftypheic') || headerText.includes('ftypheix') || headerText.includes('ftypmif1') || headerText.includes('ftyphevc');
-
-		if (isHeic) {
+		if (isHeifBuffer(buffer)) {
 			try {
-				const heicConvert = (await import('heic-convert')).default;
-				let converted: any = await heicConvert({ buffer, format: 'JPEG', quality: 1 });
+				const heicImport = await import('heic-convert');
+				const heicConvert = (heicImport.default || heicImport) as any;
+				let converted: any = await heicConvert({ buffer, format: 'JPEG', quality: 0.9 });
 				sharpInput = Buffer.from(converted);
-				converted = null; // GIẢI PHÓNG
+				(buffer as any) = null;
+				(converted as any) = null;
 			} catch (err) {
 				console.error('CBZ Cover HEIC conversion failed:', err);
 			}
