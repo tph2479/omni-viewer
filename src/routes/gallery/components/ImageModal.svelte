@@ -578,7 +578,7 @@
 					<button aria-label="Previous" class="btn btn-ghost w-12 h-12 min-h-0 p-0 text-white rounded-none border-b border-white/10 transition-colors hover:bg-white/5" onclick={(e) => { e.stopPropagation(); prevImage(); }} onmousedown={(e) => e.preventDefault()}>
 						<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
 					</button>
-					<button aria-label="Next" class="btn btn-ghost w-12 h-12 min-h-0 p-0 text-white rounded-none transition-colors hover:bg-white/5" onclick={(e) => { e.stopPropagation(); nextImage(); }} onmousedown={(e) => e.preventDefault()}>
+					<button aria-label="Next" class="btn btn-ghost border-none w-12 h-12 min-h-0 p-0 text-white rounded-none transition-colors hover:bg-white/5" onclick={(e) => { e.stopPropagation(); nextImage(); }} onmousedown={(e) => e.preventDefault()}>
 						<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
 					</button>
 				</div>
@@ -595,7 +595,7 @@
 					</button>
 					<button 
 						aria-label="Toggle 1:1" 
-						class="btn btn-ghost w-12 h-12 min-h-0 p-0 text-white rounded-none font-black font-mono flex items-center justify-center text-[10px] transition-colors hover:bg-white/5"
+						class="btn btn-ghost border-none w-12 h-12 min-h-0 p-0 text-white rounded-none font-black font-mono flex items-center justify-center text-[10px] transition-colors hover:bg-white/5"
 						onclick={(e) => { e.stopPropagation(); toggleZoom(); }}
 						onmousedown={(e) => e.preventDefault()}
 					>
