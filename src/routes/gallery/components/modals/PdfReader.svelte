@@ -20,6 +20,12 @@
 		pdf.updateCurrentPageAndScroll();
 	});
 
+	$effect(() => {
+		if (s.pdfScrollContainer) {
+			s.pdfScrollContainer.focus();
+		}
+	});
+
 	onMount(() => {
 		pdf.loadLibraries();
 	});
@@ -39,6 +45,7 @@
 			if (s.isSearchSidebarOpen) {
 				s.isSearchSidebarOpen = false;
 				s.isSearching = false;
+				s.pdfScrollContainer?.focus();
 			} else {
 				closePdf();
 			}
@@ -154,13 +161,13 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div 
 	class="fixed inset-0 z-[399]" 
-	onclick={() => { s.isSearchSidebarOpen = false; s.isSearching = false; }}
+	onclick={() => { s.isSearchSidebarOpen = false; s.isSearching = false; s.pdfScrollContainer?.focus(); }}
 ></div>
 <div class="fixed inset-y-0 right-0 w-80 sm:w-96 bg-zinc-950/95 border-l border-white/10 backdrop-blur-xl shadow-2xl z-[400] overflow-hidden flex flex-col animate-in slide-in-from-right duration-300">
 	<div class="p-4 border-b border-white/10 bg-zinc-950/80 backdrop-blur-md shrink-0 flex flex-col gap-3">
 		<div class="flex items-center justify-between">
 			<h2 class="text-white font-bold text-lg">Search PDF</h2>
-			<button class="btn btn-ghost btn-sm btn-circle text-white/50 hover:text-white transition-colors" onclick={() => { s.isSearchSidebarOpen = false; s.isSearching = false; }}>
+			<button class="btn btn-ghost btn-sm btn-circle text-white/50 hover:text-white transition-colors" onclick={() => { s.isSearchSidebarOpen = false; s.isSearching = false; s.pdfScrollContainer?.focus(); }}>
 				<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 18L18 6M6 6l12 12" stroke-width="2"/></svg>
 			</button>
 		</div>
@@ -207,7 +214,7 @@
 				onclick={() => {
 					s.currentSearchResultIndex = i;
 					pdf.scrollToIndex(result.pageIndex);
-					if (window.innerWidth < 768) s.isSearchSidebarOpen = false;
+					if (window.innerWidth < 768) { s.isSearchSidebarOpen = false; s.pdfScrollContainer?.focus(); }
 				}}
 			>
 				<div class="flex items-center justify-between mb-1">
@@ -250,11 +257,11 @@
 	<div class="fixed top-4 right-4 sm:right-6 pointer-events-none z-[110] transition-all duration-300 {s.controlsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}">
 		<div class="flex items-center justify-end gap-2">
 			{#if !s.isSearchSidebarOpen}
-				<button class="btn rounded-xl w-12 h-12 min-h-0 p-0 bg-zinc-900/90 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl pointer-events-auto transition-all" onclick={() => s.isSearchSidebarOpen = true}>
+				<button class="btn rounded-xl w-12 h-12 min-h-0 p-0 bg-zinc-900/90 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl pointer-events-auto transition-all" onclick={() => { s.isSearchSidebarOpen = true; s.pdfScrollContainer?.focus(); }}>
 					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
 				</button>
 			{/if}
-			<button class="btn rounded-xl w-12 h-12 min-h-0 p-0 bg-zinc-900/90 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl pointer-events-auto transition-all" onclick={() => s.isDarkMode = !s.isDarkMode}>
+			<button class="btn rounded-xl w-12 h-12 min-h-0 p-0 bg-zinc-900/90 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl pointer-events-auto transition-all" onclick={() => { s.isDarkMode = !s.isDarkMode; s.pdfScrollContainer?.focus(); }}>
 				{#if s.isDarkMode}
 					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
 				{:else}
@@ -270,18 +277,18 @@
 	<!-- Side Controls -->
 	<div class="fixed top-20 right-4 sm:right-6 bottom-4 flex flex-col items-end gap-2 z-[110] pointer-events-none transition-all duration-300 {s.controlsVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2'}">
 		<div class="flex flex-col items-end gap-2 pointer-events-auto h-full">
-			<button class="btn rounded-xl w-12 h-12 min-h-0 p-0 bg-zinc-900/90 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl" onclick={pdf.toggleFit}>
+			<button class="btn rounded-xl w-12 h-12 min-h-0 p-0 bg-zinc-900/90 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl" onclick={() => { pdf.toggleFit(); s.pdfScrollContainer?.focus(); }}>
 				<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
 			</button>
 
 			<div class="flex flex-col bg-zinc-900/90 rounded-xl backdrop-blur-xl border border-white/10 shadow-2xl mt-1 w-12 overflow-hidden">
-				<button class="btn btn-ghost btn-sm h-12 w-12 p-0 text-white rounded-none border-b border-white/10" onclick={() => pdf.setZoom(s.zoomLevel * 1.2)}>
+				<button class="btn btn-ghost btn-sm h-12 w-12 p-0 text-white rounded-none border-b border-white/10" onclick={() => { pdf.setZoom(s.zoomLevel * 1.2); s.pdfScrollContainer?.focus(); }}>
 					<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
 				</button>
 				<span class="py-2 text-[10px] font-mono font-black text-white text-center bg-white/5">
 					{Math.round(s.zoomLevel * 100)}%
 				</span>
-				<button class="btn btn-ghost btn-sm h-12 w-12 p-0 text-white rounded-none border-t border-white/10" onclick={() => pdf.setZoom(s.zoomLevel / 1.2)}>
+				<button class="btn btn-ghost btn-sm h-12 w-12 p-0 text-white rounded-none border-t border-white/10" onclick={() => { pdf.setZoom(s.zoomLevel / 1.2); s.pdfScrollContainer?.focus(); }}>
 					<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" /></svg>
 				</button>
 			</div>
