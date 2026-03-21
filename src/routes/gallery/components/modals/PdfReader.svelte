@@ -61,6 +61,50 @@
 		}
 	}
 
+	let lastWidth = typeof window !== 'undefined' ? window.innerWidth : 1000;
+	let isResizing = false;
+
+	function handleResize() {
+		const currentWidth = window.innerWidth;
+		if (!s.pdfScrollContainer || currentWidth === lastWidth) return;
+		
+		isResizing = true;
+
+		// SYNC DETECTION IN RESIZE (Eliminate lag)
+		const centerPoint = s.pdfScrollContainer.scrollTop + (s.viewportHeight / 2);
+		let capturedIdx = 0;
+		const offsets = pdf.virtualData.offsets;
+		for (let i = 0; i < s.numPages; i++) {
+			if (offsets[i] > centerPoint) {
+				capturedIdx = Math.max(0, i - 1);
+				break;
+			}
+			capturedIdx = i;
+		}
+
+		const capturedPagePercent = s.anchorPercentInPage;
+		const capturedDocPercent = s.lastScrollPercent;
+
+		// 2. Automate Fit-Width for mobile if needed (already handled by toggleFit in controller? No.)
+		// But let's stay consistent with WebtoonReader's width-based logic.
+		
+		lastWidth = currentWidth;
+
+		tick().then(() => {
+			if (s.pdfScrollContainer) {
+				const el = document.getElementById(`pdf-page-${capturedIdx}`);
+				if (el) {
+					// 16px is the pt-4 padding. pdf.virtualData.topOffset handles the virtualized pages above.
+					s.pdfScrollContainer.scrollTop = 16 + pdf.virtualData.topOffset + el.offsetTop + (capturedPagePercent * el.offsetHeight);
+				} else {
+					const maxScroll = Math.max(1, (s.pdfScrollContainer.scrollHeight || 1) - s.viewportHeight);
+					s.pdfScrollContainer.scrollTop = capturedDocPercent * maxScroll;
+				}
+			}
+			isResizing = false;
+		});
+	}
+
 	function pageAction(node: HTMLCanvasElement, index: number) {
 		const parent = node.parentElement;
 		const textLayerDiv = parent?.querySelector('.textLayer') as HTMLDivElement;
@@ -153,6 +197,7 @@
 	onkeydown={handleKeyDown} 
 	onmousemove={pdf.handleWindowMouseMove} 
 	onmouseup={pdf.handleWindowMouseUp} 
+	onresize={handleResize}
 />
 
 {#if s.isSearchSidebarOpen}
@@ -241,7 +286,35 @@
 	tabindex="0"
 	class="pdf-scroll fixed inset-0 z-[300] bg-zinc-950 overflow-y-auto animate-in fade-in duration-200 focus:outline-none {s.isDarkMode ? 'pdf-dark-mode' : ''}" 
 	onmousemove={pdf.handleContainerMouseMove}
-	onscroll={(e) => { s.scrollY = e.currentTarget.scrollTop; }}
+	onscroll={(e) => { 
+		const target = e.currentTarget as HTMLElement;
+		s.scrollY = target.scrollTop;
+		
+		if (target.scrollHeight > 0 && !isResizing && s.pendingScrollTop === null) {
+			const maxScroll = Math.max(1, target.scrollHeight - s.viewportHeight);
+			s.lastScrollPercent = target.scrollTop / maxScroll;
+
+			// SYNC PAGE DETECTION (Eliminate 1-page lag)
+			const centerPoint = target.scrollTop + (s.viewportHeight / 2);
+			let detectedIdx = 0;
+			const offsets = pdf.virtualData.offsets;
+			for (let i = 0; i < s.numPages; i++) {
+				if (offsets[i] > centerPoint) {
+					detectedIdx = Math.max(0, i - 1);
+					break;
+				}
+				detectedIdx = i;
+			}
+
+			// Pro-Reader Anchoring: Track precise offset into the CORRECT page instantly
+			const anchorEl = document.getElementById(`pdf-page-${detectedIdx}`);
+			if (anchorEl) {
+				const rect = anchorEl.getBoundingClientRect();
+				const containerRect = target.getBoundingClientRect();
+				s.anchorPercentInPage = (containerRect.top - rect.top) / rect.height;
+			}
+		}
+	}}
 	bind:clientHeight={s.viewportHeight}
 	onwheel={(e) => {
 		if (e.ctrlKey) {

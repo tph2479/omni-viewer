@@ -28,11 +28,16 @@ export function createPdfController(initialPdfPath: string) {
 		scrollY: 0,
 		viewportHeight: 0,
 
-		smoothPercent: 0,
+		get smoothPercent() {
+			const maxScroll = Math.max(1, (virtualData.offsets[this.numPages - 1] + getPageHeight(this.numPages - 1)) - this.viewportHeight);
+			return Math.min(100, Math.max(0, (this.scrollY / maxScroll) * 100));
+		},
 		isDraggingSeek: false,
 		hasMoved: false,
 		startY: 0,
 		previewPercent: 0,
+		lastScrollPercent: 0,
+		anchorPercentInPage: 0,
 		seekBarElement: null as HTMLElement | null,
 
 		aspectRatios: {} as Record<number, number>,
@@ -106,9 +111,6 @@ export function createPdfController(initialPdfPath: string) {
 				closestIndex = i;
 			}
 			s.currentPageIndex = closestIndex;
-
-			const maxScroll = Math.max(1, (virtualData.offsets[s.numPages - 1] + getPageHeight(s.numPages - 1)) - s.viewportHeight);
-			s.smoothPercent = Math.min(100, Math.max(0, (s.scrollY / maxScroll) * 100));
 		}
 	}
 
@@ -120,6 +122,24 @@ export function createPdfController(initialPdfPath: string) {
 			const loadingTask = s.pdfjs.getDocument(`/api/ebook?path=${encodeURIComponent(s.pdfPath)}`);
 			s.pdfDoc = await loadingTask.promise;
 			s.numPages = s.pdfDoc.numPages;
+
+			// Background Ratio Discovery: Discover all page dimensions for perfect virtualization math
+			// We do this in chunks to avoid overwhelming the message bus
+			(async () => {
+				for (let i = 0; i < s.numPages; i++) {
+					// Skip if already discovered
+					if (s.aspectRatios[i]) continue;
+					try {
+						const page = await s.pdfDoc.getPage(i + 1);
+						const viewport = page.getViewport({ scale: 1.0 });
+						s.aspectRatios[i] = viewport.height / viewport.width;
+						// Yield to main thread every 10 pages
+						if (i % 10 === 0) await tick();
+					} catch (e) {
+						console.warn(`Failed to discover ratio for page ${i}:`, e);
+					}
+				}
+			})();
 		} catch (e: any) {
 			console.error("Error loading PDF:", e);
 			s.errorMsg = e.message || "Failed to load PDF";
@@ -165,6 +185,17 @@ export function createPdfController(initialPdfPath: string) {
 			if (s.pdfScrollContainer && s.pendingScrollTop !== null) {
 				s.pdfScrollContainer.scrollTop = s.pendingScrollTop;
 				s.pendingScrollTop = null;
+				
+				// Sync stable indicators after zoom
+				const maxScroll = Math.max(1, (virtualData.offsets[s.numPages - 1] + getPageHeight(s.numPages - 1)) - s.viewportHeight);
+				s.lastScrollPercent = s.pdfScrollContainer.scrollTop / maxScroll;
+				
+				const anchorEl = document.getElementById(`pdf-page-${s.currentPageIndex}`);
+				if (anchorEl) {
+					const rect = anchorEl.getBoundingClientRect();
+					const cRect = s.pdfScrollContainer.getBoundingClientRect();
+					s.anchorPercentInPage = (cRect.top - rect.top) / rect.height;
+				}
 			}
 		});
 	}
