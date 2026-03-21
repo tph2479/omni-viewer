@@ -306,21 +306,29 @@
 		ctx.stroke();
 		ctx.filter = 'none';
 
-		// Solid Center Point (Sleek Flying Dot)
+		// Solid Center Point (Sleek Flying Dot - "Dody")
 		ctx.beginPath();
 		
-		// Dynamic Color
+		// 1. Calculate dynamic outer color (Climax/Bass driven)
 		const r = 255;
 		const g = 255 - (climaxIntensity * 150) - (bassIntensity * 30); 
 		const b = 255 - (climaxIntensity * 50) + (bassIntensity * 50);
 		
-		ctx.fillStyle = climaxIntensity > 0.2 
+		const outerColor = climaxIntensity > 0.2 
 			? `hsla(${hue}, 80%, 70%, ${0.9 + climaxIntensity * 0.1})`
 			: `rgba(${r}, ${g}, ${b}, ${0.9 + climaxIntensity * 0.1})`;
 		
-		// Sleek Dynamic Size: Smaller base (2.0) and controlled expansion
+		// 2. Sleek Dynamic Size
 		const baseSize = 2.0;
 		const dynamicSize = baseSize + (climaxIntensity * 8) + (bassIntensity * 4);
+		
+		// 3. Create White-Core Gradient for Dody
+		const grad = ctx.createRadialGradient(headX, headY, 0, headX, headY, dynamicSize);
+		grad.addColorStop(0, "#FFFFFF"); // Pure white core
+		grad.addColorStop(0.4, "#FFFFFF"); // Maintain white core for most of the radius
+		grad.addColorStop(1, outerColor); // Dynamic edge
+		
+		ctx.fillStyle = grad;
 		ctx.arc(headX, headY, dynamicSize, 0, Math.PI * 2);
 		ctx.fill();
 
