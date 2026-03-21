@@ -398,7 +398,7 @@
 					<div 
 						id="pdf-page-{i}" 
 						class="bg-white shadow-2xl relative flex items-center justify-center"
-						style="height: {pdf.getPageHeight(i)}px; width: {90 * s.zoomLevel}%; max-width: {1000 * s.zoomLevel}px;"
+						style="height: {pdf.getPageHeight(i)}px; width: {s.isFitWidth ? '100%' : (90 * s.zoomLevel) + '%'}; max-width: {s.isFitWidth ? (window.innerWidth) + 'px' : (1000 * s.zoomLevel) + 'px'};"
 					>
 						<canvas use:pageAction={i} class="absolute w-full h-full block object-contain z-0 pointer-events-none"></canvas>
 						<div class="textLayer absolute inset-0 z-10 pointer-events-auto"></div>

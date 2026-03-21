@@ -17,6 +17,7 @@ export function createPdfController(initialPdfPath: string) {
 		isSearching: false,
 		hideTimerId: null as any,
 		isDarkMode: typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'business',
+		isFitWidth: false,
 
 		currentPageIndex: 0,
 		zoomLevel: 1.0,
@@ -169,11 +170,13 @@ export function createPdfController(initialPdfPath: string) {
 	}
 
 	function toggleFit() {
-		if (s.zoomLevel >= 0.99 && s.zoomLevel <= 1.01) {
-			setZoom(s.previousZoom < 0.99 ? s.previousZoom : 0.6);
-		} else {
+		s.isFitWidth = !s.isFitWidth;
+		if (s.isFitWidth) {
 			s.previousZoom = s.zoomLevel;
-			setZoom(1);
+			const fitZoom = (window.innerWidth * 0.9) / s.baseWidth;
+			setZoom(fitZoom);
+		} else {
+			setZoom(s.previousZoom < 0.99 ? s.previousZoom : 1);
 		}
 	}
 
