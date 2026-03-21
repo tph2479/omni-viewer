@@ -86,7 +86,7 @@
 		isLoading = true;
 		errorMsg = '';
 		try {
-			const loadingTask = pdfjs.getDocument(`/api/image?path=${encodeURIComponent(pdfPath)}`);
+			const loadingTask = pdfjs.getDocument(`/api/ebook?path=${encodeURIComponent(pdfPath)}`);
 			pdfDoc = await loadingTask.promise;
 			numPages = pdfDoc.numPages;
 		} catch (e: any) {

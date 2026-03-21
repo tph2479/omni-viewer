@@ -381,7 +381,7 @@
 	<div class="absolute inset-0 z-0">
 		{#if !imgFailed}
 			<img 
-				src={`/api/image?path=${encodeURIComponent(currentAudio?.path || '')}&thumbnail=true`} 
+				src={`/api/media?path=${encodeURIComponent(currentAudio?.path || '')}&thumbnail=true`} 
 				alt=""
 				class="w-full h-full object-cover opacity-20 saturate-[1.2]"
 				transition:fade={{ duration: 1000 }}
@@ -420,7 +420,7 @@
 			<div class="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl border border-white/20 bg-black/40 transition-all duration-700 group-hover:scale-105">
 				{#if !imgFailed}
 					<img 
-						src={`/api/image?path=${encodeURIComponent(currentAudio?.path || '')}&thumbnail=true`} 
+						src={`/api/media?path=${encodeURIComponent(currentAudio?.path || '')}&thumbnail=true`} 
 						alt={currentAudio?.name}
 						class="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110"
 						onerror={() => imgFailed = true}
@@ -443,7 +443,7 @@
 			>
 				<div class="absolute inset-[37.5%] rounded-full bg-black/60 border border-white/10 flex items-center justify-center overflow-hidden">
 					{#if !imgFailed}
-						<img src={`/api/image?path=${encodeURIComponent(currentAudio?.path || '')}&thumbnail=true`} alt="" class="w-full h-full object-cover opacity-50 animate-spin-slow will-change-transform" />
+						<img src={`/api/media?path=${encodeURIComponent(currentAudio?.path || '')}&thumbnail=true`} alt="" class="w-full h-full object-cover opacity-50 animate-spin-slow will-change-transform" />
 					{/if}
 				</div>
 			</div>
@@ -595,7 +595,7 @@
 	<!-- Hidden Audio Native -->
 	<audio
 		bind:this={audioPlayer}
-		src={`/api/image?path=${encodeURIComponent(currentAudio?.path || '')}`}
+		src={`/api/media?path=${encodeURIComponent(currentAudio?.path || '')}`}
 		crossorigin="anonymous"
 		autoplay
 		loop={isLooping}

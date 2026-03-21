@@ -42,7 +42,7 @@
 		
 		// Debounce hover to avoid fetching if just passing through
 		const timer = setTimeout(() => {
-			fetch(`/api/image?path=${encodeURIComponent(img.path)}&metadata=true`)
+			fetch(`/api/media?path=${encodeURIComponent(img.path)}&metadata=true`)
 				.then(res => res.json())
 				.then(data => {
 					// Update the object directly - since it's state in +page.svelte, it will propagate
@@ -115,7 +115,7 @@
 					{:else if isCbzFile(img.name)}
 						<!-- CBZ cover -->
 						<img
-							src={`/api/cbz-cover?path=${encodeURIComponent(img.path)}`}
+							src={`/api/ebook?path=${encodeURIComponent(img.path)}&cover=true`}
 							loading="lazy"
 							decoding="async"
 							fetchpriority={i < 12 ? 'high' : 'auto'}
@@ -137,7 +137,7 @@
 						</div>
 					{:else if isVideoFile(img.name)}
 						<img
-							src={`/api/image?path=${encodeURIComponent(img.path)}&thumbnail=true`}
+							src={`/api/media?path=${encodeURIComponent(img.path)}&thumbnail=true`}
 							loading="lazy"
 							decoding="async"
 							fetchpriority={i < 12 ? 'high' : 'auto'}
@@ -158,7 +158,7 @@
 							</svg>
 						</div>
 						<img
-							src={`/api/image?path=${encodeURIComponent(img.path)}&thumbnail=true`}
+							src={`/api/media?path=${encodeURIComponent(img.path)}&thumbnail=true`}
 							loading="lazy"
 							decoding="async"
 							fetchpriority="auto"
@@ -200,7 +200,7 @@
 						</div>
 					{:else}
 						<img
-							src={`/api/image?path=${encodeURIComponent(img.path)}&thumbnail=true`}
+							src={`/api/media?path=${encodeURIComponent(img.path)}&thumbnail=true`}
 							loading="lazy"
 							decoding="async"
 							fetchpriority={i < 12 ? 'high' : 'auto'}

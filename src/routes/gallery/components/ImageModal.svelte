@@ -173,7 +173,7 @@
 
 	$effect(() => {
 		if (currentItem?.path) {
-			currentImageSrc = `/api/image?path=${encodeURIComponent(currentItem.path)}`;
+			currentImageSrc = `/api/media?path=${encodeURIComponent(currentItem.path)}`;
 			isFullImageLoaded = false;
 			translateX = 0;
 			translateY = 0;
@@ -494,7 +494,7 @@
 			isMetadataLoading = true;
 			const retryParam = isMetadataRetry ? '&retry=true' : '';
 			
-			fetch(`/api/image?path=${encodeURIComponent(currentPath)}&metadata=true${retryParam}`, { signal: controller.signal })
+			fetch(`/api/media?path=${encodeURIComponent(currentPath)}&metadata=true${retryParam}`, { signal: controller.signal })
 				.then(res => res.json())
 				.then(data => {
 					if (currentPath === currentItem.path) {

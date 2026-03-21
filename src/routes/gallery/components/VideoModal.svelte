@@ -207,7 +207,7 @@
 
 	$effect(() => {
 		if (currentItem?.path) {
-			currentVideoSrc = `/api/image?path=${encodeURIComponent(currentItem.path)}`;
+			currentVideoSrc = `/api/media?path=${encodeURIComponent(currentItem.path)}`;
 		}
 	});
 
@@ -231,7 +231,7 @@
 			lastMetadataPath = currentItem.path;
 			const controller = new AbortController();
 			isMetadataLoading = true;
-			fetch(`/api/image?path=${encodeURIComponent(currentItem.path)}&metadata=true`, { signal: controller.signal })
+			fetch(`/api/media?path=${encodeURIComponent(currentItem.path)}&metadata=true`, { signal: controller.signal })
 				.then(res => res.json())
 				.then(data => {
 					currentMetadata = data;

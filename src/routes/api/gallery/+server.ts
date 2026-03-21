@@ -1,9 +1,7 @@
-import { error, json, isHttpError } from '@sveltejs/kit';
+import { error, json } from '@sveltejs/kit';
 import type { RequestEvent } from '@sveltejs/kit';
-import fs from 'node:fs/promises';
 import path from 'node:path';
-import yauzl from 'yauzl-promise';
-import { ALLOWED_EXTENSIONS, isImageFile, isVideoFile, isAudioFile, isPdfFile, isEpubFile, isCbzFile } from '$lib/server/fileUtils';
+import { handleListing } from './handlers/listing';
 
 export async function GET({ url }: RequestEvent) {
 	const folderParam = url.searchParams.get('folder');
@@ -11,6 +9,7 @@ export async function GET({ url }: RequestEvent) {
 	const limitParam = url.searchParams.get('limit') || '50';
 	const sortBy = url.searchParams.get('sort') || 'date_desc';
 	const typeFilter = url.searchParams.get('type') || 'all';
+    const imagesOnly = url.searchParams.get('imagesOnly') === 'true';
 
 	if (!folderParam || folderParam === 'This PC' || folderParam === 'This PC (Ổ đĩa hệ thống)') {
 		return json({ images: [], total: 0, page: 0, hasMore: false });
@@ -18,143 +17,17 @@ export async function GET({ url }: RequestEvent) {
 
 	const folderPath = path.resolve(folderParam);
 
-	const imagesOnlyParam = url.searchParams.get('imagesOnly') === 'true';
-
 	try {
-		// Kiểm tra cơ bản
-		const stat = await fs.stat(folderPath);
-		let imageDetails: any[] = [];
-
-		if (stat.isFile() && (folderPath.toLowerCase().endsWith('.cbz') || folderPath.toLowerCase().endsWith('.zip'))) {
-			const zip = await yauzl.open(folderPath);
-			try {
-				for await (const entry of zip) {
-					const ext = path.extname(entry.filename).toLowerCase();
-					// In a CBZ/ZIP, we typically only want images. Definitely NO nested CBZ/ZIP.
-					if (ALLOWED_EXTENSIONS.has(ext) && ext !== '.cbz' && ext !== '.zip' && ext !== '.mp4' && ext !== '.webm') {
-						imageDetails.push({
-							name: entry.filename,
-							path: `${folderPath}::${entry.filename}`,
-							size: entry.uncompressedSize,
-							mtime: Date.now(),
-							isDir: false
-						});
-					}
-				}
-			} finally {
-				await zip.close();
-			}
-		} else if (stat.isDirectory()) {
-			const entries = await fs.readdir(folderPath, { withFileTypes: true });
-
-			// TỐI ƯU: Quét thông tin file theo từng đợt (chunks) để tránh nghẽn RAM/Disk
-			const CHUNK_SIZE_STAT = 50;
-			for (let i = 0; i < entries.length; i += CHUNK_SIZE_STAT) {
-				const chunk = entries.slice(i, i + CHUNK_SIZE_STAT);
-				const results = await Promise.all(
-					chunk.map(async (entry) => {
-						const fullPath = path.join(folderPath, entry.name);
-						const ext = path.extname(entry.name).toLowerCase();
-						const isDir = entry.isDirectory();
-						const isCbz = !isDir && isCbzFile(ext);
-						const isVideo = !isDir && isVideoFile(ext);
-						const isAudio = !isDir && isAudioFile(ext);
-						const isPdf = !isDir && isPdfFile(ext);
-						const isEpub = !isDir && isEpubFile(ext);
-
-						let isAllowed = isDir || isCbz || isAudio || isPdf || isEpub || ALLOWED_EXTENSIONS.has(ext);
-
-						// Apply type filter
-						if (!isDir) {
-							if (typeFilter === 'images' && (isVideo || isAudio || isPdf || isEpub || isCbz)) isAllowed = false;
-							if (typeFilter === 'videos' && !isVideo) isAllowed = false;
-							if (typeFilter === 'audio' && !isAudio) isAllowed = false;
-							if (typeFilter === 'ebook' && (!isPdf && !isEpub && !isCbz)) isAllowed = false;
-						}
-						
-						if (isAllowed) {
-							if (imagesOnlyParam) {
-								if (isDir || isVideo || isAudio || (isCbz || isPdf || isEpub)) return null;
-							}
-
-							try {
-								const entryStat = await fs.stat(fullPath);
-								return {
-									name: entry.name,
-									path: fullPath,
-									mtime: entryStat.mtimeMs,
-									size: entryStat.size, // Needed for cache keys or metadata placeholder
-									isDir,
-									isCbz,
-									isVideo,
-									isAudio,
-									isPdf,
-									isEpub
-								};
-							} catch (e) { return null; }
-						}
-						return null;
-					})
-				);
-				imageDetails.push(...results.filter(Boolean));
-			}
-		} else {
-			throw error(400, 'Invalid path');
-		}
-
-		// Sắp xếp
-		imageDetails.sort((a, b) => {
-			if (a.isDir && !b.isDir) return -1;
-			if (!a.isDir && b.isDir) return 1;
-			if (sortBy === 'date_desc') return b.mtime - a.mtime;
-			if (sortBy === 'date_asc') return a.mtime - b.mtime;
-			if (sortBy === 'name_asc') return a.name.localeCompare(b.name);
-			if (sortBy === 'name_desc') return b.name.localeCompare(a.name);
-			return 0;
-		});
-
-		const page = parseInt(pageParam, 10);
-		const limit = parseInt(limitParam, 10);
-		const start = page * limit;
-		const end = start + limit;
-		const totalCount = imageDetails.length;
-		const totalImagesCount = imageDetails.filter(item => !item.isDir && !item.isCbz && !item.isVideo && !item.isAudio && !item.isPdf && !item.isEpub).length;
-		const totalVideosCount = imageDetails.filter(item => item.isVideo).length;
-		const totalAudioCount = imageDetails.filter(item => item.isAudio).length;
-		const totalEbookCount = imageDetails.filter(item => item.isPdf || item.isEpub || item.isCbz).length;
-
-		// Final mapping of essential data only
-		const paginatedImages = imageDetails.slice(start, end).map(item => ({
-			name: item.name,
-			path: item.path,
-			isDir: item.isDir,
-			isCbz: item.isCbz,
-			isVideo: item.isVideo,
-			isAudio: item.isAudio,
-			isPdf: item.isPdf,
-			isEpub: item.isEpub,
-			size: item.size,
-			lastModified: item.mtime
-		}));
-
-		imageDetails = [];
-
-		if (global.Bun) { Bun.gc(true); }
-
-		return json({
-			images: paginatedImages,
-			total: totalCount,
-			totalImages: totalImagesCount,
-			totalVideos: totalVideosCount,
-			totalAudio: totalAudioCount,
-			totalEbook: totalEbookCount,
-			page,
-			hasMore: end < totalCount
-		});
-
+        return await handleListing(
+            folderPath, 
+            parseInt(pageParam, 10), 
+            parseInt(limitParam, 10), 
+            sortBy, 
+            typeFilter, 
+            imagesOnly
+        );
 	} catch (e: any) {
 		console.error('API Gallery Error:', e);
-		if (isHttpError(e)) throw e;
-		throw error(500, 'Error: ' + (e.message || 'Unknown error'));
+		throw e;
 	}
 }

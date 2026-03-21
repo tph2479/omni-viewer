@@ -465,7 +465,7 @@
 					class="w-full flex flex-col items-center justify-center border-b border-white/5 bg-black relative"
 				>
 					<img
-						src={inBuffer ? `/api/image?path=${encodeURIComponent(img.path)}` : undefined}
+						src={inBuffer ? `/api/media?path=${encodeURIComponent(img.path)}` : undefined}
 						alt=""
 						class="w-full h-auto object-contain block m-0 p-0 pointer-events-none"
 						onload={(e) => {

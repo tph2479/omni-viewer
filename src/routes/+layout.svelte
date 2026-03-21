@@ -58,7 +58,7 @@
 		if (isClearingCache) return;
 		isClearingCache = true;
 		try {
-			await fetch('/api/image', { method: 'DELETE' });
+			await fetch('/api/media', { method: 'DELETE' });
 			localStorage.removeItem('hello-theme');
 			userHasSetPreference = false;
 			const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
