@@ -161,7 +161,7 @@ async function generateThumbnail(inputPath: string, outputPath: string, mtimeMs:
 
 		try {
 			const ext = path.extname(inputPath).toLowerCase();
-			const isVideo = ['.mp4', '.webm'].includes(ext);
+			const isVideo = ['.mp4', '.webm', '.mkv', '.avi', '.flv', '.mov', '.m4v'].includes(ext);
 			const isAudio = ['.mp3', '.wav', '.ogg', '.flac', '.m4a', '.aac', '.opus', '.m4b'].includes(ext);
 
 			if (isVideo || isAudio) {

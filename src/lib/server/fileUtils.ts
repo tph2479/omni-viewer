@@ -7,10 +7,17 @@
 // All file extensions that the gallery accepts.
 export const ALLOWED_EXTENSIONS = new Set([
 	'.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif', '.bmp', 
-	'.mp4', '.webm', '.cbz', '.zip', '.heic', '.heif',
+	'.mp4', '.webm', '.mkv', '.avi', '.flv', '.mov', '.m4v', '.cbz', '.zip', '.heic', '.heif',
 	'.mp3', '.wav', '.ogg', '.flac', '.m4a', '.aac', '.opus', '.m4b',
 	'.pdf', '.epub'
 ]);
+
+export const isImageFile = (ext: string) => /^\.(jpg|jpeg|png|webp|gif|avif|bmp|heic|heif)$/i.test(ext);
+export const isVideoFile = (ext: string) => /^\.(mp4|webm|mkv|avi|flv|mov|m4v)$/i.test(ext);
+export const isAudioFile = (ext: string) => /^\.(mp3|wav|ogg|flac|m4a|aac|opus|m4b)$/i.test(ext);
+export const isPdfFile = (ext: string) => ext === '.pdf';
+export const isEpubFile = (ext: string) => ext === '.epub';
+export const isCbzFile = (ext: string) => /^\.(cbz|zip)$/i.test(ext);
 
 /**
  * Return the appropriate HTTP Content-Type for the given lowercase file
@@ -38,7 +45,13 @@ export function getContentType(ext: string): string {
 		case '.aac':  return 'audio/aac';
 		case '.opus': return 'audio/opus';
 		case '.m4b':  return 'audio/mp4';
+		case '.mkv':  return 'video/x-matroska';
+		case '.avi':  return 'video/x-msvideo';
+		case '.flv':  return 'video/x-flv';
+		case '.mov':  return 'video/quicktime';
+		case '.m4v':  return 'video/x-m4v';
 		case '.pdf':  return 'application/pdf';
+		case '.epub': return 'application/epub+zip';
 		default:      return 'application/octet-stream';
 	}
 }

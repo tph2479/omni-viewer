@@ -3,7 +3,7 @@ import type { RequestEvent } from '@sveltejs/kit';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import yauzl from 'yauzl-promise';
-import { ALLOWED_EXTENSIONS } from '$lib/server/fileUtils';
+import { ALLOWED_EXTENSIONS, isImageFile, isVideoFile, isAudioFile, isPdfFile, isEpubFile, isCbzFile } from '$lib/server/fileUtils';
 
 export async function GET({ url }: RequestEvent) {
 	const folderParam = url.searchParams.get('folder');
@@ -56,17 +56,17 @@ export async function GET({ url }: RequestEvent) {
 						const fullPath = path.join(folderPath, entry.name);
 						const ext = path.extname(entry.name).toLowerCase();
 						const isDir = entry.isDirectory();
-						const isCbz = !isDir && (ext === '.cbz' || ext === '.zip');
-						const isVideo = !isDir && (ext === '.mp4' || ext === '.webm');
-						const isAudio = !isDir && ['.mp3', '.wav', '.ogg', '.flac', '.m4a', '.aac', '.opus', '.m4b'].includes(ext);
-						const isPdf = !isDir && ext === '.pdf';
-						const isEpub = !isDir && ext === '.epub';
+						const isCbz = !isDir && isCbzFile(ext);
+						const isVideo = !isDir && isVideoFile(ext);
+						const isAudio = !isDir && isAudioFile(ext);
+						const isPdf = !isDir && isPdfFile(ext);
+						const isEpub = !isDir && isEpubFile(ext);
 
 						let isAllowed = isDir || isCbz || isAudio || isPdf || isEpub || ALLOWED_EXTENSIONS.has(ext);
 
 						// Apply type filter
 						if (!isDir) {
-							if (typeFilter === 'images' && (isVideo || isAudio)) isAllowed = false;
+							if (typeFilter === 'images' && (isVideo || isAudio || isPdf || isEpub || isCbz)) isAllowed = false;
 							if (typeFilter === 'videos' && !isVideo) isAllowed = false;
 							if (typeFilter === 'audio' && !isAudio) isAllowed = false;
 							if (typeFilter === 'ebook' && (!isPdf && !isEpub && !isCbz)) isAllowed = false;

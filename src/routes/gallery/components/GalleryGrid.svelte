@@ -84,7 +84,7 @@
 	{:else}
 		<div class="flex-1 flex flex-col items-center justify-center opacity-60 bg-base-200/50 rounded-xl border-2 border-dashed border-base-300 p-6 text-center">
 			<p class="text-lg font-medium">No files found in this directory</p>
-			<p class="text-xs mt-2">Supported formats: JPG, PNG, WEBP, GIF, AVIF, BMP, MP4, WEBM, CBZ, PDF</p>
+			<p class="text-xs mt-2 text-center">Supported formats: JPG, PNG, WEBP, GIF, MP4, WEBM, MP3, WAV, CBZ, PDF, EPUB</p>
 		</div>
 	{/if}
 {:else}

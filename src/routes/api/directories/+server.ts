@@ -8,7 +8,7 @@ import path from 'node:path';
 import { exec } from 'node:child_process';
 // @ts-ignore
 import { promisify } from 'node:util';
-import { ALLOWED_EXTENSIONS } from '$lib/server/fileUtils';
+import { ALLOWED_EXTENSIONS, isImageFile, isVideoFile, isAudioFile, isPdfFile, isEpubFile, isCbzFile } from '$lib/server/fileUtils';
 
 const execAsync = promisify(exec);
 
@@ -90,8 +90,8 @@ export async function GET({ url }: RequestEvent) {
 				const entryPath = path.join(currentPath, entry.name);
 				const ext = path.extname(entry.name).toLowerCase();
 				const isDir = entry.isDirectory();
-				const isCbz = !isDir && CBZ_EXTS.has(ext);
-				const isMedia = !isDir && !isCbz && ALLOWED_EXTENSIONS.has(ext);
+				const isCbz = !isDir && isCbzFile(ext);
+				const isMedia = !isDir && !isCbz && (isImageFile(ext) || isVideoFile(ext) || isAudioFile(ext) || isPdfFile(ext) || isEpubFile(ext));
 
 				if (isMedia) {
 					mediaCount++;
