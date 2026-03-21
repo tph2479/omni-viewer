@@ -24,7 +24,7 @@
 		onOpenPicker: () => void;
 		onOpenWebtoon: () => void;
 		onGoUp: (dir: string) => void;
-		mediaType: 'all' | 'images' | 'videos' | 'audio' | 'pdf';
+		mediaType: 'all' | 'images' | 'videos' | 'audio' | 'ebook';
 	} = $props();
 
 	const parentPath = $derived.by(() => {
@@ -106,35 +106,27 @@
 			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
 			</svg>
-			<span class="hidden sm:inline">Webtoon</span>
 		</button>
-
-		<!-- Items Count -->
-		<div class="bg-base-200 border border-base-content/20 px-2 sm:px-3 h-8 rounded-lg flex items-center gap-2 shrink-0 shadow-sm">
-			<span class="text-[13px] font-black tabular-nums">{totalItems}</span>
-		</div>
 
 		<!-- Media Type Select -->
 		<select
-			class="select select-bordered select-sm rounded-lg font-bold w-fit min-w-[100px] shrink-0 border-primary"
+			class="select select-bordered select-sm rounded-lg font-bold w-fit shrink-0 border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
 			bind:value={mediaType}
 			onchange={onLoad}
-			disabled={isLoading}
 		>
 			<option value="all">All</option>
 			<option value="images">Images</option>
 			<option value="videos">Videos</option>
 			<option value="audio">Audio</option>
-			<option value="pdf">PDF</option>
+			<option value="ebook">Ebook</option>
 		</select>
 
 		<!-- Sort Select -->
 		<!-- Mobile: icon only -->
 		<select
-			class="sm:hidden select select-bordered select-sm rounded-lg font-bold w-fit min-w-[40px] shrink-0 border-primary text-center appearance-none [&::-ms-expand]:hidden"
+			class="sm:hidden select select-bordered select-sm rounded-lg font-bold w-fit min-w-[40px] shrink-0 border-primary text-center appearance-none focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all [&::-ms-expand]:hidden"
 			bind:value={currentSort}
 			onchange={onLoad}
-			disabled={isLoading}
 		>
 			<option value="date_desc">↓</option>
 			<option value="date_asc">↑</option>
@@ -143,15 +135,14 @@
 		</select>
 		<!-- Desktop: full text -->
 		<select
-			class="hidden sm:block select select-bordered select-sm rounded-lg font-bold w-fit min-w-[130px] shrink-0 pr-8 border-primary"
+			class="hidden sm:block select select-bordered select-sm rounded-lg font-bold w-fit shrink-0 pr-8 border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
 			bind:value={currentSort}
 			onchange={onLoad}
-			disabled={isLoading}
 		>
-			<option value="date_desc">🕒 Newest</option>
-			<option value="date_asc">🕒 Oldest</option>
-			<option value="name_asc">🔤 A-Z</option>
-			<option value="name_desc">🔤 Z-A</option>
+			<option value="date_desc">Newest</option>
+			<option value="date_asc">Oldest</option>
+			<option value="name_asc">A-Z</option>
+			<option value="name_desc">Z-A</option>
 		</select>
 	{/if}
 </div>

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
-	import { isVideoFile, isZipFile, isCbzFile, isPdfFile, handleImageError, formatBytes, formatDate, type ImageFile } from './utils';
+	import { isVideoFile, isZipFile, isCbzFile, isPdfFile, isEpubFile, handleImageError, formatBytes, formatDate, type ImageFile } from './utils';
 
 	let {
 		loadedImages,
@@ -185,6 +185,17 @@
 						<div class="absolute top-2 left-2 z-20">
 							<div class="bg-red-600/80 backdrop-blur-md px-2 py-0.5 rounded shadow-lg group-hover:bg-red-600 transition-colors">
 								<span class="text-[9px] font-black text-white tracking-widest uppercase">PDF</span>
+							</div>
+						</div>
+					{:else if isEpubFile(img.name) || img.isEpub}
+						<div class="absolute inset-0 flex flex-col items-center justify-center bg-emerald-500/5 transition-colors group-hover:bg-emerald-500/10">
+							<svg xmlns="http://www.w3.org/2000/svg" class="w-1/3 h-1/3 text-emerald-600 opacity-20 group-hover:opacity-40 transition-all duration-500 group-hover:scale-110" fill="currentColor" viewBox="0 0 24 24">
+								<path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20s3.4.45 4.75 1.45c1.35-1 3.3-1.45 4.75-1.45s3.4.45 4.75 1.45c.1 0 .15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1zM9.5 18c-1.2-.55-2.65-.85-4-.85s-2.8.3-4 .85V7.15c1.2-.55 2.65-.85 4-.85s2.8.3 4 .85V18zm11 0c-1.2-.55-2.65-.85-4-.85s-2.8.3-4 .85V7.15c1.2-.55 2.65-.85 4-.85s2.8.3 4 .85V18z"/>
+							</svg>
+						</div>
+						<div class="absolute top-2 left-2 z-20">
+							<div class="bg-emerald-600/80 backdrop-blur-md px-2 py-0.5 rounded shadow-lg group-hover:bg-emerald-600 transition-colors">
+								<span class="text-[9px] font-black text-white tracking-widest uppercase">EPUB</span>
 							</div>
 						</div>
 					{:else}

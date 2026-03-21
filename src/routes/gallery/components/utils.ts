@@ -67,6 +67,10 @@ export function isCbzFile(filename: string) {
 	return filename.toLowerCase().endsWith('.cbz');
 }
 
+export function isEpubFile(filename: string) {
+	return filename.toLowerCase().endsWith('.epub');
+}
+
 export function isAudioFile(filename: string) {
 	const ext = filename.toLowerCase().split('.').pop();
 	return ['.mp3', '.wav', '.ogg', '.flac', '.m4a', '.aac', '.opus', '.m4b'].includes('.' + ext);
@@ -90,4 +94,4 @@ export function formatDateTime(ms: number) {
 	return new Date(ms).toLocaleString();
 }
 
-export type ImageFile = { name: string; path: string; size: number; lastModified: number; isCbz?: boolean; isDir?: boolean; isVideo?: boolean; isAudio?: boolean; isPdf?: boolean; width?: number; height?: number };
+export type ImageFile = { name: string; path: string; size: number; lastModified: number; isCbz?: boolean; isDir?: boolean; isVideo?: boolean; isAudio?: boolean; isPdf?: boolean; isEpub?: boolean; width?: number; height?: number };

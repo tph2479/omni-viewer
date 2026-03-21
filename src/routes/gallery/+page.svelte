@@ -26,7 +26,7 @@
 	let hasMore = $state(false);
 
 	let currentSort = $state('date_desc');
-	let mediaType = $state<'all'|'images'|'videos'|'audio'|'pdf'>('all');
+	let mediaType = $state<'all'|'images'|'videos'|'audio'|'ebook'>('all');
 	
 	/** Persistent drives list loaded ONCE on start */
 	let availableDrives = $state<any[]>([]);
@@ -277,6 +277,9 @@
 			isAudioModalOpen = true;
 		} else if (img.isPdf) {
 			openPdfReader(img.path);
+		} else if (img.isEpub) {
+			// EPUB reader not implemented yet, maybe show a message or just ignore
+			console.log('EPUB clicked:', img.path);
 		} else {
 			isImageModalOpen = true;
 		}

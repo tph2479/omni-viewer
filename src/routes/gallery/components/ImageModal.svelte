@@ -329,7 +329,7 @@
 	}
 
 	function isImage(item: ImageFile) {
-		return item && !item.isDir && !item.isCbz && !item.isVideo;
+		return item && !item.isDir && !item.isCbz && !item.isVideo && !item.isAudio && !item.isPdf && !item.isEpub;
 	}
 
 	function nextImage() {

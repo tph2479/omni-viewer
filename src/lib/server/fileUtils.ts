@@ -9,7 +9,7 @@ export const ALLOWED_EXTENSIONS = new Set([
 	'.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif', '.bmp', 
 	'.mp4', '.webm', '.cbz', '.zip', '.heic', '.heif',
 	'.mp3', '.wav', '.ogg', '.flac', '.m4a', '.aac', '.opus', '.m4b',
-	'.pdf'
+	'.pdf', '.epub'
 ]);
 
 /**

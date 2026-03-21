@@ -60,20 +60,21 @@ export async function GET({ url }: RequestEvent) {
 						const isVideo = !isDir && (ext === '.mp4' || ext === '.webm');
 						const isAudio = !isDir && ['.mp3', '.wav', '.ogg', '.flac', '.m4a', '.aac', '.opus', '.m4b'].includes(ext);
 						const isPdf = !isDir && ext === '.pdf';
+						const isEpub = !isDir && ext === '.epub';
 
-						let isAllowed = isDir || isCbz || isAudio || isPdf || ALLOWED_EXTENSIONS.has(ext);
+						let isAllowed = isDir || isCbz || isAudio || isPdf || isEpub || ALLOWED_EXTENSIONS.has(ext);
 
 						// Apply type filter
 						if (!isDir) {
 							if (typeFilter === 'images' && (isVideo || isAudio)) isAllowed = false;
 							if (typeFilter === 'videos' && !isVideo) isAllowed = false;
 							if (typeFilter === 'audio' && !isAudio) isAllowed = false;
-							if (typeFilter === 'pdf' && !isPdf) isAllowed = false;
+							if (typeFilter === 'ebook' && (!isPdf && !isEpub && !isCbz)) isAllowed = false;
 						}
 						
 						if (isAllowed) {
 							if (imagesOnlyParam) {
-								if (isDir || isCbz || isVideo) return null;
+								if (isDir || isVideo || isAudio || (isCbz || isPdf || isEpub)) return null;
 							}
 
 							try {
@@ -87,7 +88,8 @@ export async function GET({ url }: RequestEvent) {
 									isCbz,
 									isVideo,
 									isAudio,
-									isPdf
+									isPdf,
+									isEpub
 								};
 							} catch (e) { return null; }
 						}
@@ -116,10 +118,10 @@ export async function GET({ url }: RequestEvent) {
 		const start = page * limit;
 		const end = start + limit;
 		const totalCount = imageDetails.length;
-		const totalImagesCount = imageDetails.filter(item => !item.isDir && !item.isCbz && !item.isVideo && !item.isAudio).length;
+		const totalImagesCount = imageDetails.filter(item => !item.isDir && !item.isCbz && !item.isVideo && !item.isAudio && !item.isPdf && !item.isEpub).length;
 		const totalVideosCount = imageDetails.filter(item => item.isVideo).length;
 		const totalAudioCount = imageDetails.filter(item => item.isAudio).length;
-		const totalPdfCount = imageDetails.filter(item => item.isPdf).length;
+		const totalEbookCount = imageDetails.filter(item => item.isPdf || item.isEpub || item.isCbz).length;
 
 		// Final mapping of essential data only
 		const paginatedImages = imageDetails.slice(start, end).map(item => ({
@@ -130,6 +132,7 @@ export async function GET({ url }: RequestEvent) {
 			isVideo: item.isVideo,
 			isAudio: item.isAudio,
 			isPdf: item.isPdf,
+			isEpub: item.isEpub,
 			size: item.size,
 			lastModified: item.mtime
 		}));
@@ -144,7 +147,7 @@ export async function GET({ url }: RequestEvent) {
 			totalImages: totalImagesCount,
 			totalVideos: totalVideosCount,
 			totalAudio: totalAudioCount,
-			totalPdf: totalPdfCount,
+			totalEbook: totalEbookCount,
 			page,
 			hasMore: end < totalCount
 		});
