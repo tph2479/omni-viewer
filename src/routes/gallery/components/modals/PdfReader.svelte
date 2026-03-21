@@ -174,20 +174,22 @@
 	}
 	:global(.textLayer) {
 		position: absolute;
-		left: 0; top: 0; right: 0; bottom: 0;
-		overflow: hidden;
+		left: 0; top: 0;
+		overflow: visible;
 		opacity: 1;
 		line-height: 1;
 		cursor: text !important;
 		user-select: text !important;
 		-webkit-user-select: text !important;
 	}
-	:global(.textLayer > span) {
+	:global(.textLayer span),
+	:global(.textLayer br) {
 		color: transparent;
 		position: absolute;
 		white-space: pre;
 		cursor: text !important;
 		user-select: text !important;
+		-webkit-user-select: text !important;
 		transform-origin: 0% 0%;
 	}
 	:global(.textLayer ::selection) {
@@ -196,6 +198,10 @@
 	}
 	:global(.pdf-dark-mode .textLayer ::selection) {
 		background: rgba(255, 255, 0, 0.25);
+	}
+	/* Fix pdf.js endOfContent div that blocks text selection */
+	:global(.textLayer .endOfContent) {
+		display: none !important;
 	}
 </style>
 

@@ -5,7 +5,6 @@ export function createPdfController(initialPdfPath: string) {
 	const s = $state({
 		pdfPath: initialPdfPath,
 		pdfjs: null as any,
-		pdfjsViewer: null as any,
 		pdfDoc: null as any,
 		numPages: 0,
 		isLoading: false,
@@ -136,13 +135,6 @@ export function createPdfController(initialPdfPath: string) {
 
 		const mod = await import('pdfjs-dist/legacy/build/pdf.mjs');
 		s.pdfjs = mod;
-		try {
-			// @ts-ignore
-			const viewerMod = await import('pdfjs-dist/legacy/web/pdf_viewer.mjs');
-			s.pdfjsViewer = viewerMod;
-		} catch (e) {
-			console.log('pdfjsViewer not loaded', e);
-		}
 
 		if (s.pdfjs && !s.pdfjs.GlobalWorkerOptions.workerSrc) {
 			s.pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
@@ -330,31 +322,34 @@ export function createPdfController(initialPdfPath: string) {
 			renderTasks.delete(pageIndex);
 
 			try {
-				if (textLayerDiv && s.pdfjsViewer && s.pdfjsViewer.renderTextLayer) {
+				if (textLayerDiv && s.pdfjs && s.pdfjs.TextLayer) {
 					textLayerDiv.innerHTML = '';
 
+					const parentWidth = canvas.parentElement?.clientWidth || viewport.width / viewport.scale;
+					const pageWidthPt = viewport.width / viewport.scale;
+					const pageHeightPt = viewport.height / viewport.height * viewport.height / viewport.scale;
+					const totalScaleFactor = parentWidth / pageWidthPt;
+
+					// Store PDF-point dimensions for ResizeObserver
+					textLayerDiv.setAttribute('data-pt-w', String(pageWidthPt));
+					// Keep data-vw/vh for highlightAction compatibility
 					textLayerDiv.setAttribute('data-vw', String(viewport.width));
 					textLayerDiv.setAttribute('data-vh', String(viewport.height));
 
-					const parentWidth = canvas.parentElement?.clientWidth || viewport.width;
-					const parentHeight = canvas.parentElement?.clientHeight || viewport.height;
-
-					const scaleX = parentWidth / viewport.width;
-					const scaleY = parentHeight / viewport.height;
-
-					textLayerDiv.style.width = `${viewport.width}px`;
-					textLayerDiv.style.height = `${viewport.height}px`;
-					textLayerDiv.style.transform = `scale(${scaleX}, ${scaleY})`;
-					textLayerDiv.style.transformOrigin = 'top left';
+					// Set CSS vars — TextLayer v5 uses these to size/position itself
 					textLayerDiv.style.setProperty('--scale-factor', String(viewport.scale));
+					textLayerDiv.style.setProperty('--total-scale-factor', String(totalScaleFactor));
+					textLayerDiv.style.setProperty('--scale-round-x', '1px');
+					textLayerDiv.style.setProperty('--scale-round-y', '1px');
 
-					const textContent = await page.getTextContent();
-					await s.pdfjsViewer.renderTextLayer({
-						textContentSource: textContent,
+					// Don't set width/height/transform — TextLayer manages those
+					const textContentSource = page.streamTextContent();
+					const textLayer = new s.pdfjs.TextLayer({
+						textContentSource,
 						container: textLayerDiv,
-						viewport: viewport,
-						textDivs: []
-					}).promise;
+						viewport,
+					});
+					await textLayer.render();
 				}
 			} catch (e) {
 				console.error('TextLayer rendering failed:', e);
