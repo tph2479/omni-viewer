@@ -57,6 +57,11 @@
 
 	let isPinned = $state(true);
 	let showHeader = $state(true);
+	
+	let isGrouped = $state(false);
+	let groupedData = $state<any>(null);
+	let currentExclusiveType = $state<string | null>(null);
+	let groupScrollPosition = $state(0);
 
 	$effect(() => {
 		const handleMouseMove = (e: MouseEvent) => {
@@ -218,13 +223,20 @@
 			}
 
 			const res = await fetch(
-				`/api/file?action=gallery&folder=${encodeURIComponent(targetPath)}&page=${currentPage}&limit=${PAGE_SIZE}&sort=${currentSort}&type=${mediaType}`
+				`/api/file?action=gallery&folder=${encodeURIComponent(targetPath)}&page=${currentPage}&limit=${PAGE_SIZE}&sort=${currentSort}&type=${mediaType}${currentExclusiveType ? '&exclusiveType=' + currentExclusiveType : ''}`
 			);
 			const data = await res.json();
 
 			if (!res.ok) throw new Error(data.message || 'Error fetching data from server.');
 
-			loadedImages = append ? [...loadedImages, ...data.images] : data.images;
+			isGrouped = data.isGrouped || false;
+			if (isGrouped) {
+				groupedData = data.groups;
+				loadedImages = [];
+			} else {
+				groupedData = null;
+				loadedImages = append ? [...loadedImages, ...data.images] : data.images;
+			}
 
 			if (reset) {
 				isFolderSelected = true;
@@ -312,6 +324,7 @@
 		
 		folderPath = normalized;
 		localStorage.setItem('hello-last-path', normalized);
+		currentExclusiveType = null;
 		
 		// Restore page if it exists in history
 		const savedPage = folderPageHistory[normalized] || 0;
@@ -353,6 +366,23 @@
 	function handleWebtoonClose() {
 		webtoonCbzPath = '';
 	}
+
+	function handleOpenGroup(type: string) {
+		const scrollContainer = document.querySelector('.drawer-content');
+		if (scrollContainer) groupScrollPosition = scrollContainer.scrollTop;
+		currentExclusiveType = type;
+		loadFolder(true, 0); // Always start at page 0 for exclusive view
+	}
+
+	function handleExitGroupView() {
+		currentExclusiveType = null;
+		loadFolder(true, 0).then(() => {
+			tick().then(() => {
+				const scrollContainer = document.querySelector('.drawer-content');
+				if (scrollContainer) scrollContainer.scrollTo({ top: groupScrollPosition, behavior: 'instant' });
+			});
+		});
+	}
 </script>
 
 <div class="flex flex-col relative w-full min-h-full">
@@ -368,6 +398,7 @@
 					bind:mediaType
 					{isLoading}
 					{isFolderSelected}
+					{isGrouped}
 					{loadedImages}
 					totalItems={totalMedia}
 					onLoad={() => {
@@ -413,8 +444,21 @@
 				<button class="btn btn-primary rounded-2xl px-10 font-black uppercase tracking-widest" onclick={() => (isFolderPickerOpen = true)}>Open Picker</button>
 			</div>
 		{:else if isFolderSelected}
+			{#if currentExclusiveType}
+				<div class="mb-4 flex items-center justify-between bg-base-200/50 backdrop-blur-md px-4 py-3 rounded-2xl border border-base-content/10 shadow-sm animate-in fade-in slide-in-from-top-2">
+					<div class="flex items-center gap-3">
+						<button class="btn btn-sm btn-circle btn-ghost" onclick={() => handleExitGroupView()} aria-label="Back to Group View">
+							<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-base-content" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+						</button>
+						<span class="font-bold tracking-tight uppercase text-sm text-base-content/80">Viewing: <span class="text-primary">{currentExclusiveType}</span></span>
+					</div>
+				</div>
+			{/if}
+
 			<GalleryGrid
 				{loadedImages}
+				{isGrouped}
+				{groupedData}
 				totalImages={totalMedia}
 				{currentPage}
 				{hasMore}
@@ -424,6 +468,7 @@
 				onOpenCbz={openCbzInWebtoon}
 				onOpenDir={openDir}
 				onLoadPage={(page) => loadFolder(false, page)}
+				onOpenGroup={handleOpenGroup}
 			/>
 		{/if}
 	</div>

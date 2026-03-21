@@ -7,6 +7,7 @@
 		mediaType = $bindable(),
 		isLoading,
 		isFolderSelected,
+		isGrouped = false,
 		loadedImages,
 		totalItems,
 		onLoad,
@@ -18,6 +19,7 @@
 		currentSort: string;
 		isLoading: boolean;
 		isFolderSelected: boolean;
+		isGrouped?: boolean;
 		loadedImages: ImageFile[];
 		totalItems: number;
 		onLoad: () => void;
@@ -96,11 +98,10 @@
 	</button>
 
 	{#if isFolderSelected}
-		<!-- Webtoon Button -->
 		<button
 			class="btn btn-sm btn-ghost rounded-lg shadow-sm font-bold gap-1 sm:gap-2 shrink-0 border border-primary"
 			onclick={onOpenWebtoon}
-			disabled={loadedImages.length === 0}
+			disabled={loadedImages.length === 0 && !isGrouped}
 			onmousedown={(e) => e.preventDefault()}
 		>
 			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

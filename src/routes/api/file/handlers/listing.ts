@@ -4,7 +4,15 @@ import path from 'node:path';
 import yauzl from 'yauzl-promise';
 import { ALLOWED_EXTENSIONS, isVideoFile, isAudioFile, isPdfFile, isEpubFile, isCbzFile } from '$lib/server/fileUtils';
 
-export async function handleListing(folderPath: string, page: number, limit: number, sortBy: string, typeFilter: string, imagesOnly: boolean) {
+export async function handleListing(
+    folderPath: string, 
+    page: number, 
+    limit: number, 
+    sortBy: string, 
+    typeFilter: string, 
+    imagesOnly: boolean,
+    exclusiveType: string | null = null
+) {
     const stat = await fs.stat(folderPath);
     let imageDetails: any[] = [];
 
@@ -55,6 +63,17 @@ export async function handleListing(folderPath: string, page: number, limit: num
                     if (isAllowed) {
                         if (imagesOnly && (isDir || isVideo || isAudio || isCbz || isPdf || isEpub)) return null;
 
+                        if (exclusiveType) {
+                            if (exclusiveType === 'folders' && !isDir) return null;
+                            if (exclusiveType !== 'folders' && isDir) return null;
+                            if (exclusiveType === 'images' && (isVideo || isAudio || isCbz || isPdf || isEpub)) return null;
+                            if (exclusiveType === 'cbz' && !isCbz) return null;
+                            if (exclusiveType === 'pdf' && !isPdf) return null;
+                            if (exclusiveType === 'epub' && !isEpub) return null;
+                            if (exclusiveType === 'audio' && !isAudio) return null;
+                            if (exclusiveType === 'videos' && !isVideo) return null;
+                        }
+
                         try {
                             const entryStat = await fs.stat(fullPath);
                             return {
@@ -93,6 +112,56 @@ export async function handleListing(folderPath: string, page: number, limit: num
     const totalAudioCount = imageDetails.filter(item => item.isAudio).length;
     const totalEbookCount = imageDetails.filter(item => item.isPdf || item.isEpub || item.isCbz).length;
 
+    // Conditional Grouping
+    let isGrouped = false;
+    let groupedResponse: Record<string, any> | null = null;
+
+    if (!exclusiveType) {
+        const folders = imageDetails.filter(i => i.isDir);
+        const images = imageDetails.filter(i => !i.isDir && !i.isCbz && !i.isVideo && !i.isAudio && !i.isPdf && !i.isEpub);
+        const cbz = imageDetails.filter(i => i.isCbz);
+        const pdf = imageDetails.filter(i => i.isPdf);
+        const epub = imageDetails.filter(i => i.isEpub);
+        const audio = imageDetails.filter(i => i.isAudio);
+        const videos = imageDetails.filter(i => i.isVideo);
+
+        const groupsArray = [
+            { type: 'folders', items: folders },
+            { type: 'images', items: images },
+            { type: 'cbz', items: cbz },
+            { type: 'pdf', items: pdf },
+            { type: 'epub', items: epub },
+            { type: 'audio', items: audio },
+            { type: 'videos', items: videos }
+        ];
+
+        const activeGroupsCount = groupsArray.filter(g => g.items.length > 0).length;
+
+        if (activeGroupsCount > 1) {
+            isGrouped = true;
+            groupedResponse = {};
+            for (const g of groupsArray) {
+                if (g.items.length > 0) {
+                    groupedResponse[g.type] = {
+                        total: g.items.length,
+                        items: g.items.slice(0, 11).map(item => ({
+                            name: item.name,
+                            path: item.path,
+                            isDir: item.isDir,
+                            isCbz: item.isCbz,
+                            isVideo: item.isVideo,
+                            isAudio: item.isAudio,
+                            isPdf: item.isPdf,
+                            isEpub: item.isEpub,
+                            size: item.size,
+                            lastModified: item.mtime
+                        }))
+                    };
+                }
+            }
+        }
+    }
+
     const paginatedImages = imageDetails.slice(start, end).map(item => ({
         name: item.name,
         path: item.path,
@@ -108,6 +177,18 @@ export async function handleListing(folderPath: string, page: number, limit: num
 
     // @ts-ignore
     if (globalThis.Bun) { globalThis.Bun.gc(true); }
+
+    if (isGrouped) {
+        return json({
+            isGrouped: true,
+            groups: groupedResponse,
+            total: totalCount,
+            totalImages: totalImagesCount,
+            totalVideos: totalVideosCount,
+            totalAudio: totalAudioCount,
+            totalEbook: totalEbookCount
+        });
+    }
 
     return json({
         images: paginatedImages,

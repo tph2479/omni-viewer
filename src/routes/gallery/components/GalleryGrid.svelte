@@ -4,6 +4,8 @@
 
 	let {
 		loadedImages,
+		isGrouped = false,
+		groupedData = null,
 		totalImages,
 		currentPage,
 		hasMore,
@@ -12,9 +14,12 @@
 		onOpenModal,
 		onOpenCbz,
 		onOpenDir,
-		onLoadPage
+		onLoadPage,
+		onOpenGroup
 	}: {
 		loadedImages: ImageFile[];
+		isGrouped?: boolean;
+		groupedData?: any;
 		totalImages: number;
 		currentPage: number;
 		hasMore: boolean;
@@ -24,6 +29,7 @@
 		onOpenCbz: (path: string) => void;
 		onOpenDir: (path: string) => void;
 		onLoadPage: (page: number) => void;
+		onOpenGroup?: (type: string) => void;
 	} = $props();
 
 	const totalPages = $derived(Math.ceil(totalImages / PAGE_SIZE));
@@ -70,27 +76,7 @@
 	});
 </script>
 
-{#if loadedImages.length === 0}
-	{#if isLoading}
-		<!-- Skeleton Loading Grid -->
-		<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 pb-6 animate-pulse">
-			{#each Array.from({ length: 12 }) as _}
-				<div class="flex flex-col gap-2">
-					<div class="aspect-square bg-base-300 rounded-2xl w-full"></div>
-					<div class="h-3 bg-base-300 rounded-full w-2/3 mx-auto"></div>
-				</div>
-			{/each}
-		</div>
-	{:else}
-		<div class="flex-1 flex flex-col items-center justify-center opacity-60 bg-base-200/50 rounded-xl border-2 border-dashed border-base-300 p-6 text-center">
-			<p class="text-lg font-medium">No files found in this directory</p>
-			<p class="text-xs mt-2 text-center">Supported formats: JPG, PNG, WEBP, GIF, MP4, WEBM, MP3, WAV, CBZ, PDF, EPUB</p>
-		</div>
-	{/if}
-{:else}
-	<!-- Thumbnail Grid -->
-	<div class="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4 pb-10">
-		{#each loadedImages as img, i}
+{#snippet fileCard(img: ImageFile, i: number)}
 			<div class="group flex flex-col">
 				<button
 					id="item-{img.path.replace(/[^a-zA-Z0-9]/g, '-')}"
@@ -226,6 +212,66 @@
 					{/if}
 				</div>
 			</div>
+{/snippet}
+
+{#if loadedImages.length === 0 && !isGrouped}
+	{#if isLoading}
+		<!-- Skeleton Loading Grid -->
+		<div class="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3 sm:gap-4 pb-6 animate-pulse">
+			{#each Array.from({ length: 12 }) as _}
+				<div class="flex flex-col gap-2">
+					<div class="aspect-square bg-base-300 rounded-2xl w-full"></div>
+					<div class="h-3 bg-base-300 rounded-full w-2/3 mx-auto"></div>
+				</div>
+			{/each}
+		</div>
+	{:else}
+		<div class="flex-1 flex flex-col items-center justify-center opacity-60 bg-base-200/50 rounded-xl border-2 border-dashed border-base-300 p-6 text-center">
+			<p class="text-lg font-medium">No files found in this directory</p>
+			<p class="text-xs mt-2 text-center">Supported formats: JPG, PNG, WEBP, GIF, MP4, WEBM, MP3, WAV, CBZ, PDF, EPUB</p>
+		</div>
+	{/if}
+{:else}
+
+
+{#if isGrouped && groupedData}
+	<div class="flex flex-col gap-5 pb-6">
+		{#each ['folders', 'images', 'cbz', 'pdf', 'epub', 'audio', 'videos'] as groupKey}
+			{#if groupedData[groupKey] && groupedData[groupKey].items.length > 0}
+				{@const groupInfo = groupedData[groupKey]}
+				<div class="flex flex-col gap-2">
+					<div class="flex items-center gap-2 ml-1">
+						<h2 class="text-base font-black tracking-tight uppercase text-base-content/80">{groupKey}</h2>
+						<span class="badge badge-primary badge-sm font-bold opacity-80">{groupInfo.total}</span>
+					</div>
+					<div class="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3 sm:gap-4">
+						{#each groupInfo.items as img, i}
+							{@render fileCard(img, i)}
+						{/each}
+						
+						{#if groupInfo.total > 11}
+							<button
+								class="relative aspect-square rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:ring-2 hover:ring-primary/50 transition-all duration-300 cursor-pointer border border-primary/20 bg-primary/5 flex flex-col items-center justify-center group w-full"
+								onclick={() => onOpenGroup?.(groupKey)}
+							>
+								<div class="bg-primary/20 p-4 rounded-full group-hover:bg-primary/30 transition-colors group-hover:scale-110 duration-300">
+									<svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+									</svg>
+								</div>
+								<span class="mt-3 font-bold text-xs text-primary/80 uppercase tracking-widest">View All</span>
+							</button>
+						{/if}
+					</div>
+				</div>
+			{/if}
+		{/each}
+	</div>
+{:else}
+	<!-- Thumbnail Grid -->
+	<div class="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3 sm:gap-4 pb-10">
+		{#each loadedImages as img, i}
+			{@render fileCard(img, i)}
 		{/each}
 	</div>
 
@@ -270,4 +316,5 @@
 			</button>
 		</div>
 	{/if}
+{/if}
 {/if}

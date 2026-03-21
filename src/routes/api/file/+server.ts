@@ -35,6 +35,7 @@ export async function GET({ url }: RequestEvent) {
         const sortBy = url.searchParams.get('sort') || 'date_desc';
         const typeFilter = url.searchParams.get('type') || 'all';
         const imagesOnly = url.searchParams.get('imagesOnly') === 'true';
+        const exclusiveType = url.searchParams.get('exclusiveType');
 
         if (!folderParam || folderParam === 'This PC' || folderParam === 'This PC (Ổ đĩa hệ thống)') {
             return json({ images: [], total: 0, page: 0, hasMore: false });
@@ -49,7 +50,8 @@ export async function GET({ url }: RequestEvent) {
                 parseInt(limitParam, 10), 
                 sortBy, 
                 typeFilter, 
-                imagesOnly
+                imagesOnly,
+                exclusiveType
             );
         } catch (e: any) {
             console.error('API Gallery Error:', e);
