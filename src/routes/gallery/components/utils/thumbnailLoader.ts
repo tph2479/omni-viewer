@@ -27,10 +27,29 @@ export async function fetchThumbnailBlob(url: string, signal: AbortSignal): Prom
     }
 }
 
+const PLACEHOLDER = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+
 export function lazyThumbnail(node: HTMLImageElement, url: string) {
     let abortController = new AbortController();
     let currentObjectUrl: string | null = null;
     let observer: IntersectionObserver;
+    
+    // Initialize state to avoid "broken" icon and ugly layout
+    if (!node.src || node.src === window.location.href) {
+        node.src = PLACEHOLDER;
+    }
+    node.style.opacity = '0';
+    node.style.transition = 'opacity 0.2s ease-in-out';
+
+    node.onload = () => {
+        if (node.src !== PLACEHOLDER) {
+            node.style.opacity = '1';
+        }
+    };
+
+    node.onerror = () => {
+        node.style.display = 'none';
+    };
     
     async function executeLoad(targetUrl: string) {
         try {
@@ -38,11 +57,11 @@ export function lazyThumbnail(node: HTMLImageElement, url: string) {
             if (!abortController.signal.aborted) {
                 currentObjectUrl = src;
                 node.src = src;
-                node.style.display = ''; // Restore visibility from any lazy hidden states
+                node.style.display = ''; 
             }
         } catch (e) {
             if (!abortController.signal.aborted) {
-				node.style.display = 'none'; // The thumbnail doesn't exist (e.g. audio without cover art), hide it to reveal background SVG
+				node.style.display = 'none';
 			}
         }
     }
