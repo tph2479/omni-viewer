@@ -34,16 +34,25 @@ export async function generateThumbnail(inputPath: string, outputPath: string, m
 			const isAudio = ['.mp3', '.wav', '.ogg', '.flac', '.m4a', '.aac', '.opus', '.m4b'].includes(ext);
 
 			if (isVideo || isAudio) {
+				const { hasVideoStream } = await new Promise<{ hasVideoStream: boolean }>((resolve) => {
+					const probe = spawn('ffprobe', [
+						'-v', 'error',
+						'-select_streams', 'v',
+						'-show_entries', 'stream=codec_type',
+						'-of', 'csv=p=0',
+						inputPath
+					], { stdio: ['ignore', 'pipe', 'ignore'] });
+					let output = '';
+					probe.stdout.on('data', (d) => { output += d; });
+					probe.on('close', () => { resolve({ hasVideoStream: output.trim().length > 0 }); });
+				});
+
+				if (!hasVideoStream) {
+					return false;
+				}
+
 				await new Promise((resolve, reject) => {
-					const ffmpegArgs = isAudio ? [
-						'-i', inputPath,
-						'-map', '0:v?',
-						'-frames:v', '1',
-						'-vf', 'scale=300:300:force_original_aspect_ratio=increase,crop=300:300',
-						'-c:v', 'webp',
-						'-y',
-						outputPath
-					] : [
+					const ffmpegArgs = [
 						'-ss', '00:00:01',
 						'-i', inputPath,
 						'-frames:v', '1',
