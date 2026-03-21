@@ -10,6 +10,10 @@
 		isGrouped = false,
 		loadedImages,
 		totalItems,
+		totalImages = 0,
+		totalVideos = 0,
+		totalAudio = 0,
+		totalEbook = 0,
 		onLoad,
 		onOpenPicker,
 		onOpenWebtoon,
@@ -22,6 +26,10 @@
 		isGrouped?: boolean;
 		loadedImages: ImageFile[];
 		totalItems: number;
+		totalImages?: number;
+		totalVideos?: number;
+		totalAudio?: number;
+		totalEbook?: number;
 		onLoad: () => void;
 		onOpenPicker: () => void;
 		onOpenWebtoon: () => void;
@@ -115,11 +123,11 @@
 			bind:value={mediaType}
 			onchange={onLoad}
 		>
-			<option value="all">All</option>
-			<option value="images">Images</option>
-			<option value="videos">Videos</option>
-			<option value="audio">Audio</option>
-			<option value="ebook">Ebook</option>
+			<option value="all">All-{totalItems}</option>
+			<option value="images">Images-{totalImages}</option>
+			<option value="videos">Videos-{totalVideos}</option>
+			<option value="audio">Audio-{totalAudio}</option>
+			<option value="ebook">Ebook-{totalEbook}</option>
 		</select>
 
 		<!-- Sort Select -->

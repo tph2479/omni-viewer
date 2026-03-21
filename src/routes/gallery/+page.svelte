@@ -17,6 +17,7 @@
 	let totalImagesCount = $state(0);
 	let totalVideosCount = $state(0);
 	let totalAudioCount = $state(0);
+	let totalEbookCount = $state(0);
 	let totalMedia = $state(0);
 	let currentPage = $state(0);
 	const PAGE_SIZE = 30;
@@ -171,6 +172,9 @@
 		loadedImages = [];
 		totalImagesCount = 0;
 		totalVideosCount = 0;
+		totalAudioCount = 0;
+		totalEbookCount = 0;
+		totalMedia = 0;
 		currentPage = 0;
 		hasMore = false;
 		isFolderSelected = false;
@@ -244,6 +248,7 @@
 			totalImagesCount = data.totalImages;
 			totalVideosCount = data.totalVideos;
 			totalAudioCount = data.totalAudio;
+			totalEbookCount = data.totalEbook;
 			totalMedia = data.total;
 			hasMore = data.hasMore;
 
@@ -403,6 +408,10 @@
 					{isGrouped}
 					{loadedImages}
 					totalItems={totalMedia}
+					totalImages={totalImagesCount}
+					totalVideos={totalVideosCount}
+					totalAudio={totalAudioCount}
+					totalEbook={totalEbookCount}
 					onLoad={() => {
 						const savedPage = folderPageHistory[folderPath] || 0;
 						loadFolder(true, savedPage);
