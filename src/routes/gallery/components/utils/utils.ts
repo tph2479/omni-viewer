@@ -1,38 +1,39 @@
 // Fallback ảnh lỗi hoặc xử lý HEIC/HEIF kể cả khi bị sai đuôi file
 export async function handleImageError(event: Event, imgPath: string) {
 	const target = event.target as HTMLImageElement;
-	if (!target) return;
+	if (!target || !target.src) return;
 	
 	const originalSrc = target.src;
-	const loadingIndicator = target.nextElementSibling as HTMLElement;
-	
+	const baseUrl = originalSrc.split('&__rt=')[0].split('&retry=')[0];
+
+	// Store the expected base url to detect if Svelte recycled this DOM node for another file
+	if (!target.dataset.expectedSrc) {
+		target.dataset.expectedSrc = baseUrl;
+	} else if (target.dataset.expectedSrc !== baseUrl) {
+		// This node was recycled for a new image! Reset everything!
+		target.dataset.failedPermanently = "";
+		target.dataset.expectedSrc = baseUrl;
+	}
+
 	// Prevent infinite loops if the image consistently fails
-	if (target.dataset.failedPermanently) {
-		console.warn("Image consistently failing, giving up:", imgPath);
+	if (target.dataset.failedPermanently === "true") {
 		return;
 	}
 
 	target.style.display = 'none';
-	if (loadingIndicator) {
-		loadingIndicator.style.display = 'flex';
-		loadingIndicator.innerHTML = '<span class="loading loading-spinner loading-lg text-primary opacity-50"></span>';
-	}
 
 	try {
-		// If we haven't retried this specific version yet
-		if (!originalSrc.includes('retry=')) {
-			// Just wait a moment and retry once with forced-regeneration flag on server
+        if (!originalSrc.includes('retry=')) {
+			// Just wait a moment and retry once with forced-regeneration flag on server for full images
 			await new Promise(resolve => setTimeout(resolve, 500));
+			
+			if (target.dataset.expectedSrc !== baseUrl) return; // ABORT recycling
 			
 			// Set a flag so if THIS retry fails, we don't try again
 			target.onerror = () => {
 				target.onerror = null;
 				target.dataset.failedPermanently = "true";
 				target.style.display = 'none';
-				if (loadingIndicator) {
-					loadingIndicator.style.display = 'flex';
-					loadingIndicator.innerHTML = '<div class="flex flex-col items-center opacity-30"><svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg></div>';
-				}
 			};
 			
 			// Notify parents that we are retrying (useful for metadata sync)
@@ -40,9 +41,11 @@ export async function handleImageError(event: Event, imgPath: string) {
 			
 			target.src = originalSrc + (originalSrc.includes('?') ? '&' : '?') + 'retry=' + Date.now();
 			target.style.display = 'block';
-			if (loadingIndicator) loadingIndicator.style.display = 'none';
 		} else {
-			target.dataset.failedPermanently = "true";
+			if (target.dataset.expectedSrc === baseUrl) {
+				target.dataset.failedPermanently = "true";
+				target.style.display = 'none';
+			}
 		}
 	} catch (err) {
 		console.warn("Image recovery failed:", err);

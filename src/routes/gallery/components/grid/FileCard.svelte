@@ -2,6 +2,7 @@
 	import { onDestroy } from 'svelte';
 	import { isVideoFile, isZipFile, isCbzFile, isPdfFile, isEpubFile, handleImageError, formatBytes, type ImageFile } from '../utils/utils';
 	import { cacheVersion } from '$lib/stores/cache.svelte';
+	import { lazyThumbnail } from '../utils/thumbnailLoader';
 
 	let {
 		img = $bindable(),
@@ -84,6 +85,7 @@
 				fetchpriority={index < 12 ? 'high' : 'auto'}
 				alt={img.name}
 				class="absolute inset-0 w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-700 ease-out"
+				onload={(e) => { (e.currentTarget as HTMLElement).style.display = ''; }}
 				onerror={(e) => {
 					const target = e.currentTarget as HTMLImageElement;
 					target.style.display = 'none';
@@ -100,12 +102,13 @@
 			</div>
 		{:else if isVideoFile(img.name)}
 			<img
-				src={`/api/media?path=${encodeURIComponent(img.path)}&thumbnail=true&v=${cacheVersion.value}`}
-				loading="lazy"
+				use:lazyThumbnail={`/api/media?path=${encodeURIComponent(img.path)}&thumbnail=true&v=${cacheVersion.value}`}
 				decoding="async"
 				fetchpriority={index < 12 ? 'high' : 'auto'}
 				alt={img.name}
 				class="absolute inset-0 w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-700 ease-out"
+				onload={(e) => { (e.currentTarget as HTMLElement).style.display = ''; }}
+				onerror={(e) => handleImageError(e, img.path)}
 			/>
 			<div class="absolute top-2 left-2 z-20">
 				<div class="bg-black/40 backdrop-blur-md p-1.5 rounded-lg border border-white/20 shadow-lg">
@@ -121,16 +124,13 @@
 				</svg>
 			</div>
 			<img
-				src={`/api/media?path=${encodeURIComponent(img.path)}&thumbnail=true&v=${cacheVersion.value}`}
-				loading="lazy"
+				use:lazyThumbnail={`/api/media?path=${encodeURIComponent(img.path)}&thumbnail=true&v=${cacheVersion.value}`}
 				decoding="async"
 				fetchpriority="auto"
 				alt={img.name}
 				class="absolute inset-0 w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-700 ease-out z-10"
-				onerror={(e) => {
-					const target = e.currentTarget as HTMLImageElement;
-					target.style.display = 'none';
-				}}
+				onload={(e) => { (e.currentTarget as HTMLElement).style.display = ''; }}
+				onerror={(e) => handleImageError(e, img.path)}
 			/>
 			<div class="absolute top-2 left-2 z-20">
 				<div class="bg-primary/80 backdrop-blur-md p-1.5 rounded-lg border border-white/20 shadow-lg group-hover:bg-primary transition-colors">
@@ -163,12 +163,12 @@
 			</div>
 		{:else}
 			<img
-				src={`/api/media?path=${encodeURIComponent(img.path)}&thumbnail=true&v=${cacheVersion.value}`}
-				loading="lazy"
+				use:lazyThumbnail={`/api/media?path=${encodeURIComponent(img.path)}&thumbnail=true&v=${cacheVersion.value}`}
 				decoding="async"
 				fetchpriority={index < 12 ? 'high' : 'auto'}
 				alt={img.name}
 				class="absolute inset-0 w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-700 ease-out"
+				onload={(e) => { (e.currentTarget as HTMLElement).style.display = ''; }}
 				onerror={(e) => handleImageError(e, img.path)}
 			/>
 		{/if}

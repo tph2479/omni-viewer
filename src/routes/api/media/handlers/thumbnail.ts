@@ -16,6 +16,8 @@ export async function generateThumbnail(inputPath: string, outputPath: string, m
 
 	const generationPromise = (async (): Promise<boolean> => {
 		if (activeGenerations >= MAX_CONCURRENT_THUMBS) {
+			if (generationQueue.length >= 40) return false;
+
 			await new Promise<void>(resolve => {
 				const onAbort = () => {
 					const idx = generationQueue.indexOf(resolve);
