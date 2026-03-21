@@ -19,7 +19,11 @@ export async function handleArchive(absolutePath: string, internalPath: string) 
             } 
         });
     } catch (err: any) {
-        console.error(`[Ebook API Error] Extracting ${internalPath}:`, err);
+        if (err.message && err.message.includes('encrypted')) {
+            console.warn(`[Ebook API] Skipping encrypted entry: ${internalPath}`);
+        } else {
+            console.error(`[Ebook API Error] Extracting ${internalPath}:`, err);
+        }
         throw error(404, `Internal file not found: ${err.message}`);
     }
 }

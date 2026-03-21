@@ -225,13 +225,18 @@ export async function extractFileFromArchive(archivePath: string, internalPath: 
 			throw new Error(`Entry ${internalPath} not found in archive`);
 		}
 
+		if (entry.isEncrypted && entry.isEncrypted()) {
+			await zip.close().catch(() => {});
+			throw new Error(`Entry ${internalPath} is encrypted and decryption is not supported.`);
+		}
+
 		const stream = await entry.openReadStream();
 		// Ensure zip is closed when stream ends
 		stream.on('end', () => zip.close().catch(() => {}));
 		stream.on('error', () => zip.close().catch(() => {}));
 		
 		return stream;
-	} catch (err) {
+	} catch (err: any) {
 		await zip.close().catch(() => {});
 		throw err;
 	}

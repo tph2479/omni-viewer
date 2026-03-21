@@ -151,7 +151,7 @@
 					<button 
 						aria-label="Toggle 1:1" 
 						class="btn btn-ghost border-none w-12 h-12 min-h-0 p-0 text-white rounded-none font-black font-mono flex items-center justify-center text-[10px] transition-colors hover:bg-white/5"
-						onclick={(e) => { e.stopPropagation(); imgState.toggleZoom(); }}
+						onclick={(e) => { e.stopPropagation(); imgState.toggleZoom(e.clientX, e.clientY); }}
 						onmousedown={(e) => e.preventDefault()}
 					>
 						1:1
@@ -240,12 +240,12 @@
 								imgState.isFullImageLoaded = true;
 							}}
 							class="pointer-events-auto select-none"
-							style="opacity: {imgState.isFullImageLoaded ? 1 : 0}; transform: translate({imgState.translateX}px, {imgState.translateY}px) scale({imgState.zoomLevel}) rotate({imgState.rotation}deg); transition: {imgState.isFullImageLoaded ? 'transform 0.2s ease-out, opacity 0.25s ease-in' : 'none'};"
+							style="opacity: {imgState.isFullImageLoaded ? 1 : 0}; transform: translate({imgState.translateX}px, {imgState.translateY}px) scale({imgState.zoomLevel}) rotate({imgState.rotation}deg); transition: {imgState.isFullImageLoaded ? 'transform 0.2s ease-out' : 'none'};"
 							decoding="async"
 							fetchpriority="high"
 							draggable="false"
 							onclick={(e) => e.stopPropagation()}
-							ondblclick={(e) => { e.stopPropagation(); imgState.toggleZoom(); }}
+							ondblclick={(e) => { e.stopPropagation(); imgState.toggleZoom(e.clientX, e.clientY); }}
 							onerror={(e) => handleImageError(e, imgState.currentItem.path)}
 							alt={imgState.currentItem.name}
 						/>

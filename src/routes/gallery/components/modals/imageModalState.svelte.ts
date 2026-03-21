@@ -39,6 +39,9 @@ export function createImageModalState(props: {
 	let currentMetadata = $state<any>(null);
 	let isMetadataLoading = $state(false);
 	
+	let mouseX = $state(0);
+	let mouseY = $state(0);
+	
 	let lastPathForReset = '';
 	let imageKey = $state(0);
 	let lastMetadataPath = '';
@@ -209,6 +212,9 @@ export function createImageModalState(props: {
 	function handleMouseMoveVisibility(e: MouseEvent) {
 		if (typeof window === 'undefined') return;
 		
+		mouseX = e.clientX;
+		mouseY = e.clientY;
+		
 		const height = window.innerHeight;
 		const width = window.innerWidth;
 		const ratioX = e.clientX / width;
@@ -238,7 +244,7 @@ export function createImageModalState(props: {
 	}
 
 	function resetZoomAndPan() {
-		zoomLevel = 1;
+		fitImageToViewport();
 		translateX = 0;
 		translateY = 0;
 		isDragging = false;
@@ -269,16 +275,19 @@ export function createImageModalState(props: {
 		}
 	}
 
-	function toggleZoom() {
-		if (zoomLevel === 1) {
-			let targetScale = (renderedWidth && naturalWidth) ? naturalWidth / renderedWidth : 2;
-			if (targetScale < 1.1) targetScale = 2;
-			performZoom(targetScale);
-			if (naturalWidth > 0 && naturalHeight > naturalWidth * 1.2) {
+	function toggleZoom(anchorX?: number, anchorY?: number) {
+		let targetScale = (renderedWidth && naturalWidth) ? naturalWidth / renderedWidth : 2;
+		if (targetScale < 1.1) targetScale = 2;
+		
+		// If zoom level is currently at or close to targetScale (or significantly zoomed in), reset to best fit
+		if (zoomLevel >= targetScale * 0.95) {
+			resetZoomAndPan();
+		} else {
+			performZoom(targetScale, anchorX, anchorY);
+			// Only force scroll to top for tall images if we DID NOT zoom via mouse anchor
+			if (anchorX === undefined && naturalWidth > 0 && naturalHeight > naturalWidth * 1.2) {
 				translateY = maxTranslateY;
 			}
-		} else {
-			resetZoomAndPan();
 		}
 	}
 
@@ -311,8 +320,17 @@ export function createImageModalState(props: {
 			return;
 		}
 
-		const hasDeltaX = Math.abs(event.deltaX) > 0.1;
-		const hasDeltaY = Math.abs(event.deltaY) > 0.1;
+		let dX = event.deltaX;
+		let dY = event.deltaY;
+		
+		// Map vertical wheel to horizontal pan if image only overflows horizontally (e.g. rotated)
+		if (!needsVerticalPan && needsHorizontalPan && Math.abs(dY) > 0.1 && Math.abs(dX) < 0.1) {
+			dX = dY;
+			dY = 0;
+		}
+
+		const hasDeltaX = Math.abs(dX) > 0.1;
+		const hasDeltaY = Math.abs(dY) > 0.1;
 		if (!hasDeltaX && !hasDeltaY) return;
 		
 		const willPanH = hasDeltaX && (needsHorizontalPan || isWheelPanningH);
@@ -330,8 +348,9 @@ export function createImageModalState(props: {
 			}, 300);
 		}
 		
-		if (willPanH) translateX += event.deltaX * 1.5;
-		if (willPanV) translateY -= event.deltaY * 1.5;
+		// Standard native 2D scroll behavior
+		if (willPanH) translateX -= dX * 1.5;
+		if (willPanV) translateY -= dY * 1.5;
 	}
 
 	function startDrag(event: MouseEvent) {
@@ -413,7 +432,17 @@ export function createImageModalState(props: {
 		const key = event.key.toLowerCase();
 		if (key === 'z') {
 			event.preventDefault();
-			toggleZoom();
+			toggleZoom(mouseX || window.innerWidth / 2, mouseY || window.innerHeight / 2);
+			return;
+		}
+		if (key === '=' || key === '+') {
+			event.preventDefault();
+			performZoom(Math.min(maxZoom, zoomLevel * 1.35), mouseX || window.innerWidth / 2, mouseY || window.innerHeight / 2);
+			return;
+		}
+		if (key === '-') {
+			event.preventDefault();
+			performZoom(Math.max(minZoom, zoomLevel / 1.35), mouseX || window.innerWidth / 2, mouseY || window.innerHeight / 2);
 			return;
 		}
 
