@@ -75,19 +75,64 @@
 			ctrl.toggleWebtoonFit();
 		}
 	}
+
+	let lastWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
+	let isResizing = false;
+	function handleResize() {
+		if (typeof window === 'undefined' || !s.webtoonScrollContainer || isResizing) return;
+		const currentWidth = window.innerWidth;
+		if (currentWidth === lastWidth) return;
+		
+		isResizing = true;
+
+		const capturedIdx = s.currentImageIndex;
+		const capturedImagePercent = s.anchorPercentInImage;
+		const capturedDocPercent = s.lastScrollPercent;
+
+		// 2. Symmetrical Zoom Switch
+		if (lastWidth >= 640 && currentWidth < 640) {
+			ctrl.setWebtoonZoom(1, undefined, { skipScroll: true });
+		} else if (lastWidth < 640 && currentWidth >= 640) {
+			ctrl.setWebtoonZoom(s.previousWebtoonZoom < 0.99 ? s.previousWebtoonZoom : 0.6, undefined, { skipScroll: true });
+		}
+		
+		// 3. Clear any pending controller adjustments to ensure we have full control
+		s.pendingScrollTop = null;
+		lastWidth = currentWidth;
+
+		// 4. Restore anchor: Primary is element-specific, fallback is document percentage
+		tick().then(() => {
+			if (s.webtoonScrollContainer) {
+				const el = document.getElementById(`webtoon-image-${capturedIdx}`);
+				if (el) {
+					s.webtoonScrollContainer.scrollTop = el.offsetTop + (capturedImagePercent * el.offsetHeight);
+				} else {
+					s.webtoonScrollContainer.scrollTop = capturedDocPercent * s.webtoonScrollContainer.scrollHeight;
+				}
+			}
+			isResizing = false;
+		});
+	}
+
+	// Initial check for mobile fit
+	onMount(() => {
+		if (window.innerWidth < 640) {
+			ctrl.setWebtoonZoom(1);
+		}
+	});
 </script>
 
 <style>
 	:global(.webtoon-scroll) {
 		scrollbar-width: none;
-		overflow-anchor: auto;
+		overflow-anchor: none;
 	}
 	:global(.webtoon-scroll::-webkit-scrollbar) {
 		display: none;
 	}
 </style>
 
-<svelte:window onkeydown={handleKeyDown} onmousemove={ctrl.handleWindowMouseMove} onmouseup={ctrl.handleWindowMouseUp} />
+<svelte:window onkeydown={handleKeyDown} onmousemove={ctrl.handleWindowMouseMove} onmouseup={ctrl.handleWindowMouseUp} onresize={handleResize} />
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div 
@@ -96,8 +141,17 @@
 	class="webtoon-scroll fixed inset-0 z-[300] bg-zinc-950 overflow-y-auto animate-in fade-in duration-200 focus:outline-none" 
 	onmousemove={ctrl.handleMouseMove}
 	onscroll={(e) => { 
-		if (s.totalImages > 0) {
-			s.smoothPercent = ((s.currentImageIndex + 1) / s.totalImages) * 100;
+		const target = e.currentTarget as HTMLElement;
+		if (target.scrollHeight > 0 && !isResizing && s.pendingScrollTop === null) {
+			s.lastScrollPercent = target.scrollTop / target.scrollHeight;
+
+			// Pro-Reader Anchoring: Track precise offset into the current image
+			const anchorEl = document.getElementById(`webtoon-image-${s.currentImageIndex}`);
+			if (anchorEl) {
+				const rect = anchorEl.getBoundingClientRect();
+				const containerRect = target.getBoundingClientRect();
+				s.anchorPercentInImage = (containerRect.top - rect.top) / rect.height;
+			}
 		}
 	}}
 	onwheel={(e) => {
@@ -238,14 +292,14 @@
 
 	<!-- Nội dung Webtoon -->
 	<div class="flex flex-col items-center pb-20 pt-4 min-h-screen outline-none w-full">
-		<div class="flex flex-col items-center origin-top" style="transform: scale({s.webtoonZoomLevel}); width: 100%; max-width: none;">
+		<div class="flex flex-col items-center" style="width: {s.webtoonZoomLevel * 100}%; max-width: none; flex-shrink: 0;">
 			{#each s.loadedImages as img, i}
 				{@const inBuffer = Math.abs(i - s.currentImageIndex) <= ctrl.BUFFER_SIZE}
 				<!-- svelte-ignore a11y_missing_attribute -->
 				<div
 					id="webtoon-image-{i}"
 					use:trackImageIndex={i}
-					style="min-height: {s.imageSizes[i] ?? 500}px"
+					style="aspect-ratio: {s.aspectRatios[i] ?? 0.7}; min-height: {s.aspectRatios[i] ? 'auto' : '120vw'}"
 					class="w-full flex flex-col items-center justify-center border-b border-white/5 bg-black relative"
 				>
 					<img
@@ -253,8 +307,10 @@
 						alt=""
 						class="w-full h-auto object-contain block m-0 p-0 pointer-events-none"
 						onload={(e) => {
-							const h = (e.currentTarget as HTMLImageElement).clientHeight;
-							if (h) s.imageSizes[i] = h;
+							const img = e.currentTarget as HTMLImageElement;
+							if (img.naturalWidth && img.naturalHeight) {
+								s.aspectRatios[i] = img.naturalWidth / img.naturalHeight;
+							}
 						}}
 					/>
 				</div>

@@ -19,19 +19,25 @@ export function createWebtoonController(folderPath: string) {
 		
 		webtoonZoomLevel: 0.6,
 		previousWebtoonZoom: 0.6,
-		currentImageIndex: 0,
 		
 		webtoonScrollContainer: undefined as HTMLElement | undefined,
 		pendingScrollTop: null as number | null,
 		goToPageInput: "",
 		
-		imageSizes: {} as Record<number, number>,
+		aspectRatios: {} as Record<number, number>,
 		
-		smoothPercent: 0,
+		currentImageIndex: 0,
+		
+		get smoothPercent() {
+			return this.totalImages > 0 ? ((this.currentImageIndex + 1) / this.totalImages) * 100 : 0;
+		},
+		
 		isDraggingSeek: false,
 		hasMoved: false,
 		startY: 0,
 		previewPercent: 0,
+		lastScrollPercent: 0,
+		anchorPercentInImage: 0,
 		seekBarElement: null as HTMLElement | null
 	});
 
@@ -95,7 +101,7 @@ export function createWebtoonController(folderPath: string) {
 		}
 	}
 
-	function setWebtoonZoom(newZoom: number, cursorY?: number) {
+	function setWebtoonZoom(newZoom: number, cursorY?: number, options?: { skipScroll?: boolean }) {
 		if (!s.webtoonScrollContainer || newZoom === s.webtoonZoomLevel) return;
 		
 		const oldZoom = s.webtoonZoomLevel;
@@ -109,12 +115,30 @@ export function createWebtoonController(folderPath: string) {
 		const contentY = currentScroll + yAnchor - paddingTop;
 		
 		s.webtoonZoomLevel = newZoom;
+		
+		if (options?.skipScroll) {
+			s.pendingScrollTop = null;
+			return;
+		}
+
 		s.pendingScrollTop = (contentY * ratio) + paddingTop - yAnchor;
 		
 		tick().then(() => {
 			if (s.webtoonScrollContainer && s.pendingScrollTop !== null) {
 				s.webtoonScrollContainer.scrollTop = s.pendingScrollTop;
 				s.pendingScrollTop = null;
+				
+				// Synchronize the stable percentage after zoom adjustment to avoid jumps on next resize
+				if (s.webtoonScrollContainer.scrollHeight > 0) {
+					s.lastScrollPercent = s.webtoonScrollContainer.scrollTop / s.webtoonScrollContainer.scrollHeight;
+					
+					const anchorEl = document.getElementById(`webtoon-image-${s.currentImageIndex}`);
+					if (anchorEl) {
+						const rect = anchorEl.getBoundingClientRect();
+						const cRect = s.webtoonScrollContainer.getBoundingClientRect();
+						s.anchorPercentInImage = (cRect.top - rect.top) / rect.height;
+					}
+				}
 			}
 		});
 	}
@@ -129,13 +153,8 @@ export function createWebtoonController(folderPath: string) {
 	}
 
 	function cleanupOldSizes() {
-		const keepRange = BUFFER_SIZE * 3;
-		const keys = Object.keys(s.imageSizes).map(Number).sort((a, b) => a - b);
-		for (const key of keys) {
-			if (Math.abs(key - s.currentImageIndex) > keepRange) {
-				delete s.imageSizes[key];
-			}
-		}
+		// Deactivated to ensure layout stability during window resize and jumps.
+		// Aspect ratios are tiny and should be kept for the duration of the folder view.
 	}
 
 	function handleSeekBarMouseDown(e: MouseEvent) {
@@ -200,7 +219,7 @@ export function createWebtoonController(folderPath: string) {
 
 	function destroy() {
 		s.loadedImages = [];
-		s.imageSizes = {};
+		s.aspectRatios = {};
 	}
 
 	return {
@@ -210,7 +229,7 @@ export function createWebtoonController(folderPath: string) {
 		loadMore,
 		scrollToIndex,
 		handlePageInput,
-		setWebtoonZoom,
+		setWebtoonZoom: (newZoom: number, cursorY?: number, options?: { skipScroll?: boolean }) => setWebtoonZoom(newZoom, cursorY, options),
 		toggleWebtoonFit,
 		cleanupOldSizes,
 		handleSeekBarMouseDown,
