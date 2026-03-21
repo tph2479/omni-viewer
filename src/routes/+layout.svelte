@@ -201,7 +201,7 @@
 	</div>
 
 	<!-- Content box -->
-	<div class="drawer-content flex flex-col flex-1 min-w-0 h-full overflow-y-auto">
+	<div class="drawer-content flex flex-col flex-1 min-w-0 h-full overflow-y-auto" style="scrollbar-gutter: stable">
 		<!-- Navbar (Chỉ hiện trên Mobile) -->
 		<div class="w-full navbar bg-base-100 lg:hidden shadow-sm sticky top-0 z-[200]">
 			<div class="flex-none">

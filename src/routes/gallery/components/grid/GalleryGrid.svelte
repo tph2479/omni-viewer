@@ -38,7 +38,7 @@
 {#if loadedImages.length === 0 && !isGrouped}
 	{#if isLoading}
 		<!-- Skeleton Loading Grid -->
-		<div class="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3 sm:gap-4 pb-6 animate-pulse">
+		<div class="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3 sm:gap-4 pb-6 animate-pulse">
 			{#each Array.from({ length: 12 }) as _}
 				<div class="flex flex-col gap-2">
 					<div class="aspect-square bg-base-300 rounded-2xl w-full"></div>
@@ -65,7 +65,7 @@
 						<h2 class="text-base font-black tracking-tight uppercase text-base-content/80">{groupKey}</h2>
 						<span class="badge badge-primary badge-sm font-bold opacity-80">{groupInfo.total}</span>
 					</div>
-					<div class="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3 sm:gap-4">
+					<div class="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3 sm:gap-4">
 						{#each groupInfo.items as img, i}
 							<FileCard {img} index={i} {onOpenDir} {onOpenCbz} onOpenModal={(idx) => onOpenModal(idx, groupInfo.items)} />
 						{/each}
@@ -90,7 +90,7 @@
 	</div>
 {:else}
 	<!-- Thumbnail Grid -->
-	<div class="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3 sm:gap-4 pb-10">
+	<div class="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3 sm:gap-4 pb-10">
 		{#each loadedImages as _, i}
 			<FileCard bind:img={loadedImages[i]} index={i} {onOpenDir} {onOpenCbz} {onOpenModal} />
 		{/each}
