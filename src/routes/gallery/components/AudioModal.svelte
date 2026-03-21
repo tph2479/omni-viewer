@@ -365,7 +365,7 @@
 </script>
 
 <div 
-	class="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950 overflow-hidden font-sans"
+	class="fixed inset-0 z-[300] flex items-center justify-center bg-zinc-950 subtitle-hidden overflow-hidden font-sans"
 	role="dialog"
 	aria-modal="true"
 	transition:fade={{ duration: 300 }}
@@ -387,9 +387,9 @@
 		<div class="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.8)_100%)]"></div>
 	</div>
 
-	<!-- Centered, Width-Limited Canvas Visualizer -->
-	<div class="absolute bottom-12 left-0 right-0 h-40 pointer-events-none z-0 flex justify-center">
-		<div class="w-full max-w-2xl h-full opacity-40">
+	<!-- Centered, Width-Limited Canvas Visualizer (Background) -->
+	<div class="absolute bottom-6 md:bottom-12 left-0 right-0 h-40 pointer-events-none z-0 flex justify-center">
+		<div class="w-full max-w-2xl h-full opacity-30 md:opacity-40">
 			<canvas 
 				bind:this={canvas} 
 				width="800" 
@@ -401,11 +401,11 @@
 
 	<!-- Main Interaction Area -->
 	<div 
-		class="relative z-10 w-full h-full max-w-5xl flex flex-col md:flex-row items-center justify-center gap-12 p-8 md:p-16 -translate-y-12 md:-translate-y-20"
+		class="relative z-10 w-full h-full max-w-5xl flex flex-col md:flex-row items-center justify-center gap-6 md:gap-12 p-6 md:p-16 -translate-y-6 md:-translate-y-20"
 		in:fly={{ y: 20, duration: 600, easing: quintOut }}
 	>
 		<!-- Cover Art Panel -->
-		<div class="relative group perspective-1000 w-full max-w-[240px] md:max-w-[420px] aspect-square flex-shrink-0">
+		<div class="relative group perspective-1000 w-full max-w-[200px] md:max-w-[420px] aspect-square flex-shrink-0">
 			<!-- Subtle Glow -->
 			<div class="absolute inset-4 bg-white/5 rounded-full opacity-0 group-hover:opacity-20 transition-opacity"></div>
 			
@@ -462,7 +462,7 @@
 			</div>
 
 			<!-- Control Pad -->
-			<div class="bg-zinc-900/60 border border-white/10 rounded-3xl p-8 space-y-8 shadow-2xl transition-all hover:bg-zinc-900/80">
+			<div class="bg-zinc-900/60 border border-white/10 rounded-3xl p-5 md:p-8 space-y-4 md:space-y-8 shadow-2xl transition-all hover:bg-zinc-900/80">
 				
 				<!-- Seekbar -->
 				<div class="space-y-4">

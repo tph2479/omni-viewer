@@ -262,7 +262,7 @@
 		role="dialog"
 		aria-modal="true"
 		tabindex="-1"
-		class="fixed inset-0 z-[100] bg-black/40 backdrop-blur-md flex flex-col h-full w-full overflow-hidden outline-none animate-in fade-in duration-300"
+		class="fixed inset-0 z-[300] bg-black/40 backdrop-blur-md flex flex-col h-full w-full overflow-hidden outline-none animate-in fade-in duration-300"
 		onmousemove={handleMouseMoveVisibility}
 	>
 		<!-- Main View Area -->

@@ -308,7 +308,7 @@
 <div 
 	bind:this={webtoonScrollContainer}
 	tabindex="0"
-	class="webtoon-scroll fixed inset-0 z-[100] bg-zinc-950 overflow-y-auto animate-in fade-in duration-200 focus:outline-none" 
+	class="webtoon-scroll fixed inset-0 z-[300] bg-zinc-950 overflow-y-auto animate-in fade-in duration-200 focus:outline-none" 
 	onmousemove={handleMouseMove}
 	onscroll={(e) => { 
 		const t = e.currentTarget;

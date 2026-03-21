@@ -399,7 +399,7 @@
 <div 
 	bind:this={pdfScrollContainer}
 	tabindex="0"
-	class="pdf-scroll fixed inset-0 z-[100] bg-zinc-950 overflow-y-auto animate-in fade-in duration-200 focus:outline-none" 
+	class="pdf-scroll fixed inset-0 z-[300] bg-zinc-950 overflow-y-auto animate-in fade-in duration-200 focus:outline-none" 
 	onmousemove={handleMouseMove}
 	onwheel={(e) => {
 		if (e.ctrlKey) {
