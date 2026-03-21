@@ -268,36 +268,22 @@
 		const currentCount = history.length;
 		const headX = w - 120; // Leave leading space in front of the dot
 		
-		// 1. Smart History Trail (Multi-segment rendering for varying colors)
+		// 1. Sleek Continuous History Trail (Single Color)
+		ctx.beginPath();
+		const opacity = 0.25; // Constant subtle opacity
+		ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
 		ctx.lineWidth = 1.0;
 		
-		for (let i = 1; i < currentCount; i++) {
-			const pt = history[i];
-			const prevPt = history[i-1];
-			
+		for (let i = 0; i < currentCount; i++) {
 			const indexFromHead = (currentCount - 1 - i);
 			const x = headX - (indexFromHead * step);
-			const prevX = headX - ((indexFromHead + 1) * step);
+			const y = h - (history[i].y * h * 0.5) - 40; 
 			
 			if (x < -20) continue;
-			
-			const y = h - (pt.y * h * 0.5) - 40;
-			const prevY = h - (prevPt.y * h * 0.5) - 40;
-			
-			// Color based on band intensity: Blue/Purple for Bass, White/Gold for Treble
-			const opacity = Math.max(0, 1 - (indexFromHead / 400));
-			let color = `hsla(${pt.h}, 30%, 80%, ${opacity * 0.5})`; // Default sleek
-			
-			if (pt.b > 0.6) color = `hsla(280, 70%, 70%, ${opacity * 0.8})`; // Bass Purple
-			if (pt.t > 0.6) color = `hsla(50, 90%, 80%, ${opacity * 0.8})`;  // Treble Gold
-			
-			ctx.beginPath();
-			ctx.strokeStyle = color;
-			ctx.lineWidth = 0.8 + (pt.b * 1.5); // Thicker for bass hits
-			ctx.moveTo(prevX, prevY);
-			ctx.lineTo(x, y);
-			ctx.stroke();
+			if (i === 0) ctx.moveTo(x, y);
+			else ctx.lineTo(x, y);
 		}
+		ctx.stroke();
 
 		// Floating Glow Point (Right-aligned)
 		const lastPt = history[currentCount - 1];
