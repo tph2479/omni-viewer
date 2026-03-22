@@ -374,6 +374,12 @@
 	}
 
 	async function handleOpenWebtoon() {
+		if (isCoverMode) {
+			isCoverMode = false;
+			coverFolders = [];
+			return;
+		}
+
 		if (webtoonCbzPath) {
 			isWebtoonMode = true;
 			return;
@@ -464,11 +470,11 @@
 					{isFolderSelected}
 					{isGrouped}
 					{loadedImages}
-					totalItems={totalMedia}
-					totalImages={totalImagesCount}
-					totalVideos={totalVideosCount}
-					totalAudio={totalAudioCount}
-					totalEbook={totalEbookCount}
+					totalItems={isCoverMode ? coverFoldersTotal : totalMedia}
+					totalImages={isCoverMode ? 0 : totalImagesCount}
+					totalVideos={isCoverMode ? 0 : totalVideosCount}
+					totalAudio={isCoverMode ? 0 : totalAudioCount}
+					totalEbook={isCoverMode ? 0 : totalEbookCount}
 					onLoad={() => {
 						const savedPage = folderPageHistory[folderPath] || 0;
 						loadFolder(true, savedPage);

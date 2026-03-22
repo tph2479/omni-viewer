@@ -100,8 +100,8 @@
 					<div class="absolute bottom-0 inset-x-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent"></div>
 				</button>
 				<div class="flex flex-col items-center mt-auto pt-1">
-					<p 
-						class="text-[10px] sm:text-[11px] font-bold truncate text-center px-1 text-base-content/60 group-hover:text-teal-500 transition-colors duration-300 w-full" 
+					<p
+						class="text-[10px] sm:text-[11px] font-bold truncate text-center px-1 text-base-content/60 group-hover:text-teal-500 transition-colors duration-300 w-full"
 						title={folder.name}
 					>
 						{folder.name}
@@ -162,9 +162,26 @@
 			{/each}
 		</div>
 	{:else}
-		<div class="flex-1 flex flex-col items-center justify-center opacity-60 bg-base-200/50 rounded-xl border-2 border-dashed border-base-300 p-6 text-center">
-			<p class="text-lg font-medium">No files found in this directory</p>
-			<p class="text-xs mt-2 text-center">Supported formats: JPG, PNG, WEBP, GIF, MP4, WEBM, MP3, WAV, CBZ, PDF, EPUB</p>
+		<div class="flex-1 flex flex-col items-center justify-center opacity-60 bg-base-200/30 rounded-3xl border-2 border-dashed border-base-content/10 p-10 text-center min-h-[300px]">
+			<svg xmlns="http://www.w3.org/2000/svg" class="h-14 w-14 mb-4 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+			</svg>
+			<p class="text-base font-black uppercase tracking-tight mb-2 text-base-content">No files found</p>
+			<p class="text-[11px] font-bold uppercase tracking-widest opacity-50 mb-4">This directory contains no supported media</p>
+			<div class="flex flex-wrap justify-center gap-1.5 max-w-sm">
+				{#each ['JPG','PNG','WEBP','AVIF','GIF','BMP','HEIC'] as fmt}
+					<span class="badge badge-sm font-black opacity-60 bg-success/10 text-success border-success/20">{fmt}</span>
+				{/each}
+				{#each ['MP4','WEBM','MKV','AVI','MOV','FLV','M4V'] as fmt}
+					<span class="badge badge-sm font-black opacity-60 bg-info/10 text-info border-info/20">{fmt}</span>
+				{/each}
+				{#each ['MP3','WAV','FLAC','OGG','M4A','AAC','OPUS'] as fmt}
+					<span class="badge badge-sm font-black opacity-60 bg-warning/10 text-warning border-warning/20">{fmt}</span>
+				{/each}
+				{#each ['CBZ','PDF','EPUB'] as fmt}
+					<span class="badge badge-sm font-black opacity-60 bg-error/10 text-error border-error/20">{fmt}</span>
+				{/each}
+			</div>
 		</div>
 	{/if}
 {:else}
@@ -184,7 +201,7 @@
 						{#each groupInfo.items as img, i}
 							<FileCard {img} index={i} {onOpenDir} {onOpenCbz} onOpenModal={(idx) => onOpenModal(idx, groupInfo.items)} />
 						{/each}
-						
+
 						{#if groupInfo.total > 11}
 							<button
 								class="relative aspect-square rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:ring-2 hover:ring-primary/50 transition-all duration-300 cursor-pointer border border-primary/20 bg-primary/5 flex flex-col items-center justify-center group w-full"
