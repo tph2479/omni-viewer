@@ -51,6 +51,7 @@
 	let coverFoldersHasMore = $state(false);
 	let isCoverMode = $state(false);
 	const COVER_PAGE_SIZE = 30;
+	let savedCoverState: { path: string; folders: CoverFolder[]; total: number; page: number; hasMore: boolean; scrollPos: number } | null = $state(null);
 	let selectedPdfPath = $state('');
 	let pendingFile = $state<{ path: string, type: 'media' | 'cbz' | 'pdf' } | null>(null);
 	let lastOpenedFolder = $state<string | null>(null);
@@ -69,6 +70,7 @@
 	let groupedData = $state<any>(null);
 	let currentExclusiveType = $state<string | null>(null);
 	let groupScrollPosition = $state(0);
+	let coverScrollPosition = $state(0);
 
 	$effect(() => {
 		const handleMouseMove = (e: MouseEvent) => {
@@ -464,7 +466,46 @@
 					}}
 					onOpenPicker={() => (isFolderPickerOpen = true)}
 					onOpenWebtoon={handleOpenWebtoon}
-					onGoUp={(path) => openDir(path, true)}
+					onGoUp={async (path) => {
+                    if (savedCoverState && savedCoverState.path === path) {
+                        isCoverMode = true;
+                        coverFolders = savedCoverState.folders;
+                        coverFoldersTotal = savedCoverState.total;
+                        coverFoldersPage = savedCoverState.page;
+                        coverFoldersHasMore = savedCoverState.hasMore;
+                        const restoredScrollPos = savedCoverState.scrollPos;
+                        savedCoverState = null;
+                        folderPath = path;
+                        tick().then(() => {
+                            const scrollContainer = document.querySelector('.drawer-content');
+                            if (scrollContainer) scrollContainer.scrollTo({ top: restoredScrollPos, behavior: 'instant' });
+                        });
+                        return;
+                    }
+                    
+                    isLoading = true;
+                    try {
+                        const res = await fetch(`/api/file?action=covers&folder=${encodeURIComponent(path)}&page=0&limit=${COVER_PAGE_SIZE}`);
+                        const data = await res.json();
+                        if (data.total > 0) {
+                            isCoverMode = true;
+                            coverFolders = data.folders;
+                            coverFoldersTotal = data.total;
+                            coverFoldersPage = 0;
+                            coverFoldersHasMore = data.hasMore;
+                        } else {
+                            isCoverMode = false;
+                            coverFolders = [];
+                        }
+                    } catch (e) {
+                        console.error(e);
+                        isCoverMode = false;
+                        coverFolders = [];
+                    } finally {
+                        isLoading = false;
+                    }
+                    openDir(path, true);
+                }}
 				/>
 			</div>
 
@@ -520,7 +561,21 @@
 				{coverFoldersHasMore}
 				{isCoverMode}
 				onExitCoverMode={() => { isCoverMode = false; coverFolders = []; }}
-				onCoverFolderClick={(path) => { isCoverMode = false; coverFolders = []; openDir(path); }}
+				onCoverFolderClick={(path) => {
+                    const scrollContainer = document.querySelector('.drawer-content');
+                    if (scrollContainer) coverScrollPosition = scrollContainer.scrollTop;
+                    savedCoverState = {
+                        path: normalizePath(folderPath),
+                        folders: [...coverFolders],
+                        total: coverFoldersTotal,
+                        page: coverFoldersPage,
+                        hasMore: coverFoldersHasMore,
+                        scrollPos: coverScrollPosition
+                    };
+                    isCoverMode = false;
+                    coverFolders = [];
+                    openDir(path);
+                }}
 				onLoadCoverPage={async (page) => {
 					isLoading = true;
 					try {
