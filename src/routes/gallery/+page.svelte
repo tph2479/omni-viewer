@@ -25,7 +25,7 @@
 
 	let currentSort = $state('date_desc');
 	let mediaType = $state<'all'|'images'|'videos'|'audio'|'ebook'>('all');
-	
+
 	/** Persistent drives list loaded ONCE on start */
 	let availableDrives = $state<any[]>([]);
 
@@ -65,7 +65,7 @@
 
 	let isPinned = $state(true);
 	let showHeader = $state(true);
-	
+
 	let isGrouped = $state(false);
 	let groupedData = $state<any>(null);
 	let currentExclusiveType = $state<string | null>(null);
@@ -75,7 +75,7 @@
 	$effect(() => {
 		const handleMouseMove = (e: MouseEvent) => {
 			if (isPinned) return;
-			
+
 			// Chỉ hiện khi chuột nằm ở vùng 10% trên cùng của màn hình
 			if (e.clientY < window.innerHeight * 0.1) {
 				showHeader = true;
@@ -211,10 +211,10 @@
 
 		isLoading = true;
 		errorMsg = '';
-		
+
 		// Capture and normalize path at the start to avoid race conditions
 		folderPath = normalizePath(folderPath);
-		const targetPath = folderPath; 
+		const targetPath = folderPath;
 		const targetId = lastOpenedFolder ? `item-${lastOpenedFolder.replace(/[^a-zA-Z0-9]/g, '-')}` : null;
 
 		if (reset) {
@@ -311,7 +311,7 @@
 		if (items) {
 			loadedImages = items;
 		}
-		
+
 		selectedImageIndex = index;
 		if (img.isVideo) {
 			isVideoModalOpen = true;
@@ -339,12 +339,12 @@
 		} else {
 			lastOpenedFolder = null;
 		}
-		
+
 		folderPath = normalized;
 		localStorage.setItem('hello-last-path', normalized);
 		currentExclusiveType = null;
 		mediaType = 'all';
-		
+
 		// Restore page if it exists in history
 		const savedPage = folderPageHistory[normalized] || 0;
 		loadFolder(true, savedPage);
@@ -425,7 +425,7 @@
 	async function handleSwitchToPaginationToContinue() {
 		const firstItem = loadedImages[0];
 		if (!firstItem) return;
-		
+
 		let key = 'images';
 		if (firstItem.isVideo) key = 'videos';
 		else if (firstItem.isAudio) key = 'audio';
@@ -442,7 +442,7 @@
 
 <div class="flex flex-col relative w-full min-h-full">
 	<!-- Sticky Header -->
-	<header 
+	<header
 		class="sticky top-[56px] lg:top-0 z-40 lg:z-[50] bg-base-100 backdrop-blur-md px-4 border-b py-1 border-base-content/10 shadow-md transition-transform duration-300 pt-[6px] lg:pt-[2px] {showHeader ? 'translate-y-0' : '-translate-y-full'}"
 	>
 		<div class="flex flex-row items-center gap-4">
@@ -482,28 +482,7 @@
                         });
                         return;
                     }
-                    
-                    isLoading = true;
-                    try {
-                        const res = await fetch(`/api/file?action=covers&folder=${encodeURIComponent(path)}&page=0&limit=${COVER_PAGE_SIZE}`);
-                        const data = await res.json();
-                        if (data.total > 0) {
-                            isCoverMode = true;
-                            coverFolders = data.folders;
-                            coverFoldersTotal = data.total;
-                            coverFoldersPage = 0;
-                            coverFoldersHasMore = data.hasMore;
-                        } else {
-                            isCoverMode = false;
-                            coverFolders = [];
-                        }
-                    } catch (e) {
-                        console.error(e);
-                        isCoverMode = false;
-                        coverFolders = [];
-                    } finally {
-                        isLoading = false;
-                    }
+
                     openDir(path, true);
                 }}
 				/>
