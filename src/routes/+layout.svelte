@@ -10,6 +10,7 @@
     } from "lucide-svelte";
     import { Navigation } from "@skeletonlabs/skeleton-svelte";
     import type { Snippet } from "svelte";
+    import { onMount } from "svelte";
 
     const { children }: { children: Snippet } = $props();
 
@@ -49,25 +50,28 @@
     {#if !isMobile}
         <Navigation
             layout={layoutRail ? "rail" : "sidebar"}
-            class={layoutRail ? "" : "grid grid-rows-[1fr_auto] gap-4"}
+            class={layoutRail ? "w-14!" : "w-48"}
         >
             <Navigation.Content>
                 <Navigation.Header>
                     <Navigation.Trigger onclick={toggleLayout}>
-                        <ArrowLeftRightIcon
-                            class={layoutRail ? "size-5" : "size-4"}
-                        />
+                        <ArrowLeftRightIcon class="size-5" />
                         {#if !layoutRail}<span>Resize</span>{/if}
                     </Navigation.Trigger>
                 </Navigation.Header>
                 <Navigation.Menu>
                     {#each links as link (link)}
                         {@const Icon = link.icon}
-                        <Navigation.TriggerAnchor href={link.href}>
+                        <Navigation.TriggerAnchor
+                            href={link.href}
+                            class={layoutRail ? "justify-center" : ""}
+                        >
                             <Icon class="size-5" />
-                            <Navigation.TriggerText>
-                                {link.label}
-                            </Navigation.TriggerText>
+                            {#if !layoutRail}
+                                <Navigation.TriggerText>
+                                    {link.label}
+                                </Navigation.TriggerText>
+                            {/if}
                         </Navigation.TriggerAnchor>
                     {/each}
                 </Navigation.Menu>

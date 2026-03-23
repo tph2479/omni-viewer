@@ -1,54 +1,106 @@
 <script lang="ts">
+    import { SunIcon, MoonIcon, Trash2Icon, PowerIcon } from "lucide-svelte";
+    import { Switch } from "@skeletonlabs/skeleton-svelte";
+    import { cacheVersion } from "$lib/stores/cache.svelte";
+
+    let clearConfirm = $state(false);
+    let isClearingCache = $state(false);
+    let shutdownConfirm = $state(false);
+
+    async function handleClear() {
+        if (isClearingCache) return;
+        isClearingCache = true;
+        try {
+            await fetch("/api/media", { method: "DELETE" });
+            cacheVersion.refresh();
+        } catch (e) {
+            console.error(e);
+        } finally {
+            isClearingCache = false;
+        }
+    }
+
+    function handleShutdown() {
+        if (!shutdownConfirm) {
+            shutdownConfirm = true;
+            setTimeout(() => (shutdownConfirm = false), 3000);
+            return;
+        }
+        // TODO: gọi API shutdown
+        shutdownConfirm = false;
+    }
 </script>
 
-<div class="p-8 max-w-2xl mx-auto">
-	<h1 class="text-3xl font-bold mb-8">Settings</h1>
-	
-	<div class="space-y-8">
-		<!-- Section: General -->
-		<section class="card bg-base-200 shadow-sm border border-base-300">
-			<div class="card-body p-6">
-				<h2 class="card-title text-xl mb-4">General</h2>
-				<div class="form-control w-full">
-					<label class="label cursor-pointer justify-start gap-4">
-						<input type="checkbox" class="checkbox checkbox-primary" checked />
-						<span class="label-text text-base font-medium">Show Hidden Files</span>
-					</label>
-					<p class="text-xs text-base-content/60 ml-10">Display files starting with a dot (.) in the browser.</p>
-				</div>
-                
-				<div class="form-control w-full mt-4">
-					<label class="label cursor-pointer justify-start gap-4">
-						<input type="checkbox" class="checkbox checkbox-primary" checked />
-						<span class="label-text text-base font-medium">Auto-play Videos</span>
-					</label>
-					<p class="text-xs text-base-content/60 ml-10">Videos will start playing automatically when opened.</p>
-				</div>
-			</div>
-		</section>
+<div class="p-4 md:p-8 max-w-2xl mx-auto space-y-3">
+    <h1 class="h2 mb-6">Settings</h1>
 
-		<!-- Section: Cache Management -->
-		<section class="card bg-base-200 shadow-sm border border-base-300">
-			<div class="card-body p-6">
-				<h2 class="card-title text-xl mb-4 text-error">Danger Zone</h2>
-				<div class="flex flex-col gap-4">
-					<div class="flex items-center justify-between gap-4">
-						<div>
-							<h3 class="font-bold">Clear Thumbnail Cache</h3>
-							<p class="text-sm text-base-content/60">Remove all generated thumbnails for files.</p>
-						</div>
-						<button class="btn btn-error btn-sm">Clear Cache</button>
-					</div>
-					<div class="divider my-1"></div>
-					<div class="flex items-center justify-between gap-4">
-						<div>
-							<h3 class="font-bold">Reset All Settings</h3>
-							<p class="text-sm text-base-content/60">Reset application state and preferences.</p>
-						</div>
-						<button class="btn btn-outline btn-error btn-sm">Reset</button>
-					</div>
-				</div>
-			</div>
-		</section>
-	</div>
+    <!-- Dark / Light toggle -->
+    <!-- <div class="card preset-outlined p-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            {#if theme.isDark}
+                <MoonIcon class="size-5" />
+            {:else}
+                <SunIcon class="size-5" />
+            {/if}
+            <div>
+                <p class="font-medium">Dark Mode</p>
+                <p class="text-sm text-surface-500-400">
+                    {theme.isDark ? "Dark mode is on" : "Light mode is on"}
+                </p>
+            </div>
+        </div>
+        <Switch checked={theme.isDark} onCheckedChange={(e) => theme.toggle()}>
+            <Switch.Control>
+                <Switch.Thumb />
+            </Switch.Control>
+            <Switch.HiddenInput />
+        </Switch>
+    </div> -->
+
+    <!-- Clear cache & preferences -->
+    <div class="card preset-outlined p-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <Trash2Icon
+                class="size-5 {clearConfirm
+                    ? 'text-error-400'
+                    : 'text-surface-400'}"
+            />
+            <div>
+                <p class="font-medium">Clear cache & preferences</p>
+                <p class="text-sm text-surface-500-400">
+                    Clear thumbnail cache and localStorage.
+                </p>
+            </div>
+        </div>
+        <button onclick={handleClear} class="btn shrink-0 transition-all">
+            Clear
+        </button>
+    </div>
+
+    <!-- Shutdown -->
+    <div class="card preset-outlined p-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <PowerIcon
+                class="size-5 {shutdownConfirm
+                    ? 'text-error-400'
+                    : 'text-surface-400'}"
+            />
+            <div>
+                <p class="font-medium">Shutdown</p>
+                <p class="text-sm text-surface-500-400">
+                    Shutdown the server and close the application.
+                </p>
+            </div>
+        </div>
+        <button
+            onclick={handleShutdown}
+            class="btn shrink-0 transition-all
+                {shutdownConfirm
+                ? 'preset-filled-error-300'
+                : 'preset-tonal-surface'}"
+        >
+            <PowerIcon class="size-4" />
+            {shutdownConfirm ? "Pull the plug ?" : "Shutdown"}
+        </button>
+    </div>
 </div>
