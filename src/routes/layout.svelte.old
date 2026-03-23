@@ -1,0 +1,501 @@
+<script lang="ts">
+    import "../app.css";
+    import { onMount } from "svelte";
+    import { cacheVersion } from "$lib/stores/cache.svelte";
+
+    let { children } = $props();
+
+    let isSidebarCollapsed = $state(true);
+    let isDark = $state(false);
+    let isMounted = $state(false);
+    let isMobileOpen = $state(false);
+
+    onMount(() => {
+        isMounted = true;
+
+        const sidebar = localStorage.getItem("sidebar-collapsed");
+        if (sidebar !== null) {
+            isSidebarCollapsed = sidebar === "true";
+        }
+
+        // Đọc trạng thái dark từ class đã set bởi app.html
+        isDark = document.documentElement.classList.contains("dark");
+
+        // Theo dõi system preference
+        const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+        const handleSystemChange = (e: MediaQueryListEvent) => {
+            const saved = localStorage.getItem("theme");
+            if (!saved) applyDark(e.matches);
+        };
+        mediaQuery.addEventListener("change", handleSystemChange);
+        return () =>
+            mediaQuery.removeEventListener("change", handleSystemChange);
+    });
+
+    $effect(() => {
+        if (!isMounted) return;
+        localStorage.setItem("sidebar-collapsed", String(isSidebarCollapsed));
+    });
+
+    function toggleSidebar() {
+        isSidebarCollapsed = !isSidebarCollapsed;
+    }
+
+    function applyDark(value: boolean) {
+        isDark = value;
+        document.documentElement.classList.toggle("dark", value);
+    }
+
+    function toggleTheme() {
+        const next = !isDark;
+        applyDark(next);
+        localStorage.setItem("theme", next ? "dark" : "light");
+    }
+
+    let isClearingCache = $state(false);
+
+    async function clearCacheAndPreferences() {
+        if (isClearingCache) return;
+        isClearingCache = true;
+        try {
+            await fetch("/api/media", { method: "DELETE" });
+            cacheVersion.refresh();
+        } catch (e) {
+            console.error(e);
+        } finally {
+            isClearingCache = false;
+        }
+    }
+</script>
+
+<!-- Mobile overlay -->
+{#if isMobileOpen}
+    <div
+        class="fixed inset-0 bg-black/50 z-30 lg:hidden"
+        role="presentation"
+        onclick={() => (isMobileOpen = false)}
+    ></div>
+{/if}
+
+<div class="flex h-screen w-full overflow-hidden">
+    <!-- Sidebar -->
+    <aside
+        class="
+            fixed lg:static inset-y-0 left-0 z-40
+            flex flex-col h-full
+            border-r border-surface-200 dark:border-surface-700
+            bg-surface-50 dark:bg-surface-900
+            {isMounted ? 'transition-all duration-300 ease-in-out' : ''}
+            {isSidebarCollapsed ? 'lg:w-16' : 'lg:w-64'}
+            {isMobileOpen
+            ? 'translate-x-0'
+            : '-translate-x-full lg:translate-x-0'}
+            w-64
+        "
+    >
+        <!-- Logo -->
+        <div
+            class="flex items-center h-14 px-3 shrink-0 border-b border-surface-200 dark:border-surface-700
+                {isSidebarCollapsed ? 'justify-center' : 'justify-between'}"
+        >
+            <div class="flex items-center gap-2 overflow-hidden">
+                <span
+                    class="text-primary-500 font-black text-xl leading-none cursor-pointer shrink-0"
+                >
+                    MS
+                </span>
+                {#if !isSidebarCollapsed}
+                    <span
+                        class="text-base font-black text-surface-900 dark:text-surface-50 tracking-tight leading-none whitespace-nowrap
+                            {isMounted ? 'transition-opacity duration-300' : ''}
+                            opacity-100"
+                    >
+                        Media Station
+                    </span>
+                {/if}
+            </div>
+        </div>
+
+        <!-- Nav items -->
+        <nav
+            class="flex flex-col flex-1 gap-0.5 overflow-y-auto overflow-x-hidden
+            {isSidebarCollapsed ? 'px-0 py-3' : 'px-1.5 py-3'}"
+        >
+            {#if !isSidebarCollapsed}
+                <span
+                    class="px-3 mb-1 text-[10px] uppercase font-black tracking-widest text-surface-900/40 dark:text-surface-50/40"
+                >
+                    Navigation
+                </span>
+            {/if}
+
+            <NavItem
+                href="/"
+                label="Home"
+                collapsed={isSidebarCollapsed}
+                {isMounted}
+            >
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5 shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                >
+                    <path
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                    />
+                </svg>
+            </NavItem>
+
+            <NavItem
+                href="/gallery"
+                label="Browse"
+                collapsed={isSidebarCollapsed}
+                {isMounted}
+            >
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5 shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                >
+                    <path
+                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
+                </svg>
+            </NavItem>
+
+            <NavItem
+                href="/import"
+                label="Import"
+                collapsed={isSidebarCollapsed}
+                {isMounted}
+            >
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5 shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                >
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+            </NavItem>
+
+            <!-- Bottom tools -->
+            <div
+                class="mt-auto flex flex-col gap-0.5 border-t border-surface-200/50 dark:border-surface-700/50 pt-2"
+            >
+                <!-- Toggle theme -->
+                <SidebarButton
+                    onclick={toggleTheme}
+                    label={isDark ? "Dark Mode" : "Light Mode"}
+                    collapsed={isSidebarCollapsed}
+                    {isMounted}
+                    variant="primary"
+                >
+                    {#if isDark}
+                        <!-- Moon -->
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-5 w-5 shrink-0"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+                        </svg>
+                    {:else}
+                        <!-- Sun -->
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-5 w-5 shrink-0"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <circle cx="12" cy="12" r="4" />
+                            <path
+                                d="M12 2v2M12 20v2m-7.07-14.07 1.41 1.41M18.66 18.66l1.41 1.41M2 12h2M20 12h2m-4.93 7.07-1.41-1.41M5.34 5.34 3.93 3.93"
+                            />
+                        </svg>
+                    {/if}
+                </SidebarButton>
+
+                <!-- Clear cache -->
+                <SidebarButton
+                    onclick={clearCacheAndPreferences}
+                    label="Clear Cache"
+                    collapsed={isSidebarCollapsed}
+                    {isMounted}
+                    variant="error"
+                    disabled={isClearingCache}
+                >
+                    {#if isClearingCache}
+                        <svg
+                            class="h-5 w-5 shrink-0 animate-spin"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                        >
+                            <circle
+                                class="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                stroke-width="4"
+                            />
+                            <path
+                                class="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z"
+                            />
+                        </svg>
+                    {:else}
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-5 w-5 shrink-0"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <polyline points="3 6 5 6 21 6" />
+                            <path
+                                d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                            />
+                            <line x1="10" y1="11" x2="10" y2="17" />
+                            <line x1="14" y1="11" x2="14" y2="17" />
+                        </svg>
+                    {/if}
+                </SidebarButton>
+
+                <!-- Settings -->
+                <NavItem
+                    href="/settings"
+                    label="Settings"
+                    collapsed={isSidebarCollapsed}
+                    {isMounted}
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-5 w-5 shrink-0"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <circle cx="12" cy="12" r="3" />
+                        <path
+                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9"
+                        />
+                    </svg>
+                </NavItem>
+
+                <!-- Collapse toggle -->
+                <SidebarButton
+                    onclick={toggleSidebar}
+                    label={isSidebarCollapsed
+                        ? "Expand Sidebar"
+                        : "Collapse Sidebar"}
+                    collapsed={isSidebarCollapsed}
+                    {isMounted}
+                    variant="primary"
+                >
+                    {#if isSidebarCollapsed}
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-5 w-5 shrink-0"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <polyline points="13 17 18 12 13 7" />
+                            <polyline points="6 17 11 12 6 7" />
+                        </svg>
+                    {:else}
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-5 w-5 shrink-0"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <polyline points="11 17 6 12 11 7" />
+                            <polyline points="18 17 13 12 18 7" />
+                        </svg>
+                    {/if}
+                </SidebarButton>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- Main content -->
+    <div
+        class="flex flex-col flex-1 min-w-0 h-full overflow-y-auto"
+        style="scrollbar-gutter: stable"
+    >
+        <!-- Mobile navbar -->
+        <header
+            class="lg:hidden sticky top-0 z-20 flex items-center h-14 px-4 gap-3 bg-surface-50 dark:bg-surface-900 border-b border-surface-200 dark:border-surface-700 shadow-sm"
+        >
+            <button
+                onclick={() => (isMobileOpen = true)}
+                class="p-2 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+                aria-label="Open sidebar"
+            >
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    class="w-6 h-6 stroke-current stroke-2"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M4 6h16M4 12h16M4 18h16"
+                    />
+                </svg>
+            </button>
+            <span
+                class="text-base font-bold text-surface-900 dark:text-surface-50"
+                >Media Station</span
+            >
+        </header>
+
+        <!-- Page content -->
+        <main class="flex-1 bg-surface-50 dark:bg-surface-950 min-h-full">
+            {@render children()}
+        </main>
+    </div>
+</div>
+
+<!-- Reusable nav link -->
+{#snippet NavItem({
+    href,
+    label,
+    collapsed,
+    isMounted,
+    children: icon,
+}: {
+    href: string;
+    label: string;
+    collapsed: boolean;
+    isMounted: boolean;
+    children: any;
+})}
+    <div class="group relative w-full">
+        <a
+            {href}
+            class="flex items-center py-2 rounded-lg text-surface-700 dark:text-surface-300
+                hover:bg-primary-500/10 hover:text-primary-500
+                {isMounted ? 'transition-all duration-200' : ''}
+                {collapsed ? 'justify-center px-0' : 'px-3 gap-2'}"
+        >
+            {@render icon()}
+            {#if !collapsed}
+                <span class="text-sm font-medium whitespace-nowrap"
+                    >{label}</span
+                >
+            {/if}
+        </a>
+        {#if collapsed}
+            <span
+                class="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2
+                px-2 py-1 rounded text-xs font-medium whitespace-nowrap
+                bg-surface-900 dark:bg-surface-50
+                text-surface-50 dark:text-surface-900
+                opacity-0 group-hover:opacity-100 transition-opacity z-50"
+            >
+                {label}
+            </span>
+        {/if}
+    </div>
+{/snippet}
+
+<!-- Reusable sidebar button -->
+{#snippet SidebarButton({
+    onclick,
+    label,
+    collapsed,
+    isMounted,
+    variant,
+    disabled,
+    children: icon,
+}: {
+    onclick: () => void;
+    label: string;
+    collapsed: boolean;
+    isMounted: boolean;
+    variant: "primary" | "error";
+    disabled?: boolean;
+    children: any;
+})}
+    <div class="group relative w-full">
+        <button
+            {onclick}
+            {disabled}
+            class="flex items-center w-full py-2 rounded-lg
+                text-surface-700 dark:text-surface-300
+                {variant === 'primary'
+                ? 'hover:bg-primary-500/10 hover:text-primary-500'
+                : 'hover:bg-error-500/10 hover:text-error-500'}
+                disabled:opacity-40 disabled:cursor-not-allowed
+                {isMounted ? 'transition-all duration-200' : ''}
+                {collapsed ? 'justify-center px-0' : 'px-3 gap-2'}"
+            onmousedown={(e) => e.preventDefault()}
+        >
+            <span
+                class="group-hover:scale-110 transition-transform flex items-center justify-center"
+            >
+                {@render icon()}
+            </span>
+            {#if !collapsed}
+                <span class="text-sm font-medium whitespace-nowrap"
+                    >{label}</span
+                >
+            {/if}
+        </button>
+        {#if collapsed}
+            <span
+                class="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2
+                px-2 py-1 rounded text-xs font-medium whitespace-nowrap
+                bg-surface-900 dark:bg-surface-50
+                text-surface-50 dark:text-surface-900
+                opacity-0 group-hover:opacity-100 transition-opacity z-50"
+            >
+                {label}
+            </span>
+        {/if}
+    </div>
+{/snippet}

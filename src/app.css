@@ -1,29 +1,5 @@
 @import "tailwindcss";
-@plugin "daisyui" {
-      themes: business --default, corporate;
-};
 
-:root {
-      --color-primary: oklch(45% 0.15 250);
-      --color-primary-content: oklch(98% 0.01 250);
-}
-
-@media (prefers-color-scheme: light) {
-      [data-theme="business"] {
-            color-scheme: light;
-      }
-}
-
-.theme-icon-dark {
-      display: block;
-}
-.theme-icon-light {
-      display: none;
-}
-
-[data-theme="corporate"] .theme-icon-light {
-      display: block;
-}
-[data-theme="corporate"] .theme-icon-dark {
-      display: none;
-}
+@import "@skeletonlabs/skeleton";
+@import "@skeletonlabs/skeleton-svelte";
+@import "@skeletonlabs/skeleton/themes/cerberus";
