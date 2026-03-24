@@ -585,7 +585,7 @@
         </div>
     </header>
 
-    <div class="p-4 sm:p-6 flex-1 flex flex-col">
+    <div class="p-4 sm:p-6 flex-1 flex flex-col min-h-[calc(100vh-4rem)]">
         <!-- Error banner -->
         {#if errorMsg}
             <aside

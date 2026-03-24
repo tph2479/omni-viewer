@@ -297,7 +297,7 @@
 	</div>
 
 	<!-- Nội dung Webtoon -->
-	<div class="flex flex-col items-center pb-20 pt-4 min-h-screen outline-none w-full">
+	<div class="flex flex-col items-center pb-20 pt-4 min-h-dvh outline-none w-full">
 		<div class="flex flex-col items-center" style="width: {s.webtoonZoomLevel * 100}%; max-width: none; flex-shrink: 0;">
 			{#each s.loadedImages as img, i}
 				{@const inBuffer = Math.abs(i - s.currentImageIndex) <= ctrl.BUFFER_SIZE}

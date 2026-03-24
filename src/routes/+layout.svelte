@@ -38,6 +38,8 @@
         return () => mediaQuery.removeEventListener("change", handler);
     });
 
+    // SimpleBar removed - using CSS solution
+
     const isActive = (href: string) => {
         const currentPath = $page.url.pathname;
         if (href === "/") return currentPath === "/";
@@ -61,7 +63,7 @@
             <Navigation.TriggerAnchor
                 {href}
                 class="flex justify-center py-3 transition-all duration-200 relative
-                       "
+                       {active ? 'text-primary-500' : 'text-surface-700-200'}"
             >
                 {#if active}
                     <div
@@ -94,7 +96,7 @@
 {/snippet}
 
 <div
-    class="w-full h-screen grid"
+    class="w-full h-dvh grid"
     class:grid-rows-[1fr_auto]={isMobile}
     class:grid-cols-[auto_1fr]={!isMobile}
 >
@@ -125,7 +127,7 @@
         </Navigation>
     {/if}
 
-    <main class="overflow-auto">
+    <main class="h-full overflow-y-scroll">
         {@render children()}
     </main>
 
@@ -143,8 +145,8 @@
                         href={link.href}
                         class="flex flex-col items-center py-2 transition-all duration-200
                                {active
-                            ? 'text-primary-100'
-                            : 'text-surface-200-700 opacity-60'}"
+                            ? 'text-primary-500'
+                            : 'text-surface-700-200 opacity-60'}"
                     >
                         <div class="relative flex items-center justify-center">
                             <Icon
@@ -155,8 +157,8 @@
                         </div>
                         <span
                             class="text-[10px] mt-1 font-medium {active
-                                ? 'opacity-100'
-                                : 'opacity-80'}"
+                                ? 'text-primary-500'
+                                : 'text-surface-700-200 opacity-80'}"
                         >
                             {link.label}
                         </span>

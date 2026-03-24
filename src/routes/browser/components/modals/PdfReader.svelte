@@ -458,13 +458,13 @@
 	</div>
 
 	<!-- PDF Content -->
-	<div class="flex flex-col items-center pb-20 pt-4 min-h-screen w-full">
+	<div class="flex flex-col items-center pb-20 pt-4 min-h-dvh w-full">
 		{#if s.isLoading}
-			<div class="h-screen flex items-center justify-center">
+			<div class="h-dvh flex items-center justify-center">
 				<span class="loading loading-spinner loading-lg text-primary/50"></span>
 			</div>
 		{:else if s.errorMsg}
-			<div class="h-screen flex items-center justify-center text-error font-bold">
+			<div class="h-dvh flex items-center justify-center text-error font-bold">
 				{s.errorMsg}
 			</div>
 		{:else if s.numPages > 0}

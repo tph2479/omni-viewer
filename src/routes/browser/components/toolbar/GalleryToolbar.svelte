@@ -121,14 +121,14 @@
 </script>
 
 <div
-    class="relative flex items-center w-full max-w-4xl mx-auto h-15 px-2"
+    class="relative flex items-center w-full max-w-4xl mx-auto h-14 gap-2"
     bind:this={menuRef}
 >
+    <!-- Left buttons -->
     <div
-        class="flex items-center flex-1 px-3
-                       bg-surface-100-900 dark:bg-surface-800
-                       border border-surface-200-800 shadow-lg rounded-full
-                       overflow-visible"
+        class="flex items-center px-1
+               bg-surface-100-900 dark:bg-surface-800
+               border border-surface-200-800 shadow-lg rounded-full shrink-0"
     >
         <button
             class="hidden sm:flex items-center justify-center w-10 h-10 shrink-0
@@ -152,14 +152,19 @@
         >
             <ArrowUp size={20} strokeWidth={2.5} />
         </button>
+    </div>
 
-        <div class="h-6 w-px bg-surface-200-800 mx-1"></div>
-
+    <!-- Input -->
+    <div
+        class="flex items-center flex-1 min-w-0 h-10 max-w-[600px]
+               bg-surface-100-900 dark:bg-surface-800
+               border border-surface-200-800 shadow-lg rounded-full"
+    >
         <input
             type="text"
-            class="flex-1 min-w-0 h-full px-4 bg-transparent
+            class="w-full h-full px-4 bg-transparent
                    border-none outline-none ring-0
-                   text-sm font-medium tracking-tight
+                   text-sm font-medium tracking-tight truncate
                    placeholder:opacity-40 placeholder:font-normal
                    text-surface-700-200"
             bind:value={folderPath}
@@ -168,7 +173,14 @@
             onclick={() => isMobile && onOpenPicker()}
             readonly={isMobile}
         />
+    </div>
 
+    <!-- Right buttons -->
+    <div
+        class="flex items-center px-1
+               bg-surface-100-900 dark:bg-surface-800
+               border border-surface-200-800 shadow-lg rounded-full shrink-0"
+    >
         <button
             class="flex items-center justify-center w-10 h-10 shrink-0
                    rounded-full hover:preset-tonal-surface transition-colors
@@ -187,11 +199,10 @@
 
         <button
             type="button"
-            class="hidden sm:flex items-center justify-center w-10 h-10 shrink-0
+            class="flex items-center justify-center w-10 h-10 shrink-0
                    rounded-full hover:preset-tonal-surface transition-colors
-                   disabled:opacity-30 ml-1"
+                   disabled:opacity-30"
             onclick={onOpenWebtoon}
-            disabled={loadedImages.length === 0 && !isGrouped}
             title="Webtoon / Cover view"
         >
             <Layers size={20} />
@@ -200,7 +211,7 @@
         {#if isFolderSelected}
             <button
                 class="flex items-center justify-center w-10 h-10 shrink-0
-                       rounded-full transition-colors ml-1
+                       rounded-full transition-colors
                        {menuOpen
                     ? 'preset-filled-primary-500'
                     : 'hover:preset-tonal-surface'}"
@@ -248,26 +259,7 @@
                         <span class="text-[10px]">{opt.count}</span>
                     </button>
                 {/each}
-
-                <!-- Webtoon -->
-                <!-- <button
-                    class="flex flex-col items-center gap-1 py-2 px-1
-                           rounded-container text-xs transition-colors
-                           border border-surface-200-800
-                           hover:preset-tonal-surface disabled:opacity-40"
-                    onclick={() => {
-                        onOpenWebtoon();
-                        menuOpen = false;
-                    }}
-                    disabled={loadedImages.length === 0 && !isGrouped}
-                    title="Webtoon / Cover view"
-                >
-                    <Layers size={20} />
-                    <span class="leading-none">Webtoon</span>
-                </button> -->
             </div>
-
-            <hr class="border-surface-200-800" />
 
             <!-- Sort -->
             <p class="text-[10px] font-semibold tracking-widest uppercase">
