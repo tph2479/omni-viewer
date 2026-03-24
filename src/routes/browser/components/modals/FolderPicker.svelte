@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { FolderOpen, ChevronLeft, RotateCw, HardDrive, Folder, FileText, X } from 'lucide-svelte';
 	type DirectoryEntry = { name: string; path: string; isDir?: boolean; isCbz?: boolean; isMedia?: boolean };
 
 	let {
@@ -139,10 +140,10 @@
 		<!-- Header -->
 		<div class="px-6 py-4 flex justify-between items-center bg-base-200/50 border-b border-base-content/5">
 			<div class="flex items-center gap-3">
-				<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
+				<FolderOpen class="h-6 w-6 text-primary" />
 				<h3 class="font-black text-lg tracking-tight uppercase leading-none">Explorer</h3>
 			</div>
-			<button class="btn btn-sm btn-circle btn-ghost" onclick={close}>✕</button>
+			<button class="btn btn-sm btn-circle btn-ghost" onclick={close}><X class="h-4 w-4" /></button>
 		</div>
 
 		<!-- Path Address Bar -->
@@ -153,7 +154,7 @@
 					disabled={pickerParentPath === null}
 					onclick={() => { if (pickerParentPath !== null) loadPickerData(pickerParentPath); }}
 				>
-				<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+				<ChevronLeft class="h-5 w-5" />
 			</button>
 
 			<div class="flex-1 bg-base-100 px-4 py-2 rounded-xl text-sm font-bold border border-base-content/10 truncate opacity-70" title={pickerCurrentPath}>
@@ -169,7 +170,7 @@
 				}}
 			>
 				{#if !isPickerLoading && !isDrivesLoading}
-					<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+					<RotateCw class="h-4 w-4" />
 				{/if}
 			</button>
 		</div>
@@ -200,11 +201,11 @@
 												onclick={() => handleEntryClick(dir)}
 											>
 								{#if style.icon === 'drive'}
-									<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><rect width="20" height="8" x="2" y="14" rx="2" /><path d="M6 18h.01" /><path d="M10 18h.01" /><path d="M22 14V9a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v5" /></svg>
+									<HardDrive class="h-5 w-5" />
 								{:else if style.icon === 'folder'}
-									<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+									<Folder class="h-6 w-6" />
 								{:else}
-									<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+									<FileText class="h-5 w-5" />
 								{/if}
 								<span class="truncate text-base-content">{dir.name}</span>
 								{#if dir.isCbz}

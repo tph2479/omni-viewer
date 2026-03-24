@@ -2,6 +2,7 @@
 	import { handleImageError, formatBytes, formatDateTime, type ImageFile } from '../utils/utils';
 	import { onDestroy, tick } from 'svelte';
 	import { createImageModalState } from './imageModalState.svelte';
+	import { X, ChevronLeft, ChevronRight, Maximize2, Minimize2, RotateCw, Grid3x3 } from 'lucide-svelte';
 
 	// Props using Svelte 5 runes
 	let {
@@ -134,16 +135,16 @@
 					onclick={(e) => { e.stopPropagation(); imgState.closeModal(); }}
 					onmousedown={(e) => e.preventDefault()}
 				>
-					<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+					<X class="h-6 w-6" />
 				</button>
 
 				<!-- Navigation Group -->
 				<div class="flex flex-col bg-zinc-900/95 rounded-xl backdrop-blur-xl border border-white/10 overflow-hidden shadow-2xl w-12 mb-3 pointer-events-auto">
 					<button aria-label="Previous" class="btn btn-ghost w-12 h-12 min-h-0 p-0 text-white rounded-none border-b border-white/10 transition-colors hover:bg-white/5" onclick={(e) => { e.stopPropagation(); imgState.prevImage(); }} onmousedown={(e) => e.preventDefault()}>
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+						<ChevronLeft class="h-6 w-6" />
 					</button>
 					<button aria-label="Next" class="btn btn-ghost border-none w-12 h-12 min-h-0 p-0 text-white rounded-none transition-colors hover:bg-white/5" onclick={(e) => { e.stopPropagation(); imgState.nextImage(); }} onmousedown={(e) => e.preventDefault()}>
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+						<ChevronRight class="h-6 w-6" />
 					</button>
 				</div>
 
@@ -155,7 +156,7 @@
 						onclick={(e) => { e.stopPropagation(); imgState.toggleFitWidth(); }}
 						onmousedown={(e) => e.preventDefault()}
 					>
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h8m-8 5h8m-8 5h8M4 5v14M20 5v14" /></svg>
+						<Maximize2 class="h-5 w-5" />
 					</button>
 					<button
 						aria-label="Toggle 1:1"
@@ -171,7 +172,7 @@
 						onclick={(e) => { e.stopPropagation(); imgState.rotateImage(); }}
 						onmousedown={(e) => e.preventDefault()}
 					>
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+						<RotateCw class="h-5 w-5" />
 					</button>
 				</div>
 
@@ -181,7 +182,7 @@
 						e.stopPropagation();
 						imgState.performZoom(Math.min(500, imgState.zoomLevel * 1.35));
 					}} onmousedown={(e) => e.preventDefault()}>
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" /></svg>
+						<Maximize2 class="h-6 w-6" />
 					</button>
 					<button
 						aria-label="Current Zoom"
@@ -195,7 +196,7 @@
 						e.stopPropagation();
 						imgState.performZoom(Math.max(0.001, imgState.zoomLevel / 1.35));
 					}} onmousedown={(e) => e.preventDefault()}>
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 12H4" /></svg>
+						<Minimize2 class="h-6 w-6" />
 					</button>
 				</div>
 			</div>

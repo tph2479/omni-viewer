@@ -5,6 +5,7 @@
     import { formatDate, formatBytes, type ImageFile } from "../utils/utils";
     import { cacheVersion } from "$lib/stores/cache.svelte";
     import { createAudioController } from "./audioController.svelte";
+    import { X, ChevronLeft, ChevronRight, Play, Pause, Volume2, VolumeX, RotateCw, Maximize, SkipBack, SkipForward, Disc3 } from "lucide-svelte";
 
     let {
         isModalOpen = $bindable(),
@@ -251,16 +252,7 @@
                     <div
                         class="w-full h-full flex items-center justify-center bg-neutral-800 border border-white/5"
                     >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            class="w-24 h-24 text-white/10"
-                            fill="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
-                            />
-                        </svg>
+                        <Disc3 class="w-24 h-24 text-white/10" />
                     </div>
                 {/if}
                 <!-- Gloss -->
@@ -368,16 +360,10 @@
                             class="text-white/30 hover:text-white transition-all active:scale-90 focus:outline-none"
                             aria-label="Previous"
                             onclick={prev}
-                            disabled={selectedImageIndex === 0}
+                            disabled={selectedImageIndex === 0 && currentPage === 0}
                             onmousedown={(e) => e.preventDefault()}
                         >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                class="h-6 w-6"
-                                fill="currentColor"
-                                viewBox="0 0 24 24"
-                                ><path d="M6 6h2v12H6zm3.5 6L18 18V6z" /></svg
-                            >
+                            <SkipBack class="h-6 w-6" />
                         </button>
 
                         <button
@@ -386,23 +372,9 @@
                             onmousedown={(e) => e.preventDefault()}
                         >
                             {#if s.isPlaying}
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    class="h-8 w-8"
-                                    fill="currentColor"
-                                    viewBox="0 0 24 24"
-                                    ><path
-                                        d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"
-                                    /></svg
-                                >
+                                <Pause class="h-8 w-8" />
                             {:else}
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    class="h-8 w-8 ml-1"
-                                    fill="currentColor"
-                                    viewBox="0 0 24 24"
-                                    ><path d="M8 5v14l11-7z" /></svg
-                                >
+                                <Play class="h-8 w-8 ml-1" />
                             {/if}
                         </button>
 
@@ -414,15 +386,30 @@
                                 loadedImages.length - 1 && !hasMore}
                             onmousedown={(e) => e.preventDefault()}
                         >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                class="h-6 w-6"
-                                fill="currentColor"
-                                viewBox="0 0 24 24"
-                                ><path
-                                    d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"
-                                /></svg
-                            >
+                            <SkipForward class="h-6 w-6" />
+                        </button>
+
+                        <button
+                            class="btn btn-circle btn-primary btn-lg shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 ring-4 ring-white/10 focus:outline-none"
+                            onclick={ctrl.togglePlay}
+                            onmousedown={(e) => e.preventDefault()}
+                        >
+                            {#if s.isPlaying}
+                                <Pause class="h-8 w-8" />
+                            {:else}
+                                <Play class="h-8 w-8 ml-1" />
+                            {/if}
+                        </button>
+
+                        <button
+                            class="text-white/30 hover:text-white transition-all active:scale-90 focus:outline-none"
+                            aria-label="Next"
+                            onclick={next}
+                            disabled={selectedImageIndex ===
+                                loadedImages.length - 1 && !hasMore}
+                            onmousedown={(e) => e.preventDefault()}
+                        >
+                            <SkipForward class="h-6 w-6" />
                         </button>
 
                         {#if currentAudio?.isVideo && onSwitchToVideo}
@@ -432,20 +419,7 @@
                                 title="Switch To Video Mode"
                                 onmousedown={(e) => e.preventDefault()}
                             >
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    class="h-5 w-5"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    stroke-width="2"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-                                    />
-                                </svg>
+                                <Play class="h-5 w-5" />
                             </button>
                         {/if}
 
@@ -458,16 +432,7 @@
                             title="Loop"
                             onmousedown={(e) => e.preventDefault()}
                         >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                class="h-4 w-4"
-                                fill="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"
-                                />
-                            </svg>
+                            <RotateCw class="h-4 w-4" />
                         </button>
 
                         <!-- Auto Next Toggle -->
@@ -479,14 +444,7 @@
                             title="Auto Next"
                             onmousedown={(e) => e.preventDefault()}
                         >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                class="h-4 w-4"
-                                fill="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
-                            </svg>
+                            <SkipForward class="h-4 w-4" />
                         </button>
                     </div>
 
@@ -500,38 +458,9 @@
                             onmousedown={(e) => e.preventDefault()}
                         >
                             {#if s.isMuted || s.volume === 0}
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    class="h-4 w-4"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    ><path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
-                                    /><path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"
-                                    /></svg
-                                >
+                                <VolumeX class="h-4 w-4" />
                             {:else}
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    class="h-4 w-4"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    ><path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
-                                    /></svg
-                                >
+                                <Volume2 class="h-4 w-4" />
                             {/if}
                         </button>
                         <div
@@ -571,19 +500,7 @@
         onclick={close}
         onmousedown={(e) => e.preventDefault()}
     >
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            ><path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M6 18L18 6M6 6l12 12"
-            /></svg
-        >
+        <X class="h-6 w-6" />
     </button>
 
     <!-- Hidden Audio Native -->

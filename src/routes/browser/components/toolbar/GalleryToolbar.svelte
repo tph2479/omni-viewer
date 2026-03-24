@@ -217,7 +217,7 @@
     <!-- Popup -->
     {#if isFolderSelected && menuOpen}
         <div
-            class="popup absolute right-0 top-[calc(100%+6px)] z-[500]
+            class="popup absolute right-0 top-[calc(100%+6px)]
                     w-64 p-3 space-y-3
                     rounded-container
                     bg-surface-100-900 dark:bg-surface-800

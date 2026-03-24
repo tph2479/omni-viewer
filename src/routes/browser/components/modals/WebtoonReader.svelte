@@ -3,6 +3,7 @@
 	import { isVideoFile, type ImageFile } from '../utils/utils';
 	import { cacheVersion } from '$lib/stores/cache.svelte';
 	import { createWebtoonController } from './webtoonController.svelte';
+	import { X, Maximize2, Minimize2, ZoomIn, ZoomOut, ChevronUp, ChevronDown, ArrowLeft, ArrowRight, RotateCw } from 'lucide-svelte';
 
 	let {
 		isWebtoonMode = $bindable(),
@@ -174,7 +175,7 @@
 	<div class="fixed top-4 right-4 sm:right-6 pointer-events-none z-[110] transition-all duration-300 {s.controlsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}">
 		<div class="flex items-start justify-end">
 			<button aria-label="Close (ESC)" class="btn rounded-xl w-12 h-12 min-h-0 p-0 bg-zinc-900/90 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl pointer-events-auto transition-all hover:scale-110" onclick={(e) => { e.stopPropagation(); closeWebtoon(); }}>
-				<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+				<X class="h-6 w-6" />
 			</button>
 		</div>
 	</div>
@@ -188,18 +189,18 @@
 				onclick={(e) => { e.stopPropagation(); ctrl.toggleWebtoonFit(); }}
 				onmousedown={(e) => e.preventDefault()}
 			>
-				<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+				<Maximize2 class="h-6 w-6" />
 			</button>
 
 			<div class="flex flex-col bg-zinc-900/90 rounded-xl backdrop-blur-xl overflow-hidden sm:flex border border-white/10 shadow-2xl mt-1 w-12">
 				<button aria-label="Zoom In" class="btn btn-ghost btn-sm h-12 w-12 p-0 text-white rounded-none border-b border-white/10 tooltip tooltip-left" data-tip="Zoom In (+)" onclick={(e) => { e.stopPropagation(); ctrl.setWebtoonZoom(Math.min(500, s.webtoonZoomLevel * 1.15)); }} onmousedown={(e) => e.preventDefault()}>
-					<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 m-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+					<ZoomIn class="h-6 w-6 m-auto" />
 				</button>
 				<span class="py-2 text-xs sm:text-sm font-mono font-black text-white flex items-center justify-center bg-white/5 w-12 px-0 tracking-tighter" aria-label="Current Zoom">
 					{Math.round(s.webtoonZoomLevel * 100)}%
 				</span>
 				<button aria-label="Zoom Out" class="btn btn-ghost btn-sm h-12 w-12 p-0 text-white rounded-none border-t border-white/10 tooltip tooltip-left" data-tip="Zoom Out (-)" onclick={(e) => { e.stopPropagation(); ctrl.setWebtoonZoom(Math.max(0.001, s.webtoonZoomLevel / 1.15)); }} onmousedown={(e) => e.preventDefault()}>
-					<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 m-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" /></svg>
+					<ZoomOut class="h-6 w-6 m-auto" />
 				</button>
 			</div>
 
@@ -236,9 +237,7 @@
 						onclick={(e) => { e.stopPropagation(); s.isJumpPopupOpen = !s.isJumpPopupOpen; }}
 						onmousedown={(e) => e.preventDefault()}
 					>
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-						</svg>
+						<RotateCw class="h-5 w-5" />
 					</button>
 				</div>
 			</div>

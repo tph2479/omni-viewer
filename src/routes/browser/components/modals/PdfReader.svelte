@@ -2,6 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { createPdfController } from './pdfController.svelte';
 	import 'pdfjs-dist/web/pdf_viewer.css';
+	import { X, Search, Moon, Sun, ZoomIn, ZoomOut, Maximize2, Minimize2, RotateCw } from 'lucide-svelte';
 
 	let {
 		isPdfMode = $bindable(),
@@ -210,11 +211,11 @@
 	onclick={() => { s.isSearchSidebarOpen = false; s.isSearching = false; s.pdfScrollContainer?.focus(); }}
 ></div>
 <div class="fixed inset-y-0 right-0 w-80 sm:w-96 bg-zinc-950/95 border-l border-white/10 backdrop-blur-xl shadow-2xl z-[400] overflow-hidden flex flex-col animate-in slide-in-from-right duration-300">
-	<div class="p-4 border-b border-white/10 bg-zinc-950/80 backdrop-blur-md shrink-0 flex flex-col gap-3">
+		<div class="p-4 border-b border-white/10 bg-zinc-950/80 backdrop-blur-md shrink-0 flex flex-col gap-3">
 		<div class="flex items-center justify-between">
 			<h2 class="text-white font-bold text-lg">Search PDF</h2>
 			<button class="btn btn-ghost btn-sm btn-circle text-white/50 hover:text-white transition-colors" aria-label="Close search" onclick={() => { s.isSearchSidebarOpen = false; s.isSearching = false; s.pdfScrollContainer?.focus(); }}>
-				<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 18L18 6M6 6l12 12" stroke-width="2"/></svg>
+				<X class="h-5 w-5" />
 			</button>
 		</div>
 		<div class="flex gap-2">
@@ -235,7 +236,7 @@
 				{#if s.isSearching}
 					<span class="loading loading-spinner loading-xs text-white"></span>
 				{:else}
-					<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35" stroke-width="2"/></svg>
+					<Search class="h-4 w-4" />
 				{/if}
 			</button>
 		</div>
@@ -246,7 +247,7 @@
 					class="btn btn-ghost btn-xs text-white/40 hover:text-white gap-1 transition-colors"
 					onclick={() => { s.searchQuery = ''; s.searchResults = []; s.currentSearchResultIndex = -1; }}
 				>
-					<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg>
+					<X class="h-3.5 w-3.5" />
 					Clear
 				</button>
 			</div>
@@ -334,18 +335,18 @@
 		<div class="flex items-center justify-end gap-2">
 			{#if !s.isSearchSidebarOpen}
 				        <button class="btn rounded-xl w-12 h-12 min-h-0 p-0 bg-zinc-900/90 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl pointer-events-auto transition-all" aria-label="Search" onclick={() => { s.isSearchSidebarOpen = true; s.pdfScrollContainer?.focus(); }}>
-					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+					<Search class="h-5 w-5" />
 				</button>
 			{/if}
 			<button class="btn rounded-xl w-12 h-12 min-h-0 p-0 bg-zinc-900/90 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl pointer-events-auto transition-all" onclick={() => { s.isDarkMode = !s.isDarkMode; s.pdfScrollContainer?.focus(); }}>
 				{#if s.isDarkMode}
-					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+					<Sun class="h-5 w-5" />
 				{:else}
-					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+					<Moon class="h-5 w-5" />
 				{/if}
 			</button>
 			<button aria-label="Close (ESC)" class="btn rounded-xl w-12 h-12 min-h-0 p-0 bg-zinc-900/90 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl pointer-events-auto transition-all hover:scale-110" onclick={closePdf}>
-				<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+				<X class="h-6 w-6" />
 			</button>
 		</div>
 	</div>
@@ -354,18 +355,18 @@
 	<div class="fixed top-20 right-4 sm:right-6 bottom-4 flex flex-col items-end gap-2 z-[110] pointer-events-none transition-all duration-300 {s.controlsVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2'}">
 		<div class="flex flex-col items-end gap-2 pointer-events-auto h-full">
 			      <button class="btn rounded-xl w-12 h-12 min-h-0 p-0 bg-zinc-900/90 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl" aria-label="Toggle fit" onclick={() => { pdf.toggleFit(); s.pdfScrollContainer?.focus(); }}>
-				<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+				<Maximize2 class="h-6 w-6" />
 			</button>
 
 			<div class="flex flex-col bg-zinc-900/90 rounded-xl backdrop-blur-xl border border-white/10 shadow-2xl mt-1 w-12 overflow-hidden">
 				        <button class="btn btn-ghost btn-sm h-12 w-12 p-0 text-white rounded-none border-b border-white/10" aria-label="Zoom in" onclick={() => { pdf.setZoom(s.zoomLevel * 1.2); s.pdfScrollContainer?.focus(); }}>
-					<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+					<ZoomIn class="h-6 w-6" />
 				</button>
 				<span class="py-2 text-[10px] font-mono font-black text-white text-center bg-white/5">
 					{Math.round(s.zoomLevel * 100)}%
 				</span>
 				        <button class="btn btn-ghost btn-sm h-12 w-12 p-0 text-white rounded-none border-t border-white/10" aria-label="Zoom out" onclick={() => { pdf.setZoom(s.zoomLevel / 1.2); s.pdfScrollContainer?.focus(); }}>
-					<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" /></svg>
+					<ZoomOut class="h-6 w-6" />
 				</button>
 			</div>
 
@@ -401,9 +402,7 @@
 						onclick={(e) => { e.stopPropagation(); s.isJumpPopupOpen = !s.isJumpPopupOpen; }}
 						onmousedown={(e) => e.preventDefault()}
 					>
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-						</svg>
+						<RotateCw class="h-5 w-5" />
 					</button>
 				</div>
 			</div>
@@ -485,9 +484,7 @@
 						<!-- Improved highlight overlay if searched -->
 						{#if pageMatches > 0}
 							<div class="absolute inset-x-0 top-0 h-6 bg-yellow-400/30 pointer-events-none flex items-center justify-center text-[10px] font-bold text-yellow-900 border-b border-yellow-400/50 backdrop-blur-sm z-10 transition-all">
-								<svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
-									<path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-								</svg>
+								<Search class="w-3 h-3 mr-1" />
 								{pageMatches} {pageMatches === 1 ? 'MATCH' : 'MATCHES'} ON THIS PAGE
 							</div>
 						{/if}

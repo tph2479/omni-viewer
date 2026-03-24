@@ -3,6 +3,7 @@
 	import { onDestroy } from 'svelte';
 	import { cacheVersion } from '$lib/stores/cache.svelte';
 	import { createVideoController } from './videoController.svelte';
+	import { X, ChevronLeft, ChevronRight, Play, Pause, Volume2, VolumeX, RotateCw, Maximize, Minimize } from 'lucide-svelte';
 
 	let {
 		isModalOpen = $bindable(),
@@ -351,7 +352,7 @@
 										onclick={(e) => { e.stopPropagation(); closeModal(); }}
 										onmousedown={(e) => e.preventDefault()}
 									>
-										<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+										<X class="h-6 w-6" />
 									</button>
 								</div>
 							</div>
@@ -376,10 +377,10 @@
 											<!-- Navigation -->
 											<div class="flex items-center border-r border-white/20 pr-2 gap-1">
 												<button aria-label="Previous" class="btn btn-ghost w-8 h-8 min-h-0 p-0 text-white transition-colors hover:bg-white/10" onclick={(e) => { e.stopPropagation(); prevVideo(); }} disabled={selectedImageIndex === 0 && currentPage === 0} onmousedown={(e) => e.preventDefault()}>
-													<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+													<ChevronLeft class="h-5 w-5" />
 												</button>
 												<button aria-label="Next" class="btn btn-ghost w-8 h-8 min-h-0 p-0 text-white transition-colors hover:bg-white/10" onclick={(e) => { e.stopPropagation(); nextVideo(); }} disabled={selectedImageIndex >= loadedImages.length - 1 && !hasMore} onmousedown={(e) => e.preventDefault()}>
-													<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+													<ChevronRight class="h-5 w-5" />
 												</button>
 											</div>
 
@@ -387,17 +388,20 @@
 											<div class="flex items-center border-r border-white/20 pr-2 gap-1">
 												<button aria-label={s.isVideoPaused ? "Play" : "Pause"} class="btn btn-ghost w-8 h-8 min-h-0 p-0 text-white transition-colors hover:bg-white/10" onclick={(e) => { e.stopPropagation(); s.isVideoPaused = !s.isVideoPaused; }} onmousedown={(e) => e.preventDefault()}>
 													{#if s.isVideoPaused}
-														<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+														<Play class="h-5 w-5" />
 													{:else}
-														<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+														<Pause class="h-5 w-5" />
 													{/if}
 												</button>
 												<button aria-label="Toggle Loop" class="btn btn-ghost w-8 h-8 min-h-0 p-0 transition-all hover:bg-white/10 {s.isVideoLoop ? 'text-primary' : 'text-white'}" onclick={(e) => { e.stopPropagation(); s.isVideoLoop = !s.isVideoLoop; }} onmousedown={(e) => e.preventDefault()}>
-													<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+													<RotateCw class="h-5 w-5" />
 												</button>
 												<button aria-label="Toggle Mute" class="btn btn-ghost w-8 h-8 min-h-0 p-0 transition-all hover:bg-white/10 {s.isVideoMuted ? 'text-red-500' : 'text-white'}" onclick={(e) => { e.stopPropagation(); s.isVideoMuted = !s.isVideoMuted; }} onmousedown={(e) => e.preventDefault()}>
-													{#if s.isVideoMuted}<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M16.5 12A4.5 4.5 0 0 0 14 8.07V10.2l2.45 2.45c.05-.2.05-.41.05-.65zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3 3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4 9.91 6.09 12 8.18V4z"/></svg>
-													{:else}<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>{/if}
+													{#if s.isVideoMuted}
+														<VolumeX class="h-5 w-5" />
+													{:else}
+														<Volume2 class="h-5 w-5" />
+													{/if}
 												</button>
 											</div>
 
@@ -405,18 +409,18 @@
 											<div class="flex items-center gap-1">
 												{#if onSwitchToAudio}
 													<button aria-label="Audio Only" class="btn btn-ghost w-8 h-8 min-h-0 p-0 text-white transition-colors hover:bg-white/10" onclick={(e) => { e.stopPropagation(); onSwitchToAudio(); }} title="Audio Only Mode" onmousedown={(e) => e.preventDefault()}>
-														<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" /></svg>
+														<RotateCw class="h-5 w-5" />
 													</button>
 												{/if}
 												<button aria-label="Rotate" class="btn btn-ghost w-8 h-8 min-h-0 p-0 text-white transition-colors hover:bg-white/10" onclick={(e) => { e.stopPropagation(); ctrl.rotateVideo(); }} onmousedown={(e) => e.preventDefault()}>
-													<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-														<path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-9-9c2.48 0 4.74.99 6.36 2.59M21 3v6h-6" />
-													</svg>
+													<RotateCw class="h-5 w-5" />
 												</button>
 												<button aria-label="Toogle Fullscreen" class="btn btn-ghost w-8 h-8 min-h-0 p-0 text-white transition-colors hover:bg-white/10" onclick={(e) => { e.stopPropagation(); ctrl.toggleFullscreen(); }} onmousedown={(e) => e.preventDefault()}>
-													<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-														<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15" />
-													</svg>
+													{#if s.isFullscreen}
+														<Minimize class="h-5 w-5" />
+													{:else}
+														<Maximize class="h-5 w-5" />
+													{/if}
 												</button>
 											</div>
 										</div>
