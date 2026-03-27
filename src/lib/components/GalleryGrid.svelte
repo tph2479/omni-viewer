@@ -66,6 +66,11 @@
             onExit: () => {},
             onPageChange: () => {},
         },
+        exclusiveMode = {
+            type: null,
+            total: 0,
+            onExit: () => {},
+        },
         actions,
     }: {
         items?: ImageFile[];
@@ -75,6 +80,11 @@
         highlightedPath?: string | null;
         pagination?: PaginationState;
         coverMode?: CoverModeState;
+        exclusiveMode?: {
+            type: string | null;
+            total: number;
+            onExit: () => void;
+        };
         actions: GalleryActions;
     } = $props();
 
@@ -97,7 +107,7 @@
             Back
         </button>
         <h2
-            class="text-base font-black tracking-tight uppercase text-surface-900-100/80"
+            class="text-base font-black tracking-tight uppercase text-surface-900 dark:text-surface-100/80"
         >
             Cover Folders
         </h2>
@@ -112,7 +122,7 @@
         {#each coverMode.folders as folder}
             <div class="group flex flex-col">
                 <button
-                    class="relative aspect-square bg-surface-50-900 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:ring-2 hover:ring-primary-500/50 transition-all duration-300 cursor-pointer border-2 border-primary-500/20 hover:border-primary-500/40 w-full"
+                    class="relative aspect-square bg-surface-50 dark:bg-surface-900 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:ring-2 hover:ring-primary-500/50 transition-all duration-300 cursor-pointer border-2 border-primary-500/20 hover:border-primary-500/40 w-full"
                     onclick={() => coverMode.onFolderClick(folder.path)}
                 >
                     <img
@@ -142,7 +152,7 @@
                 </button>
                 <div class="flex flex-col items-center mt-auto pt-1">
                     <p
-                        class="text-[10px] sm:text-[11px] font-bold truncate text-center px-1 text-surface-600-400 group-hover:text-primary-500 transition-colors duration-300 w-full"
+                        class="text-[10px] sm:text-[11px] font-bold truncate text-center px-1 text-surface-600 dark:text-surface-400 group-hover:text-primary-500 transition-colors duration-300 w-full"
                         title={folder.name}
                     >
                         {folder.name}
@@ -202,21 +212,21 @@
             {#each Array.from({ length: 12 }) as _}
                 <div class="flex flex-col gap-2">
                     <div
-                        class="aspect-square bg-surface-500-900 rounded-2xl w-full"
+                        class="aspect-square bg-surface-200 dark:bg-surface-800 rounded-2xl w-full"
                     ></div>
                     <div
-                        class="h-3 bg-surface-500-900 rounded-full w-2/3 mx-auto"
+                        class="h-3 bg-surface-200 dark:bg-surface-800 rounded-full w-2/3 mx-auto"
                     ></div>
                 </div>
             {/each}
         </div>
     {:else}
         <div
-            class="flex-1 flex flex-col items-center justify-center opacity-60 bg-surface-500-500/30 p-10 text-center min-h-75"
+            class="flex-1 flex flex-col items-center justify-center opacity-60 bg-surface-200/30 dark:bg-surface-800/30 p-10 text-center min-h-75"
         >
             <FolderOpen size={56} strokeWidth={1} class="mb-4 opacity-20" />
             <p
-                class="text-base font-black uppercase tracking-tight mb-2 text-surface-900-100"
+                class="text-base font-black uppercase tracking-tight mb-2 text-surface-900 dark:text-surface-100"
             >
                 No files found
             </p>
@@ -254,14 +264,14 @@
         </div>
     {/if}
 {:else if isGrouped && groupedData}
-    <div class="flex flex-col gap-3 p-10 pt-4 bg-surface-800-500">
-        {#each ["folders", "images", "cbz", "pdf", "epub", "audio", "videos"] as groupKey}
+    <div class="flex flex-col gap-8 p-10">
+    {#each ["folders", "images", "cbz", "pdf", "epub", "audio", "videos"] as groupKey}
             {#if groupedData[groupKey] && groupedData[groupKey].items.length > 0}
                 {@const groupInfo = groupedData[groupKey]}
                 <div class="flex flex-col gap-2">
                     <div class="flex items-center gap-2 ml-1">
                         <h2
-                            class="text-base font-black tracking-tight uppercase text-surface-900-100/80"
+                            class="text-base font-black tracking-tight uppercase text-surface-900 dark:text-surface-100/80"
                         >
                             {groupKey}
                         </h2>
@@ -312,10 +322,38 @@
         {/each}
     </div>
 {:else}
-    <div
-        class="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3 sm:gap-4 p-10"
-    >
-        {#each items as _, i}
+    <div class="flex flex-col p-10">
+        {#if exclusiveMode.type}
+            <div class="flex items-center gap-3 mb-6 p-1">
+                <button
+                    class="group flex items-center justify-center w-10 h-10 rounded-full hover:bg-surface-200 dark:hover:bg-surface-800 transition-colors"
+                    onclick={exclusiveMode.onExit}
+                    onmousedown={(e) => e.preventDefault()}
+                    title="Back to group view"
+                >
+                    <ArrowLeft
+                        size={20}
+                        class="text-surface-900 dark:text-surface-100"
+                    />
+                </button>
+                <div class="flex items-center gap-2">
+                    <h2
+                        class="text-base font-black tracking-tight uppercase text-surface-900 dark:text-surface-100/80"
+                    >
+                        <span class="opacity-40 font-bold mr-1">Viewing:</span>
+                        {exclusiveMode.type}
+                    </h2>
+                    <span
+                        class="badge badge-primary badge-sm font-bold opacity-80"
+                        >{exclusiveMode.total}</span
+                    >
+                </div>
+            </div>
+        {/if}
+        <div
+            class="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3 sm:gap-4"
+        >
+            {#each items as _, i}
             <FileCard
                 bind:img={items[i]}
                 index={i}
@@ -352,8 +390,8 @@
                             onclick={() => pagination.onPageChange(i)}
                             class="btn btn-sm transition-all duration-300 font-bold
                             {pagination.currentPage === i
-                                ? 'variant-filled-primary ring-1 ring-primary-500 ring-offset-surface-900 scale-110 z-10'
-                                : 'variant-soft-surface text-surface-50 border border-surface-50 hover:border-surface-200'}"
+                                ? 'variant-filled-primary ring-1 ring-primary-500 ring-offset-surface-50 dark:ring-offset-surface-900 scale-110 z-10'
+                                : 'variant-soft-surface text-surface-900 dark:text-surface-50 border border-surface-200 dark:border-surface-700 hover:border-surface-400 dark:hover:border-surface-500'}"
                             disabled={isLoading}
                         >
                             {i + 1}
@@ -378,4 +416,5 @@
             </button>
         </div>
     {/if}
+    </div>
 {/if}

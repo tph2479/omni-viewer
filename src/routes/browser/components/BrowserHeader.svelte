@@ -67,7 +67,7 @@
 </script>
 
 <header
-    class="sticky top-0 z-100 bg-surface-100-900 px-0 py-0 shadow-md h-16 transition-transform duration-300 {s.showHeader
+    class="sticky top-0 z-100 bg-surface-100 dark:bg-surface-900 px-0 py-0 shadow-md h-16 transition-transform duration-300 {s.showHeader
         ? 'translate-y-0'
         : '-translate-y-full'}"
 >

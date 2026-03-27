@@ -1,6 +1,5 @@
 <script lang="ts">
     import EmptyState from "$lib/components/EmptyState.svelte";
-    import GroupViewHeader from "$lib/components/GroupViewHeader.svelte";
     import GalleryGrid from "$lib/components/GalleryGrid.svelte";
     import { browserStore as s } from "$lib/stores/browser.svelte";
     import { BadgeAlert } from "lucide-svelte";
@@ -29,6 +28,11 @@
             onFolderClick: s.handleCoverFolderClick,
             onExit: s.exitCoverMode,
             onPageChange: s.loadCoverPage,
+        },
+        exclusiveMode: {
+            type: s.currentExclusiveType,
+            total: s.totalMedia,
+            onExit: s.handleExitGroupView,
         },
         actions: {
             openModal: s.openModal,
@@ -76,12 +80,6 @@
     {#if !s.isFolderSelected && !s.isLoading && !s.errorMsg}
         <EmptyState onOpenPicker={() => (s.isFolderPickerOpen = true)} />
     {:else if s.isFolderSelected}
-        {#if s.currentExclusiveType}
-            <GroupViewHeader
-                currentExclusiveType={s.currentExclusiveType}
-                onExit={s.handleExitGroupView}
-            />
-        {/if}
         <GalleryGrid {...gridProps} />
     {/if}
 </div>

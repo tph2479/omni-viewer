@@ -165,8 +165,8 @@
     <!-- Left buttons -->
     <div
         class="flex items-center px-1
-               bg-surface-100-900 dark:bg-surface-800
-               border border-surface-200-800 shadow-lg rounded-full shrink-0"
+               bg-surface-100 dark:bg-surface-900
+               border border-surface-200 dark:border-surface-800 shadow-lg rounded-full shrink-0"
     >
         <button
             class="hidden sm:flex items-center justify-center w-10 h-10 shrink-0
@@ -195,8 +195,8 @@
     <!-- Input -->
     <div
         class="flex items-center flex-1 min-w-0 h-10 max-w-150
-               bg-surface-100-900 dark:bg-surface-800
-               border border-surface-200-800 shadow-lg rounded-full"
+               bg-surface-100 dark:bg-surface-900
+               border border-surface-200 dark:border-surface-800 shadow-lg rounded-full"
     >
         <input
             type="text"
@@ -204,7 +204,7 @@
                    border-none outline-none ring-0
                    text-sm font-medium tracking-tight truncate
                    placeholder:opacity-40 placeholder:font-normal
-                   text-surface-700-200"
+                   text-surface-700 dark:text-surface-200"
             value={folderPath}
             oninput={(e) =>
                 folder.onPathChange?.((e.target as HTMLInputElement).value)}
@@ -218,8 +218,8 @@
     <!-- Right buttons -->
     <div
         class="flex items-center px-1
-               bg-surface-100-900 dark:bg-surface-800
-               border border-surface-200-800 shadow-lg rounded-full shrink-0"
+               bg-surface-100 dark:bg-surface-900
+               border border-surface-200 dark:border-surface-800 shadow-lg rounded-full shrink-0"
     >
         <button
             class="flex items-center justify-center w-10 h-10 shrink-0
@@ -271,8 +271,8 @@
             class="popup absolute right-0 top-[calc(100%+6px)]
                     w-64 p-3 space-y-3
                     rounded-container
-                    bg-surface-100-900 dark:bg-surface-800
-                    border border-surface-200-800 shadow-xl
+                    bg-surface-100 dark:bg-surface-900
+                    border border-surface-200 dark:border-surface-800 shadow-xl
                     pointer-events-auto"
         >
             <!-- Media type -->
@@ -284,7 +284,7 @@
                     <button
                         class="flex flex-col items-center gap-1 py-2 px-1
                                rounded-container text-xs transition-colors
-                               border border-surface-200-800
+                               border border-surface-200 dark:border-surface-800
                                {mediaType === opt.value
                             ? 'preset-filled-primary-500'
                             : 'hover:preset-tonal-surface'}"
@@ -308,7 +308,7 @@
                 {#each sortOptions as opt}
                     <button
                         class="py-1.5 text-xs rounded-container transition-colors
-                               border border-surface-200-800 lowercase
+                               border border-surface-200 dark:border-surface-800 lowercase
                                {currentSort === opt.value
                             ? 'preset-filled-primary-500'
                             : 'hover:preset-tonal-surface'}"

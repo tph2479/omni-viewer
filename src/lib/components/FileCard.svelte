@@ -88,16 +88,16 @@
 <div class="group flex flex-col">
     <button
         id="item-{img.path.replace(/[^a-zA-Z0-9]/g, '-')}"
-        class="relative aspect-square bg-surface-500-900 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:ring-2 hover:ring-primary-500/50 transition-all duration-300 cursor-pointer border w-full"
+        class="relative aspect-square bg-surface-200 dark:bg-surface-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:ring-2 hover:ring-primary-500/50 transition-all duration-300 cursor-pointer border border-surface-300 dark:border-surface-700 w-full"
         onclick={handleCardClick}
     >
         {#if img.isDir}
             <!-- Folder card -->
             <div
-                class="absolute inset-0 flex flex-col items-center justify-center bg-surface-300-900 group-hover:bg-surface-200-800 transition-colors"
+                class="absolute inset-0 flex flex-col items-center justify-center bg-surface-100 dark:bg-surface-900 group-hover:bg-surface-200 dark:group-hover:bg-surface-800 transition-colors"
             >
                 <Folder
-                    class="w-1/2 h-1/2 text-surface-900-300 transition-transform duration-300"
+                    class="w-1/2 h-1/2 text-surface-900 dark:text-surface-300 transition-transform duration-300"
                 />
             </div>
         {:else if isZipFile(img.name)}
@@ -248,7 +248,7 @@
     </button>
     <div class="flex flex-col items-center mt-auto pt-1">
         <p
-            class="text-[10px] sm:text-[11px] font-bold truncate text-center px-1 text-surface-600-400 group-hover:text-primary transition-colors duration-300 w-full cursor-help"
+            class="text-[10px] sm:text-[11px] font-bold truncate text-center px-1 text-surface-600 dark:text-surface-400 group-hover:text-primary transition-colors duration-300 w-full cursor-help"
             title={img.name}
             onmouseenter={handleMouseEnter}
             onmouseleave={handleMouseLeave}

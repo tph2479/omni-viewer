@@ -20,17 +20,41 @@
     let isDark = $state(false);
 
     $effect(() => {
-        const mode = localStorage.getItem("mode") || "light";
+        let mode = localStorage.getItem("mode");
+        if (!mode) {
+            mode = window.matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light";
+        }
         isDark = mode === "dark";
         document.documentElement.setAttribute("data-mode", mode);
+        document.documentElement.classList.toggle("dark", isDark);
     });
 
     const toggleMode = () => {
         isDark = !isDark;
         const mode = isDark ? "dark" : "light";
         document.documentElement.setAttribute("data-mode", mode);
+        document.documentElement.classList.toggle("dark", isDark);
         localStorage.setItem("mode", mode);
     };
+
+    // --- GLOBAL BUTTON FOCUS PREVENTION ---
+    $effect(() => {
+        const handlePointerDown = (e: PointerEvent) => {
+            const button = (e.target as HTMLElement).closest("button");
+            if (button) {
+                // We use setTimeout to blur after the click event has processed
+                setTimeout(() => {
+                    if (document.activeElement === button) {
+                        button.blur();
+                    }
+                }, 0);
+            }
+        };
+        window.addEventListener("pointerdown", handlePointerDown);
+        return () => window.removeEventListener("pointerdown", handlePointerDown);
+    });
 
     // --- CẤU HÌNH LINKS ---
     const links = [
@@ -41,51 +65,44 @@
         { label: "Settings", href: "/settings", icon: SettingsIcon },
     ];
 
-    // --- RESPONSIVE & PORTAL ---
-    let isMobile = $state(false);
-    let desktopTarget: HTMLElement | undefined = $state();
-    let mobileTarget: HTMLElement | undefined = $state();
-
-    $effect(() => {
-        const mediaQuery = window.matchMedia("(max-width: 768px)");
-        isMobile = mediaQuery.matches;
-        const handler = (e: MediaQueryListEvent) => (isMobile = e.matches);
-        mediaQuery.addEventListener("change", handler);
-        return () => mediaQuery.removeEventListener("change", handler);
-    });
-
     const isActive = (href: string) => {
         const currentPath = $page.url.pathname;
         return href === "/"
             ? currentPath === "/"
             : currentPath.startsWith(href);
     };
+
+    // --- NAVIGATION COMPONENT ---
 </script>
 
 <svelte:head>
     <script>
-        const savedMode = localStorage.getItem("mode") || "light";
+        let savedMode = localStorage.getItem("mode");
+        if (!savedMode) {
+            savedMode = window.matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light";
+        }
         document.documentElement.setAttribute("data-mode", savedMode);
+        document.documentElement.classList.toggle("dark", savedMode === "dark");
     </script>
 </svelte:head>
 
-{#snippet ThemeIconToggle()}
+{#snippet ThemeIconToggle(isMobileNav = false)}
     <button
         onclick={toggleMode}
         class="flex flex-col items-center justify-center transition-all duration-300 hover:text-primary-500 active:scale-95
-               {isMobile ? 'flex-1 py-2' : 'w-full py-6'}"
+               {isMobileNav ? 'flex-1 py-2' : 'w-full py-6'}"
         aria-label="Toggle Theme"
     >
-        <div class="relative size-6 flex items-center justify-center">
+        <div class="relative size-5 flex items-center justify-center">
             {#if isDark}
                 <div
                     class="absolute"
                     in:scale={{ duration: 400, start: 0.7, delay: 100 }}
                     out:fade={{ duration: 200 }}
                 >
-                    <div class="rotate-[-15deg]">
-                        <Moon class="size-5 fill-current text-blue-400" />
-                    </div>
+                    <Moon class="size-[18px] text-surface-50 stroke-[2px]" />
                 </div>
             {:else}
                 <div
@@ -93,14 +110,14 @@
                     in:scale={{ duration: 400, start: 0.7, delay: 100 }}
                     out:fade={{ duration: 200 }}
                 >
-                    <Sun
-                        class="size-5 fill-current text-amber-500 shadow-amber-500/50"
-                    />
+                <Sun
+                    class="size-[18px] text-surface-900 stroke-[2px]"
+                />
                 </div>
             {/if}
         </div>
 
-        {#if isMobile}
+        {#if isMobileNav}
             <span class="text-[10px] mt-1 font-medium opacity-60 tracking-wide">
                 {isDark ? "Dark" : "Light"}
             </span>
@@ -108,19 +125,15 @@
     </button>
 {/snippet}
 
-{#snippet NavItem({ label, href, icon: Icon }: any)}
+{#snippet NavItem({ label, href, icon: Icon }: any, isMobileNav = false)}
     {@const active = isActive(href)}
-    <Tooltip
-        openDelay={0}
-        closeDelay={0}
-        positioning={{ placement: isMobile ? "top" : "right" }}
-    >
-        <Tooltip.Trigger class={isMobile ? "flex-1" : "w-full"}>
+    <Tooltip openDelay={0} closeDelay={0} positioning={{ placement: "right" }}>
+        <Tooltip.Trigger class="w-full">
             <Navigation.TriggerAnchor
                 {href}
                 class="flex flex-col md:flex-row justify-center items-center py-3 transition-all relative"
             >
-                {#if active && !isMobile}
+                {#if active && !isMobileNav}
                     <div
                         class="absolute left-0 top-1/4 bottom-1/4 w-1 bg-primary-500 rounded-r-full"
                         transition:fade
@@ -129,68 +142,73 @@
                 <Icon
                     class="size-5 {active ? 'stroke-[2.5px]' : 'stroke-[2px]'}"
                 />
-                {#if isMobile}
+                {#if isMobileNav}
                     <span class="text-[10px] mt-1 font-medium">{label}</span>
                 {/if}
             </Navigation.TriggerAnchor>
         </Tooltip.Trigger>
-        {#if !isMobile}
-            <Portal>
-                <Tooltip.Positioner class="z-50">
-                    <Tooltip.Content
-                        class="preset-filled-surface-950-50 text-xs px-3 py-1.5 rounded-md shadow-xl"
-                    >
-                        {label}
-                    </Tooltip.Content>
-                </Tooltip.Positioner>
-            </Portal>
-        {/if}
+        <Portal>
+            <Tooltip.Positioner class="z-50 hidden md:block">
+                <Tooltip.Content
+                    class="preset-filled-surface-950-50 text-xs px-3 py-1.5 rounded-md shadow-xl"
+                >
+                    {label}
+                </Tooltip.Content>
+            </Tooltip.Positioner>
+        </Portal>
     </Tooltip>
 {/snippet}
 
-<div
-    class="w-full h-dvh grid"
-    class:grid-rows-[1fr_auto]={isMobile}
-    class:grid-cols-[auto_1fr]={!isMobile}
->
-    {#if !isMobile}
-        <div bind:this={desktopTarget} class="w-16"></div>
-    {/if}
-
-    <main class="h-full overflow-y-auto">
-        {@render children()}
-    </main>
-
-    {#if isMobile}
-        <div bind:this={mobileTarget} class="w-full"></div>
-    {/if}
-</div>
-
-<Portal target={isMobile ? mobileTarget : desktopTarget}>
+{#snippet MainNavigation(isMobileNav: boolean)}
     <Navigation
-        layout={isMobile ? "bar" : "rail"}
-        class="h-full w-full flex {isMobile ? 'flex-row' : 'flex-col'}"
+        layout={isMobileNav ? "bar" : "rail"}
+        class="h-full w-full flex {isMobileNav
+            ? 'flex-row bg-surface-100 dark:bg-surface-900 border-t border-surface-200 dark:border-surface-800'
+            : 'flex-col bg-surface-100 dark:bg-surface-900 border-r border-surface-200 dark:border-surface-800'}"
     >
-        <!-- {#if !isMobile}
+        {#if !isMobileNav}
             <Navigation.Header>
-                {@render ThemeIconToggle()}
+                {@render ThemeIconToggle(isMobileNav)}
             </Navigation.Header>
-        {/if} -->
+        {/if}
 
-        <Navigation.Content class="flex-1 {isMobile ? 'w-full' : ''}">
+        <Navigation.Content class="flex-1 {isMobileNav ? 'w-full' : ''}">
             <Navigation.Menu
-                class={isMobile
+                class={isMobileNav
                     ? "flex w-full justify-around items-center"
                     : "space-y-2"}
             >
                 {#each links as link}
-                    {@render NavItem(link)}
+                    <div class={isMobileNav ? "flex-1" : "w-full"}>
+                        {@render NavItem(link, isMobileNav)}
+                    </div>
                 {/each}
 
-                <!-- {#if isMobile}
-                    {@render ThemeIconToggle()}
+                <!-- {#if isMobileNav}
+                    <div class="flex-1">
+                        {@render ThemeIconToggle(isMobileNav)}
+                    </div>
                 {/if} -->
             </Navigation.Menu>
         </Navigation.Content>
     </Navigation>
-</Portal>
+{/snippet}
+
+<div
+    class="w-full h-dvh grid grid-rows-[1fr_auto] md:grid-rows-none md:grid-cols-[auto_1fr]"
+>
+    <!-- Desktop Sidebar -->
+    <div class="hidden md:block w-16">
+        {@render MainNavigation(false)}
+    </div>
+
+    <!-- Main Content -->
+    <main class="h-full overflow-y-auto w-full">
+        {@render children()}
+    </main>
+
+    <!-- Mobile Navigation -->
+    <div class="block md:hidden w-full">
+        {@render MainNavigation(true)}
+    </div>
+</div>

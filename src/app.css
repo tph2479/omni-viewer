@@ -4,7 +4,7 @@
 @import "@skeletonlabs/skeleton-svelte";
 @import "@skeletonlabs/skeleton/themes/cerberus";
 
-/*@custom-variant dark (&:where([data-mode="dark"], [data-mode="dark"] *));*/
+@custom-variant dark (&:where([data-mode="dark"], [data-mode="dark"] *));
 
 /* Custom scrollbar - always visible to prevent layout shift */
 ::-webkit-scrollbar {
@@ -35,7 +35,7 @@
     --text-scaling: 1.067;
     --base-font-color: var(--color-surface-950);
     --base-font-color-dark: var(--color-surface-50);
-    --base-font-family: inherit;
+    --base-font-family: 'Outfit', sans-serif;
     --base-font-size: inherit;
     --base-line-height: inherit;
     --base-font-weight: normal;
@@ -43,7 +43,7 @@
     --base-letter-spacing: 0em;
     --heading-font-color: inherit;
     --heading-font-color-dark: inherit;
-    --heading-font-family: inherit;
+    --heading-font-family: 'Outfit', sans-serif;
     --heading-font-weight: bold;
     --heading-font-style: normal;
     --heading-letter-spacing: inherit;
@@ -59,13 +59,13 @@
     --anchor-text-decoration-hover: underline;
     --anchor-text-decoration-active: none;
     --anchor-text-decoration-focus: none;
-    --spacing: 0.24rem;
+    --spacing: 0.22rem;
     --radius-base: 0.25rem;
     --radius-container: 0.25rem;
     --default-border-width: 2px;
     --default-divide-width: 1px;
     --default-ring-width: 1px;
-    --body-background-color: var(--color-surface-100);
+    --body-background-color: var(--color-surface-50);
     --body-background-color-dark: var(--color-surface-800);
     --color-primary-50: oklch(91.93% 0.04 256.59deg);
     --color-primary-100: oklch(84.19% 0.07 255.4deg);
@@ -211,8 +211,8 @@
     --color-error-contrast-800: var(--color-error-contrast-light);
     --color-error-contrast-900: var(--color-error-contrast-light);
     --color-error-contrast-950: var(--color-error-contrast-light);
-    --color-surface-50: oklch(99.11% 0 none);
-    --color-surface-100: oklch(90.06% 0 none);
+    --color-surface-50: oklch(100% 0 none);
+    --color-surface-100: oklch(98% 0 none);
     --color-surface-200: oklch(80.78% 0 none);
     --color-surface-300: oklch(71.22% 0 none);
     --color-surface-400: oklch(61.33% 0 none);

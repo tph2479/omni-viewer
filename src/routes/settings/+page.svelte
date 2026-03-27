@@ -44,7 +44,7 @@
             {/if}
             <div>
                 <p class="font-medium">Dark Mode</p>
-                <p class="text-sm text-surface-500-400">
+                <p class="text-sm text-surface-500 dark:text-surface-400">
                     {theme.isDark ? "Dark mode is on" : "Light mode is on"}
                 </p>
             </div>
@@ -63,7 +63,7 @@
             <Trash2Icon class="size-5" />
             <div>
                 <p class="font-medium">Clear cache & preferences</p>
-                <p class="text-sm text-surface-500-400">
+                <p class="text-sm text-surface-500 dark:text-surface-400">
                     Clear thumbnail cache and localStorage.
                 </p>
             </div>
@@ -83,7 +83,7 @@
             />
             <div>
                 <p class="font-medium">Shutdown</p>
-                <p class="text-sm text-surface-500-400">
+                <p class="text-sm text-surface-500 dark:text-surface-400">
                     Shutdown the server and close the application.
                 </p>
             </div>
