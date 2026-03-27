@@ -74,7 +74,10 @@
     // ── State ─────────────────────────────────────────────────────
     let pickerCurrentPath = $state("This PC");
     let pickerParentPath = $state<string | null>(null);
-    let pickerDirectories: DirectoryEntry[] = $state([]);
+    let subdirectoryEntries: DirectoryEntry[] = $state([]);
+    const pickerDirectories = $derived(
+        isAtRoot ? availableDrives : subdirectoryEntries,
+    );
     let isPickerLoading = $state(false);
     let pickerError = $state("");
     let dialogEl: HTMLDivElement;
@@ -86,10 +89,15 @@
             pathQuery === "This PC" ||
             pathQuery === "File System";
 
-        if (!force && isRoot && availableDrives.length > 0) {
+        if (isRoot) {
             pickerCurrentPath = ROOT_LABEL;
             pickerParentPath = null;
-            pickerDirectories = availableDrives;
+
+            if (force && onRefreshDrives) {
+                await onRefreshDrives();
+            } else if (availableDrives.length === 0 && !isDrivesLoading) {
+                onRefreshDrives?.();
+            }
             return;
         }
 
@@ -97,7 +105,7 @@
         pickerError = "";
 
         try {
-            const query = isRoot ? "" : normalizePath(pathQuery);
+            const query = normalizePath(pathQuery);
             const res = await fetch(
                 `/api/file?action=directories&path=${encodeURIComponent(query)}`,
             );
@@ -107,7 +115,7 @@
 
             pickerCurrentPath = data.currentPath || ROOT_LABEL;
             pickerParentPath = data.parentPath ?? null;
-            pickerDirectories = (data.directories as DirectoryEntry[]).map(
+            subdirectoryEntries = (data.directories as DirectoryEntry[]).map(
                 (d) => ({
                     ...d,
                     path: normalizePath(d.path),
@@ -306,8 +314,11 @@
                     ? 'animate-spin opacity-50 pointer-events-none'
                     : ''}"
                 onclick={() => {
-                    loadPickerData(pickerCurrentPath, true);
-                    onRefreshDrives?.();
+                    if (isAtRoot) {
+                        onRefreshDrives?.();
+                    } else {
+                        loadPickerData(pickerCurrentPath, true);
+                    }
                 }}
                 aria-label="Refresh"
             >
@@ -319,7 +330,7 @@
         <div
             class="flex-1 overflow-y-scroll p-2 bg-white dark:bg-surface-800 custom-scroll"
         >
-            {#if isPickerLoading}
+            {#if isPickerLoading || (isAtRoot && isDrivesLoading)}
                 <ul class="flex flex-col gap-0.5 mt-2">
                     {#each [".", "..", "..."] as name, i}
                         <li class="skeleton-stagger" style="animation-delay: {i * 150}ms">

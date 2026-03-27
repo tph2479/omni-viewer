@@ -32,23 +32,4 @@
             browsing your collection.
         </p>
     </div>
-
-    <button
-        class="group relative inline-flex items-center gap-3 px-8 py-4 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-2xl shadow-lg shadow-primary-500/20 hover:shadow-xl hover:shadow-primary-500/30 transition-all duration-300 active:scale-95"
-        onclick={onOpenPicker}
-    >
-        <div
-            class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl"
-        ></div>
-        <Plus size={22} strokeWidth={2.5} />
-        <span>Select Directory</span>
-    </button>
-
-    <div
-        class="mt-12 flex items-center gap-4 text-surface-400 dark:text-surface-600"
-    >
-        <div class="h-px w-8 bg-current opacity-20"></div>
-        <span class="text-xs font-bold tracking-widest uppercase">Quick Start</span>
-        <div class="h-px w-8 bg-current opacity-20"></div>
-    </div>
 </div>
