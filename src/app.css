@@ -3,6 +3,10 @@
 @import "@skeletonlabs/skeleton";
 @import "@skeletonlabs/skeleton-svelte";
 @import "@skeletonlabs/skeleton/themes/cerberus";
+ 
+ .lucide {
+     stroke-width: 1.5px !important;
+ }
 
 @custom-variant dark (&:where([data-mode="dark"], [data-mode="dark"] *));
 
@@ -13,22 +17,25 @@
 }
 
 ::-webkit-scrollbar-track {
-    background: transparent;
+    background: rgba(128, 128, 128, 0.05);
 }
 
 ::-webkit-scrollbar-thumb {
-    background: rgba(128, 128, 128, 0.3);
+    background: rgba(128, 128, 128, 0.5);
     border-radius: 5px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: rgba(128, 128, 128, 0.5);
+    background: rgba(128, 128, 128, 0.7);
+    background-clip: padding-box;
 }
 
 /* Firefox */
 * {
     scrollbar-width: thin;
-    scrollbar-color: rgba(128, 128, 128, 0.3) transparent;
+    scrollbar-color: rgba(128, 128, 128, 0.5) rgba(128, 128, 128, 0.05);
 }
 
 [data-theme="cerberus"] {

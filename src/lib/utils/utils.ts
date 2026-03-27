@@ -2,7 +2,7 @@
 export async function handleImageError(event: Event, imgPath: string) {
 	const target = event.target as HTMLImageElement;
 	if (!target || !target.src) return;
-	
+
 	const originalSrc = target.src;
 	const baseUrl = originalSrc.split('&__rt=')[0].split('&retry=')[0];
 
@@ -23,22 +23,22 @@ export async function handleImageError(event: Event, imgPath: string) {
 	target.style.display = 'none';
 
 	try {
-        if (!originalSrc.includes('retry=')) {
+		if (!originalSrc.includes('retry=')) {
 			// Just wait a moment and retry once with forced-regeneration flag on server for full images
 			await new Promise(resolve => setTimeout(resolve, 500));
-			
+
 			if (target.dataset.expectedSrc !== baseUrl) return; // ABORT recycling
-			
+
 			// Set a flag so if THIS retry fails, we don't try again
 			target.onerror = () => {
 				target.onerror = null;
 				target.dataset.failedPermanently = "true";
 				target.style.display = 'none';
 			};
-			
+
 			// Notify parents that we are retrying (useful for metadata sync)
 			target.dispatchEvent(new CustomEvent('img-retry', { bubbles: true, detail: { path: imgPath } }));
-			
+
 			target.src = originalSrc + (originalSrc.includes('?') ? '&' : '?') + 'retry=' + Date.now();
 			target.style.display = 'block';
 		} else {
@@ -52,39 +52,36 @@ export async function handleImageError(event: Event, imgPath: string) {
 	}
 }
 
-// Kiểm tra đuôi file video
-export function isVideoFile(filename: string) {
-	const ext = filename.toLowerCase().split('.').pop();
-	return ext === 'mp4' || ext === 'webm';
-}
+import {
+	isImageFile as _isImage,
+	isVideoFile as _isVideo,
+	isAudioFile as _isAudio,
+	isPdfFile as _isPdf,
+	isEpubFile as _isEpub,
+	isCbzFile as _isCbz
+} from "$lib/fileUtils";
+
+// ... existing handleImageError ...
+
+// Kiểm tra đuôi file
+export const isImageFile = _isImage;
+export const isVideoFile = _isVideo;
+export const isAudioFile = _isAudio;
+export const isPdfFile = _isPdf;
+export const isEpubFile = _isEpub;
+export const isCbzFile = _isCbz;
 
 export function isZipFile(filename: string) {
 	return filename.toLowerCase().endsWith('.zip');
 }
 
-export function isPdfFile(filename: string) {
-	return filename.toLowerCase().endsWith('.pdf');
-}
-
-export function isCbzFile(filename: string) {
-	return filename.toLowerCase().endsWith('.cbz');
-}
-
-export function isEpubFile(filename: string) {
-	return filename.toLowerCase().endsWith('.epub');
-}
-
-export function isAudioFile(filename: string) {
-	const ext = filename.toLowerCase().split('.').pop();
-	return ['.mp3', '.wav', '.ogg', '.flac', '.m4a', '.aac', '.opus', '.m4b'].includes('.' + ext);
-}
 
 // Chuyển đổi bytes sang KB/MB
 export function formatBytes(bytes: number, decimals = 2) {
 	if (!+bytes) return '0 Bytes';
 	const k = 1024;
 	const dm = decimals < 0 ? 0 : decimals;
-	const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+	const sizes = ['Bytes', 'KiB', 'MiB', 'GiB', 'TiB'];
 	const i = Math.floor(Math.log(bytes) / Math.log(k));
 	return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
 }

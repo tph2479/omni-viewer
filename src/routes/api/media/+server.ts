@@ -3,7 +3,7 @@ import type { RequestEvent } from "@sveltejs/kit";
 import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
-import { getContentType } from "$lib/server/fileUtils";
+import { getContentType, isImageFile } from "$lib/fileUtils";
 import { isHeifBuffer, getThumbnailPath } from "$lib/server/archiveUtils";
 
 import { generateThumbnail } from "./handlers/thumbnail";
@@ -60,7 +60,7 @@ export async function GET({ url, request }: RequestEvent) {
     if (
       !isHeic &&
       !isThumbnail &&
-      ["jpg", "jpeg", "png", "webp"].includes(ext)
+      isImageFile(filename)
     ) {
       try {
         const header = Buffer.alloc(12);

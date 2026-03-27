@@ -2,7 +2,7 @@ import { error } from '@sveltejs/kit';
 import fs from 'node:fs';
 import type { Stats } from 'node:fs';
 import { Readable } from 'node:stream';
-import { getContentType } from '$lib/server/fileUtils';
+import { getContentType } from '$lib/fileUtils';
 import path from 'node:path';
 
 export async function handleServe(absolutePath: string, stat: Stats, range: string | null, signal: AbortSignal) {

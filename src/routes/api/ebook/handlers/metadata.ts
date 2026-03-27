@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import path from 'node:path';
 import fsp from 'node:fs/promises';
-import { isPdfFile, isEpubFile, isCbzFile } from '$lib/server/fileUtils';
+import { isPdfFile, isEpubFile, isCbzFile } from '$lib/fileUtils';
 
 import type { Stats } from 'node:fs';
 

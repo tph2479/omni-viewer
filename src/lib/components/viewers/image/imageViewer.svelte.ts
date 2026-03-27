@@ -116,19 +116,27 @@ export function createImageModalState(props: {
 	$effect(() => {
 		if (typeof window === 'undefined') return;
 		
+		function handleResize() {
+			fitImageToViewport();
+		}
+		
 		function handleOrientationChange() {
 			setTimeout(() => {
 				if (props.isModalOpen) {
-					zoomLevel = 1;
-					translateX = 0;
-					translateY = 0;
+					fitImageToViewport();
 				}
-			}, 100);
+			}, 200);
 		}
 		
-		window.addEventListener('orientationchange', handleOrientationChange);
+		if (typeof window !== 'undefined') {
+			window.addEventListener('orientationchange', handleOrientationChange);
+			window.addEventListener('resize', handleResize);
+		}
 		return () => {
-			window.removeEventListener('orientationchange', handleOrientationChange);
+			if (typeof window !== 'undefined') {
+				window.removeEventListener('orientationchange', handleOrientationChange);
+				window.removeEventListener('resize', handleResize);
+			}
 		};
 	});
 
@@ -200,7 +208,12 @@ export function createImageModalState(props: {
 			
 			const fitWidthZoom = (window.innerWidth * targetW) / fitWidth;
 			const fitHeightZoom = (window.innerHeight * targetH) / fitHeight;
+			
+			// On mobile, use 100% of the viewport (no extra padding)
+			// but still use the smaller of the two zooms to ensure the whole image is visible (Best Fit).
 			zoomLevel = Math.min(fitWidthZoom, fitHeightZoom);
+			translateX = 0;
+			translateY = 0;
 		}
 	}
 

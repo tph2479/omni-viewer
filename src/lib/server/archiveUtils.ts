@@ -5,7 +5,7 @@ import fsp from "node:fs/promises";
 import { createHash } from "node:crypto";
 import yauzl from "yauzl-promise";
 import sharp from "sharp";
-import { ALLOWED_EXTENSIONS, isImageFile } from "./fileUtils";
+import { ALLOWED_EXTENSIONS, isImageFile } from "$lib/fileUtils";
 import { globalTaskSemaphore } from "./semaphore";
 
 const THUMB_CACHE_DIR = path.resolve(".thumbnails");

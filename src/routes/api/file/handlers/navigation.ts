@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
-import { isImageFile, isVideoFile, isAudioFile, isPdfFile, isEpubFile, isCbzFile } from '$lib/server/fileUtils';
+import { isImageFile, isVideoFile, isAudioFile, isPdfFile, isEpubFile, isCbzFile } from '$lib/fileUtils';
 
 const execAsync = promisify(exec);
 
@@ -36,9 +36,10 @@ export async function handleNavigation(folderParam: string | null) {
         const isWin = process.platform === 'win32';
         if (isWin) {
             const drives = await getWindowsDrives();
-            return json({ currentPath: '', parentPath: null, directories: drives });
+            const directories = drives.map(d => ({ ...d, isDir: true }));
+            return json({ currentPath: '', parentPath: null, directories });
         } else {
-            return json({ currentPath: '/', parentPath: '', directories: [{ name: '/', path: '/' }] });
+            return json({ currentPath: '/', parentPath: '', directories: [{ name: '/', path: '/', isDir: true }] });
         }
     }
 

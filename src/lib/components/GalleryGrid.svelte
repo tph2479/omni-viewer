@@ -103,7 +103,7 @@
             onclick={() => coverMode.onExit()}
             onmousedown={(e) => e.preventDefault()}
         >
-            <ArrowLeft size={16} />
+            <ArrowLeft size={16} strokeWidth={1.5} />
             Back
         </button>
         <h2
@@ -131,7 +131,7 @@
                         alt={folder.name}
                         class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                     />
-                    <div class="absolute top-2 left-2 z-20">
+                    <div class="absolute top-2 left-2 z-10">
                         <div
                             class="bg-primary-500 px-2 py-0.5 rounded shadow-lg group-hover:bg-primary-600 transition-colors flex items-center gap-1"
                         >
@@ -139,6 +139,7 @@
                                 size={12}
                                 fill="currentColor"
                                 class="text-white"
+                                strokeWidth={1.5}
                             />
                             <span
                                 class="text-[9px] font-black text-white tracking-widest uppercase"
@@ -173,7 +174,7 @@
                 aria-label="Previous page"
                 onmousedown={(e) => e.preventDefault()}
             >
-                <ChevronLeft size={16} />
+                <ChevronLeft size={16} strokeWidth={1.5} />
             </button>
             <div class="flex items-center gap-1 font-mono text-sm">
                 {#each Array.from({ length: totalCoverPages }) as _, i}
@@ -200,7 +201,7 @@
                 aria-label="Next page"
                 onmousedown={(e) => e.preventDefault()}
             >
-                <ChevronRight size={16} />
+                <ChevronRight size={16} strokeWidth={1.5} />
             </button>
         </div>
     {/if}
@@ -308,6 +309,7 @@
                                     <ArrowRight
                                         size={32}
                                         class="text-primary"
+                                        strokeWidth={1.5}
                                     />
                                 </div>
                                 <span
@@ -334,6 +336,7 @@
                     <ArrowLeft
                         size={20}
                         class="text-surface-900 dark:text-surface-100"
+                        strokeWidth={1.5}
                     />
                 </button>
                 <div class="flex items-center gap-2">
@@ -379,7 +382,7 @@
                 disabled={pagination.currentPage === 0 || isLoading}
                 aria-label="Previous page"
             >
-                <ChevronLeft size={16} />
+                <ChevronLeft size={16} strokeWidth={1.5} />
             </button>
 
             <div class="flex items-center gap-2 font-mono text-sm">
@@ -412,7 +415,7 @@
                 disabled={!pagination.hasMore || isLoading}
                 aria-label="Next page"
             >
-                <ChevronRight size={16} />
+                <ChevronRight size={16} strokeWidth={1.5} />
             </button>
         </div>
     {/if}

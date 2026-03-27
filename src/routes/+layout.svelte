@@ -11,6 +11,7 @@
         Moon,
     } from "lucide-svelte";
     import { Navigation, Portal, Tooltip } from "@skeletonlabs/skeleton-svelte";
+    import GalleryModals from "$lib/components/GalleryModals.svelte";
     import type { Snippet } from "svelte";
     import { fade, scale } from "svelte/transition";
 
@@ -89,69 +90,80 @@
 </svelte:head>
 
 {#snippet ThemeIconToggle(isMobileNav = false)}
-    <button
-        onclick={toggleMode}
-        class="flex flex-col items-center justify-center transition-all duration-300 hover:text-primary-500 active:scale-95
-               {isMobileNav ? 'flex-1 py-2' : 'w-full py-6'}"
-        aria-label="Toggle Theme"
-    >
-        <div class="relative size-5 flex items-center justify-center">
-            {#if isDark}
-                <div
-                    class="absolute"
-                    in:scale={{ duration: 400, start: 0.7, delay: 100 }}
-                    out:fade={{ duration: 200 }}
+    <Tooltip openDelay={0} closeDelay={0} positioning={{ placement: "right" }}>
+        <Tooltip.Trigger 
+            onclick={toggleMode}
+            class="flex flex-col items-center justify-center transition-all duration-300 w-full py-2 text-surface-600 dark:text-surface-400 hover:text-primary-600 dark:hover:text-primary-400 active:scale-95"
+            aria-label="Toggle Theme"
+        >
+            <div class="relative size-7 flex items-center justify-center">
+                {#if isDark}
+                    <div
+                        class="absolute"
+                        in:scale={{ duration: 400, start: 0.7, delay: 100 }}
+                        out:fade={{ duration: 200 }}
+                    >
+                        <Moon class="size-[28px] stroke-[1.5px]" />
+                    </div>
+                {:else}
+                    <div
+                        class="absolute"
+                        in:scale={{ duration: 400, start: 0.7, delay: 100 }}
+                        out:fade={{ duration: 200 }}
+                    >
+                        <Sun class="size-[28px] stroke-[1.5px]" />
+                    </div>
+                {/if}
+            </div>
+        </Tooltip.Trigger>
+        <Portal>
+            <Tooltip.Positioner class="fixed z-[10000] hidden md:block">
+                <Tooltip.Content
+                    class="preset-filled-surface-950-50 text-xs px-3 py-1.5 rounded-md shadow-xl relative z-[10000]"
                 >
-                    <Moon class="size-[18px] text-surface-50 stroke-[2px]" />
-                </div>
-            {:else}
-                <div
-                    class="absolute"
-                    in:scale={{ duration: 400, start: 0.7, delay: 100 }}
-                    out:fade={{ duration: 200 }}
-                >
-                <Sun
-                    class="size-[18px] text-surface-900 stroke-[2px]"
-                />
-                </div>
-            {/if}
-        </div>
-
-        {#if isMobileNav}
-            <span class="text-[10px] mt-1 font-medium opacity-60 tracking-wide">
-                {isDark ? "Dark" : "Light"}
-            </span>
-        {/if}
-    </button>
+                    <Tooltip.Arrow>
+                        <div class="preset-filled-surface-950-50 size-2 rotate-45 absolute -left-1 top-1/2 -translate-y-1/2 -z-10"></div>
+                    </Tooltip.Arrow>
+                    {isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                </Tooltip.Content>
+            </Tooltip.Positioner>
+        </Portal>
+    </Tooltip>
 {/snippet}
 
 {#snippet NavItem({ label, href, icon: Icon }: any, isMobileNav = false)}
     {@const active = isActive(href)}
     <Tooltip openDelay={0} closeDelay={0} positioning={{ placement: "right" }}>
         <Tooltip.Trigger class="w-full">
-            <Navigation.TriggerAnchor
-                {href}
-                class="flex flex-col md:flex-row justify-center items-center py-3 transition-all relative"
-            >
-                {#if active && !isMobileNav}
-                    <div
-                        class="absolute left-0 top-1/4 bottom-1/4 w-1 bg-primary-500 rounded-r-full"
-                        transition:fade
-                    ></div>
-                {/if}
-                <Icon
-                    class="size-5 {active ? 'stroke-[2.5px]' : 'stroke-[2px]'}"
-                />
-                {#if isMobileNav}
-                    <span class="text-[10px] mt-1 font-medium">{label}</span>
-                {/if}
-            </Navigation.TriggerAnchor>
+            {#snippet element(props)}
+                <Navigation.TriggerAnchor
+                    {...props}
+                    {href}
+                    class="flex flex-col md:flex-row justify-center items-center py-2 transition-all relative"
+                >
+                    {#if active && !isMobileNav}
+                        <div
+                            class="absolute left-0 top-1/4 bottom-1/4 w-1 bg-primary-500 rounded-r-full"
+                            transition:fade
+                        ></div>
+                    {/if}
+                    <Icon
+                        class="size-7 {active ? 'stroke-[1.8px] text-primary-600 dark:text-primary-400' : 'stroke-[1.5px] text-surface-600 dark:text-surface-400 hover:text-primary-600 dark:hover:text-primary-400'} transition-colors"
+                    />
+                    {#if isMobileNav}
+                        <span class="text-[10px] mt-1 font-medium">{label}</span>
+                    {/if}
+                </Navigation.TriggerAnchor>
+            {/snippet}
         </Tooltip.Trigger>
         <Portal>
-            <Tooltip.Positioner class="z-50 hidden md:block">
+            <Tooltip.Positioner class="fixed z-[10000] hidden md:block">
                 <Tooltip.Content
-                    class="preset-filled-surface-950-50 text-xs px-3 py-1.5 rounded-md shadow-xl"
+                    class="preset-filled-surface-950-50 text-xs px-3 py-1.5 rounded-md shadow-xl relative z-[10000]"
                 >
+                    <Tooltip.Arrow>
+                        <div class="preset-filled-surface-950-50 size-2 rotate-45 absolute -left-1 top-1/2 -translate-y-1/2 -z-10"></div>
+                    </Tooltip.Arrow>
                     {label}
                 </Tooltip.Content>
             </Tooltip.Positioner>
@@ -166,11 +178,7 @@
             ? 'flex-row bg-surface-100 dark:bg-surface-900 border-t border-surface-200 dark:border-surface-800'
             : 'flex-col bg-surface-100 dark:bg-surface-900 border-r border-surface-200 dark:border-surface-800'}"
     >
-        {#if !isMobileNav}
-            <Navigation.Header>
-                {@render ThemeIconToggle(isMobileNav)}
-            </Navigation.Header>
-        {/if}
+
 
         <Navigation.Content class="flex-1 {isMobileNav ? 'w-full' : ''}">
             <Navigation.Menu
@@ -184,13 +192,14 @@
                     </div>
                 {/each}
 
-                <!-- {#if isMobileNav}
-                    <div class="flex-1">
-                        {@render ThemeIconToggle(isMobileNav)}
-                    </div>
-                {/if} -->
+
             </Navigation.Menu>
         </Navigation.Content>
+        {#if !isMobileNav}
+            <Navigation.Footer>
+                {@render ThemeIconToggle(isMobileNav)}
+            </Navigation.Footer>
+        {/if}
     </Navigation>
 {/snippet}
 
@@ -198,12 +207,12 @@
     class="w-full h-dvh grid grid-rows-[1fr_auto] md:grid-rows-none md:grid-cols-[auto_1fr]"
 >
     <!-- Desktop Sidebar -->
-    <div class="hidden md:block w-16">
+    <div class="hidden md:block w-16 relative z-[100]">
         {@render MainNavigation(false)}
     </div>
 
     <!-- Main Content -->
-    <main class="h-full overflow-y-auto w-full">
+    <main class="h-full overflow-y-scroll w-full relative z-0">
         {@render children()}
     </main>
 
@@ -212,3 +221,5 @@
         {@render MainNavigation(true)}
     </div>
 </div>
+
+<GalleryModals />

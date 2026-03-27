@@ -235,13 +235,13 @@
 								imgState.isFullImageLoaded = false;
 
 								await tick();
-								imgState.renderedWidth = img.clientWidth;
+								imgState.renderedWidth = img.naturalWidth;
 
 								if (imgState.renderedWidth > 0) {
 									imgState.fitImageToViewport();
 								} else {
 									await new Promise(r => setTimeout(r, 60));
-									imgState.renderedWidth = img?.clientWidth || 0;
+									imgState.renderedWidth = img?.naturalWidth || 0;
 									imgState.fitImageToViewport();
 								}
 
@@ -253,7 +253,7 @@
 								imgState.isFullImageLoaded = true;
 							}}
 							class="pointer-events-auto select-none"
-							style="opacity: {imgState.isFullImageLoaded ? 1 : 0}; transform: translate({imgState.translateX}px, {imgState.translateY}px) scale({imgState.zoomLevel}) rotate({imgState.rotation}deg); transition: {imgState.isFullImageLoaded ? 'transform 0.2s ease-out' : 'none'};"
+							style="opacity: {imgState.isFullImageLoaded ? 1 : 0}; transform: translate({imgState.translateX}px, {imgState.translateY}px) scale({imgState.zoomLevel}) rotate({imgState.rotation}deg); transition: {imgState.isFullImageLoaded ? 'transform 0.2s ease-out' : 'none'}; max-width: none !important; max-height: none !important;"
 							decoding="async"
 							fetchpriority="high"
 							draggable="false"

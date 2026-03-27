@@ -160,12 +160,11 @@
 
 <div
     class="relative flex items-center w-full max-w-4xl mx-auto h-14 gap-2"
-    bind:this={menuRef}
 >
     <!-- Left buttons -->
     <div
         class="flex items-center px-1
-               bg-surface-100 dark:bg-surface-900
+               bg-surface-100 dark:bg-surface-800
                border border-surface-200 dark:border-surface-800 shadow-lg rounded-full shrink-0"
     >
         <button
@@ -188,14 +187,14 @@
             onmousedown={(e) => e.preventDefault()}
             title="Up one level"
         >
-            <ArrowUp size={20} strokeWidth={2.5} />
+            <ArrowUp size={20} strokeWidth={1.5} />
         </button>
     </div>
 
     <!-- Input -->
     <div
         class="flex items-center flex-1 min-w-0 h-10 max-w-150
-               bg-surface-100 dark:bg-surface-900
+               bg-surface-100 dark:bg-surface-800
                border border-surface-200 dark:border-surface-800 shadow-lg rounded-full"
     >
         <input
@@ -218,7 +217,7 @@
     <!-- Right buttons -->
     <div
         class="flex items-center px-1
-               bg-surface-100 dark:bg-surface-900
+               bg-surface-100 dark:bg-surface-800
                border border-surface-200 dark:border-surface-800 shadow-lg rounded-full shrink-0"
     >
         <button
@@ -233,7 +232,7 @@
             {#if isLoading}
                 <span class="spinner-third w-4 h-4 border-2"></span>
             {:else}
-                <RefreshCw size={20} />
+                <RefreshCw size={20} strokeWidth={1.5} />
             {/if}
         </button>
 
@@ -245,79 +244,86 @@
             onclick={actions.onOpenWebtoon}
             title="Webtoon / Cover view"
         >
-            <Layers size={20} />
+            <Layers size={20} strokeWidth={1.5} />
         </button>
 
         {#if isFolderSelected}
-            <button
-                class="flex items-center justify-center w-10 h-10 shrink-0
-                       rounded-full transition-colors
-                       {menuOpen
-                    ? 'preset-filled-primary-500'
-                    : 'hover:preset-tonal-surface'}"
-                onclick={toggleMenu}
-                onmousedown={(e) => e.preventDefault()}
-                title="View options"
-                aria-expanded={menuOpen}
-            >
-                <ChevronsRight size={20} />
-            </button>
+            <div class="relative flex items-center" bind:this={menuRef}>
+                <button
+                    class="flex items-center justify-center w-10 h-10 shrink-0
+                           rounded-full transition-colors
+                           {menuOpen
+                        ? 'preset-filled-primary-500'
+                        : 'hover:preset-tonal-surface'}"
+                    onclick={toggleMenu}
+                    onmousedown={(e) => e.preventDefault()}
+                    title="View options"
+                    aria-expanded={menuOpen}
+                >
+                    <ChevronsRight size={20} strokeWidth={1.5} />
+                </button>
+
+                <!-- Popup -->
+                {#if menuOpen}
+                    <div
+                        class="popup absolute right-0 top-[calc(100%+8px)]
+                                w-64 p-4 space-y-4 z-[200]
+                                rounded-3xl
+                                bg-surface-100 dark:bg-surface-900/95 backdrop-blur-xl
+                                border border-surface-200/50 dark:border-white/10
+                                shadow-[0_25px_70px_-15px_rgba(0,0,0,0.5)] dark:shadow-[0_25px_70px_-15px_rgba(0,0,0,0.8)]
+                                pointer-events-auto animate-in fade-in zoom-in-95 duration-200"
+                    >
+                        <!-- Media type -->
+                        <div class="space-y-2">
+                            <p class="text-[10px] font-black tracking-widest uppercase opacity-40 ml-1">
+                                Media type
+                            </p>
+                            <div class="grid grid-cols-3 gap-2">
+                                {#each mediaOptions as opt}
+                                    <button
+                                        class="flex flex-col items-center gap-1.5 py-2.5 px-1
+                                               rounded-2xl text-xs transition-all duration-200
+                                               border border-surface-200 dark:border-white/5
+                                               {mediaType === opt.value
+                                            ? 'preset-filled-primary-500 shadow-lg shadow-primary-500/20 scale-105 z-10'
+                                            : 'hover:bg-surface-200 dark:hover:bg-white/5'}"
+                                        onclick={() => selectMedia(opt.value)}
+                                        disabled={opt.value !== "all" &&
+                                            !isGrouped &&
+                                            loadedImages.length === 0}
+                                        title="{opt.label} ({opt.count})"
+                                    >
+                                        <opt.icon size={18} strokeWidth={1.5} />
+                                        <span class="text-[9px] font-bold opacity-80">{opt.count}</span>
+                                    </button>
+                                {/each}
+                            </div>
+                        </div>
+
+                        <!-- Sort -->
+                        <div class="space-y-2">
+                            <p class="text-[10px] font-black tracking-widest uppercase opacity-40 ml-1">
+                                Sort by
+                            </p>
+                            <div class="grid grid-cols-2 gap-2">
+                                {#each sortOptions as opt}
+                                    <button
+                                        class="py-2 text-[10px] font-bold rounded-xl transition-all duration-200
+                                               border border-surface-200 dark:border-white/5 uppercase tracking-tighter
+                                               {currentSort === opt.value
+                                            ? 'preset-filled-primary-500 shadow-md shadow-primary-500/10'
+                                            : 'hover:bg-surface-200 dark:hover:bg-white/5'}"
+                                        onclick={() => selectSort(opt.value)}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                {/each}
+                            </div>
+                        </div>
+                    </div>
+                {/if}
+            </div>
         {/if}
     </div>
-
-    <!-- Popup -->
-    {#if isFolderSelected && menuOpen}
-        <div
-            class="popup absolute right-0 top-[calc(100%+6px)]
-                    w-64 p-3 space-y-3
-                    rounded-container
-                    bg-surface-100 dark:bg-surface-900
-                    border border-surface-200 dark:border-surface-800 shadow-xl
-                    pointer-events-auto"
-        >
-            <!-- Media type -->
-            <p class="text-[10px] font-semibold tracking-widest uppercase">
-                Media type
-            </p>
-            <div class="grid grid-cols-3 gap-1.5">
-                {#each mediaOptions as opt}
-                    <button
-                        class="flex flex-col items-center gap-1 py-2 px-1
-                               rounded-container text-xs transition-colors
-                               border border-surface-200 dark:border-surface-800
-                               {mediaType === opt.value
-                            ? 'preset-filled-primary-500'
-                            : 'hover:preset-tonal-surface'}"
-                        onclick={() => selectMedia(opt.value)}
-                        disabled={opt.value !== "all" &&
-                            !isGrouped &&
-                            loadedImages.length === 0}
-                        title="{opt.label} ({opt.count})"
-                    >
-                        <opt.icon size={16} />
-                        <span class="text-[10px]">{opt.count}</span>
-                    </button>
-                {/each}
-            </div>
-
-            <!-- Sort -->
-            <p class="text-[10px] font-semibold tracking-widest uppercase">
-                Sort by
-            </p>
-            <div class="grid grid-cols-4 gap-1">
-                {#each sortOptions as opt}
-                    <button
-                        class="py-1.5 text-xs rounded-container transition-colors
-                               border border-surface-200 dark:border-surface-800 lowercase
-                               {currentSort === opt.value
-                            ? 'preset-filled-primary-500'
-                            : 'hover:preset-tonal-surface'}"
-                        onclick={() => selectSort(opt.value)}
-                    >
-                        {opt.label}
-                    </button>
-                {/each}
-            </div>
-        </div>
-    {/if}
 </div>

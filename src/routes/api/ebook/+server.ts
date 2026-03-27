@@ -3,7 +3,7 @@ import type { RequestEvent } from '@sveltejs/kit';
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
-import { isPdfFile, isEpubFile, isCbzFile } from '$lib/server/fileUtils';
+import { isPdfFile, isEpubFile, isCbzFile } from '$lib/fileUtils';
 
 import { handleMetadata } from './handlers/metadata';
 import { handleCover } from './handlers/cover';

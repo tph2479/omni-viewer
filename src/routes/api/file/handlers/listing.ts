@@ -4,12 +4,13 @@ import path from "node:path";
 import yauzl from "yauzl-promise";
 import {
   ALLOWED_EXTENSIONS,
+  isImageFile,
   isVideoFile,
   isAudioFile,
   isPdfFile,
   isEpubFile,
   isCbzFile,
-} from "$lib/server/fileUtils";
+} from "$lib/fileUtils";
 
 export async function handleListing(
   folderPath: string,
@@ -23,21 +24,14 @@ export async function handleListing(
   const stat = await fs.stat(folderPath);
   let imageDetails: any[] = [];
 
-  if (
-    stat.isFile() &&
-    (folderPath.toLowerCase().endsWith(".cbz") ||
-      folderPath.toLowerCase().endsWith(".zip"))
-  ) {
+  if (stat.isFile() && isCbzFile(path.extname(folderPath))) {
     const zip = await yauzl.open(folderPath);
     try {
       for await (const entry of zip) {
         const ext = path.extname(entry.filename).toLowerCase();
         if (
           ALLOWED_EXTENSIONS.has(ext) &&
-          ext !== ".cbz" &&
-          ext !== ".zip" &&
-          ext !== ".mp4" &&
-          ext !== ".webm"
+          isImageFile(ext) // Inside CBZ/Zip we only care about images for now (as per original logic it seems, although it excluded mp4/webm explicitly)
         ) {
           imageDetails.push({
             name: entry.filename,

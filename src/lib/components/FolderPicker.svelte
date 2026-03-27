@@ -185,7 +185,9 @@
 
     // ── UI helpers ────────────────────────────────────────────────
     function getEntryMeta(dir: DirectoryEntry, isRoot: boolean) {
-        if (isRoot) return { colorClass: "text-tertiary-500", icon: "drive" };
+        const isDrive = isWindows && /^[A-Za-z]:[\\\/]?$/.test(dir.path);
+        if (isRoot || isDrive)
+            return { colorClass: "text-tertiary-500", icon: "drive" };
         if (dir.isDir)
             return { colorClass: "text-primary-500", icon: "folder" };
         if (dir.isCbz)
@@ -315,7 +317,7 @@
 
         <!-- File List -->
         <div
-            class="flex-1 overflow-y-auto p-2 bg-white dark:bg-surface-800 custom-scroll"
+            class="flex-1 overflow-y-scroll p-2 bg-white dark:bg-surface-800 custom-scroll"
         >
             {#if isPickerLoading}
                 <div
@@ -445,14 +447,14 @@
         width: 4px;
     }
     .custom-scroll::-webkit-scrollbar-track {
-        background: transparent;
+        background: rgba(128, 128, 128, 0.05);
     }
     .custom-scroll::-webkit-scrollbar-thumb {
-        background: rgba(128, 128, 128, 0.2);
+        background: rgba(128, 128, 128, 0.4);
         border-radius: 99px;
     }
     .custom-scroll::-webkit-scrollbar-thumb:hover {
-        background: rgba(128, 128, 128, 0.4);
+        background: rgba(128, 128, 128, 0.6);
     }
     .no-scrollbar {
         -ms-overflow-style: none;

@@ -1,4 +1,4 @@
-import { isImageFile } from "$lib/server/fileUtils";
+import { isImageFile } from "$lib/fileUtils";
 import { json } from "@sveltejs/kit";
 import fs from "node:fs/promises";
 import path from "node:path";

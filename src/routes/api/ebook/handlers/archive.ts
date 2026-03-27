@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit';
 import path from 'node:path';
 import { Readable } from 'node:stream';
-import { getContentType } from '$lib/server/fileUtils';
+import { getContentType } from '$lib/fileUtils';
 import { extractFileFromArchive } from '$lib/server/archiveUtils';
 
 export async function handleArchive(absolutePath: string, internalPath: string) {

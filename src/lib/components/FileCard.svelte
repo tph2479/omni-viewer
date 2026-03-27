@@ -98,6 +98,7 @@
             >
                 <Folder
                     class="w-1/2 h-1/2 text-surface-900 dark:text-surface-300 transition-transform duration-300"
+                    strokeWidth={1.5}
                 />
             </div>
         {:else if isZipFile(img.name)}
@@ -110,10 +111,11 @@
             >
                 <FileArchive
                     class="w-1/2 h-1/2 text-amber-600 transition-transform duration-300"
+                    strokeWidth={1.5}
                 />
             </div>
             <div
-                class="absolute top-2 left-2 z-20 bg-amber-600 text-white text-[9px] font-black tracking-widest px-2 py-0.5 rounded shadow-lg uppercase"
+                class="absolute top-2 left-2 z-10 bg-amber-600 text-white text-[9px] font-black tracking-widest px-2 py-0.5 rounded shadow-lg uppercase"
             >
                 ZIP
             </div>
@@ -127,7 +129,7 @@
                 class="absolute inset-0 w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-700 ease-out"
             />
             <div
-                class="absolute top-2 left-2 z-20 bg-amber-500 text-white text-[9px] font-black tracking-widest px-2 py-0.5 rounded shadow-lg uppercase"
+                class="absolute top-2 left-2 z-10 bg-amber-500 text-white text-[9px] font-black tracking-widest px-2 py-0.5 rounded shadow-lg uppercase"
             >
                 CBZ
             </div>
@@ -138,7 +140,7 @@
                     ? "rgba(59, 130, 246, 0.5)"
                     : undefined}
             >
-                <FileArchive class="w-1/2 h-1/2 text-amber-500 opacity-50" />
+                <FileArchive class="w-1/2 h-1/2 text-amber-500 opacity-50" strokeWidth={1.5} />
             </div>
         {:else if isVideoFile(img.name)}
             <div
@@ -155,11 +157,11 @@
                     class="absolute inset-0 w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-700 ease-out"
                 />
             </div>
-            <div class="absolute top-2 left-2 z-20">
+            <div class="absolute top-2 left-2 z-10">
                 <div
                     class="bg-black/60 p-1.5 rounded-lg border border-white/20 shadow-lg"
                 >
-                    <Play class="w-4 h-4 text-white" />
+                    <Play class="w-4 h-4 text-white" strokeWidth={1.5} />
                 </div>
             </div>
         {:else if img.isAudio}
@@ -171,6 +173,7 @@
             >
                 <FileAudio
                     class="w-1/4 h-1/4 text-primary opacity-20 transition-all duration-500"
+                    strokeWidth={1.5}
                 />
             </div>
             <img
@@ -180,11 +183,11 @@
                 alt={img.name}
                 class="absolute inset-0 w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-700 ease-out z-10"
             />
-            <div class="absolute top-2 left-2 z-20">
+            <div class="absolute top-2 left-2 z-10">
                 <div
                     class="bg-primary/80 p-1.5 rounded-lg border border-white/20 shadow-lg group-hover:bg-primary transition-colors"
                 >
-                    <FileAudio class="w-4 h-4 text-white" />
+                    <FileAudio class="w-4 h-4 text-white" strokeWidth={1.5} />
                 </div>
             </div>
         {:else if isPdfFile(img.name) || img.isPdf}
@@ -196,9 +199,10 @@
             >
                 <FileText
                     class="w-1/3 h-1/3 text-red-600 opacity-20 transition-all duration-500"
+                    strokeWidth={1.5}
                 />
             </div>
-            <div class="absolute top-2 left-2 z-20">
+            <div class="absolute top-2 left-2 z-10">
                 <div
                     class="bg-red-600/90 px-2 py-0.5 rounded shadow-lg group-hover:bg-red-600 transition-colors"
                 >
@@ -217,9 +221,10 @@
             >
                 <FileText
                     class="w-1/3 h-1/3 text-emerald-600 opacity-20 transition-all duration-500"
+                    strokeWidth={1.5}
                 />
             </div>
-            <div class="absolute top-2 left-2 z-20">
+            <div class="absolute top-2 left-2 z-10">
                 <div
                     class="bg-emerald-600/90 px-2 py-0.5 rounded shadow-lg group-hover:bg-emerald-600 transition-colors"
                 >

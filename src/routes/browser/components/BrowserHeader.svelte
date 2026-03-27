@@ -3,19 +3,6 @@
     import { browserStore as s } from "$lib/stores/browser.svelte";
     import { Pin } from "lucide-svelte";
 
-    $effect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            if (s.isPinned) return;
-            s.showHeader = e.clientY < window.innerHeight * 0.1;
-        };
-        window.addEventListener("mousemove", handleMouseMove);
-        return () => window.removeEventListener("mousemove", handleMouseMove);
-    });
-
-    $effect(() => {
-        if (s.isPinned) s.showHeader = true;
-    });
-
     function setSort(
         v:
             | "date_desc"
@@ -25,30 +12,30 @@
             | "size_asc"
             | "size_desc",
     ) {
-        s.currentSort = v;
+        s.pagination.setSort(v);
     }
 
     function setFilter(v: "all" | "images" | "videos" | "audio" | "ebook") {
-        s.mediaType = v;
+        s.pagination.setType(v);
     }
 
     const actions = $derived({
         onLoad: () => {
-            const savedPage = s.folderPageHistory[s.folderPath] || 0;
-            s.loadFolder(true, savedPage);
+            const savedPage = s.folder.pageHistory[s.folder.path] || 0;
+            s.ui.loadFolder(true, savedPage);
         },
-        onOpenPicker: () => (s.isFolderPickerOpen = true),
-        onOpenWebtoon: s.handleOpenWebtoon,
+        onOpenPicker: () => (s.modal.picker.open = true),
+        onOpenWebtoon: s.ui.handleOpenWebtoon,
         onGoUp: async (path: string) => {
-            if (s.savedCoverState && s.savedCoverState.path === path) {
-                s.isCoverMode = true;
-                s.coverFolders = s.savedCoverState.folders;
-                s.coverFoldersTotal = s.savedCoverState.total;
-                s.coverFoldersPage = s.savedCoverState.page;
-                s.coverFoldersHasMore = s.savedCoverState.hasMore;
-                const restoredScrollPos = s.savedCoverState.scrollPos;
-                s.savedCoverState = null;
-                s.folderPath = path;
+            if (s.cover.savedState && s.cover.savedState.path === path) {
+                s.cover.enabled = true;
+                s.cover.folders = s.cover.savedState.folders;
+                s.cover.total = s.cover.savedState.total;
+                s.cover.page = s.cover.savedState.page;
+                s.cover.hasMore = s.cover.savedState.hasMore;
+                const restoredScrollPos = s.cover.savedState.scrollPos;
+                s.cover.savedState = null;
+                s.folder.path = path;
 
                 setTimeout(() => {
                     const scrollContainer =
@@ -61,44 +48,34 @@
                 }, 0);
                 return;
             }
-            s.openDir(path, true);
+            s.folder.open(path, true);
         },
     });
 </script>
 
 <header
-    class="sticky top-0 z-100 bg-surface-100 dark:bg-surface-900 px-0 py-0 shadow-md h-16 transition-transform duration-300 {s.showHeader
-        ? 'translate-y-0'
-        : '-translate-y-full'}"
+    class="sticky top-0 z-100 bg-surface-100 dark:bg-surface-900 px-0 py-0 shadow-md h-14 w-full"
 >
-    <div class="flex flex-row items-stretch min-h-full overflow-visible">
+    <div class="flex flex-row items-center min-h-full overflow-visible">
         <GalleryToolbar
             folder={{
-                path: s.folderPath,
-                isFolderSelected: s.isFolderSelected,
-                isGrouped: s.isGrouped,
-                items: s.loadedImages,
-                onPathChange: (v) => (s.folderPath = v),
+                path: s.folder.path,
+                isFolderSelected: s.folder.isSelected,
+                isGrouped: s.content.isGrouped,
+                items: s.content.items,
+                onPathChange: (v) => (s.folder.path = v),
             }}
             stats={{
-                items: s.isCoverMode ? s.coverFoldersTotal : s.totalMedia,
-                images: s.isCoverMode ? 0 : s.totalImagesCount,
-                videos: s.isCoverMode ? 0 : s.totalVideosCount,
-                audio: s.isCoverMode ? 0 : s.totalAudioCount,
-                ebook: s.isCoverMode ? 0 : s.totalEbookCount,
+                items: s.cover.enabled ? s.cover.total : s.content.totals.media,
+                images: s.cover.enabled ? 0 : s.content.totals.images,
+                videos: s.cover.enabled ? 0 : s.content.totals.videos,
+                audio: s.cover.enabled ? 0 : s.content.totals.audio,
+                ebook: s.cover.enabled ? 0 : s.content.totals.ebook,
             }}
-            sort={{ current: s.currentSort, onChange: setSort }}
-            filter={{ type: s.mediaType, onChange: setFilter }}
+            sort={{ current: s.pagination.sort, onChange: setSort }}
+            filter={{ type: s.pagination.type, onChange: setFilter }}
             {actions}
-            isLoading={s.isLoading}
+            isLoading={s.ui.loading}
         />
-        <button
-            onclick={() => (s.isPinned = !s.isPinned)}
-            class="btn-icon btn-sm shrink-0 self-center mx-1"
-            title={s.isPinned ? "Unpin Header" : "Pin Header (Always Show)"}
-            onmousedown={(e) => e.preventDefault()}
-        >
-            <Pin size={20} />
-        </button>
     </div>
 </header>

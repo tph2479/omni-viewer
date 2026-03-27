@@ -2,11 +2,12 @@ import { json } from '@sveltejs/kit';
 import type { Stats } from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
+import { isImageFile } from '$lib/fileUtils';
 import { ensureHeicConverted } from '$lib/server/archiveUtils';
 
 export async function handleMetadata(absolutePath: string, normalizedPath: string, stat: Stats, ext: string, isHeic: boolean, signal: AbortSignal, isRetry: boolean) {
     let width = 0, height = 0;
-    if (['jpg', 'jpeg', 'png', 'webp', 'avif'].includes(ext) || isHeic) {
+    if (isImageFile(ext) || isHeic) {
         try {
             let metaPath = absolutePath;
             if (isHeic) metaPath = await ensureHeicConverted(absolutePath, stat.mtimeMs, signal, isRetry);

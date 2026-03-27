@@ -8,8 +8,7 @@ import {
   ensureHeicConverted,
 } from "$lib/server/archiveUtils";
 import { globalTaskSemaphore } from "$lib/server/semaphore";
-import { isVideoFile } from "$lib/utils/utils";
-import { isAudioFile } from "$lib/server/fileUtils";
+import { isVideoFile, isAudioFile, isImageFile } from "$lib/fileUtils";
 
 const ongoingGenerations = new Map<string, Promise<boolean>>();
 
@@ -142,7 +141,7 @@ export async function generateThumbnail(
         if (inputPath.includes("::")) {
           sharpInput = await ensureHeicConverted(inputPath, mtimeMs, signal);
         } else {
-          if (!isHeif && [".jpg", ".jpeg", ".png", ".webp"].includes(ext)) {
+          if (!isHeif && isImageFile(inputPath)) {
             try {
               const header = Buffer.alloc(12);
               const fd = fs.openSync(inputPath, "r");

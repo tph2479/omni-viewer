@@ -8,82 +8,81 @@
     import { browserStore as s } from '$lib/stores/browser.svelte';
 </script>
 
-{#if s.isWebtoonMode}
+{#if s.modal.webtoon.open}
 	<WebtoonReader
-		bind:isWebtoonMode={s.isWebtoonMode}
-		folderPath={s.webtoonActivePath}
-		onCloseCallback={() => { s.webtoonCbzPath = ""; }}
+		bind:isWebtoonMode={s.modal.webtoon.open}
+		folderPath={s.modal.webtoonActivePath}
+		onCloseCallback={() => { s.modal.webtoon.cbzPath = ""; }}
 	/>
 {/if}
 
-{#if s.isImageModalOpen && s.loadedImages.length > s.selectedImageIndex}
+{#if s.modal.image.open && s.content.items.length > s.modal.image.index}
 	<ImageModal
-		bind:isModalOpen={s.isImageModalOpen}
-		bind:selectedImageIndex={s.selectedImageIndex}
-		loadedImages={s.loadedImages}
-		totalImages={s.totalImagesCount}
-		hasMore={s.hasMore}
-		currentPage={s.currentPage}
-		loadFolder={s.loadFolder}
-		isGrouped={s.isGrouped}
-		onSwitchToPagination={s.handleSwitchToPaginationToContinue}
+		bind:isModalOpen={s.modal.image.open}
+		bind:selectedImageIndex={s.modal.image.index}
+		loadedImages={s.content.items}
+		totalImages={s.content.totals.images}
+		hasMore={s.pagination.hasMore}
+		currentPage={s.pagination.page}
+		loadFolder={s.ui.loadFolder}
+		isGrouped={s.content.isGrouped}
+		onSwitchToPagination={s.ui.continueToPagination}
 	/>
 {/if}
 
-{#if s.isPdfReaderOpen}
+{#if s.modal.pdf.open}
 	<PdfReader
-		bind:isPdfMode={s.isPdfReaderOpen}
-		pdfPath={s.selectedPdfPath}
-		onCloseCallback={() => s.selectedPdfPath = ''}
+		bind:isPdfMode={s.modal.pdf.open}
+		pdfPath={s.modal.pdf.path}
+		onCloseCallback={() => s.modal.pdf.path = ''}
 	/>
 {/if}
 
-{#if s.isVideoModalOpen && s.loadedImages.length > s.selectedImageIndex}
+{#if s.modal.video.open && s.content.items.length > s.modal.image.index}
 	<VideoModal
-		bind:isModalOpen={s.isVideoModalOpen}
-		bind:selectedImageIndex={s.selectedImageIndex}
-		loadedImages={s.loadedImages}
-		totalImages={s.totalVideosCount}
-		hasMore={s.hasMore}
-		currentPage={s.currentPage}
-		loadFolder={s.loadFolder}
-		isGrouped={s.isGrouped}
-		onSwitchToPagination={s.handleSwitchToPaginationToContinue}
-		onSwitchToAudio={() => { s.isVideoModalOpen = false; s.isAudioModalOpen = true; }}
+		bind:isModalOpen={s.modal.video.open}
+		bind:selectedImageIndex={s.modal.image.index}
+		loadedImages={s.content.items}
+		totalImages={s.content.totals.videos}
+		hasMore={s.pagination.hasMore}
+		currentPage={s.pagination.page}
+		loadFolder={s.ui.loadFolder}
+		isGrouped={s.content.isGrouped}
+		onSwitchToPagination={s.ui.continueToPagination}
+		onSwitchToAudio={() => { s.modal.video.open = false; s.modal.audio.open = true; }}
 	/>
 {/if}
 
-{#if s.isAudioModalOpen && s.loadedImages.length > s.selectedImageIndex}
+{#if s.modal.audio.open && s.content.items.length > s.modal.image.index}
 	<AudioModal
-		bind:isModalOpen={s.isAudioModalOpen}
-		bind:selectedImageIndex={s.selectedImageIndex}
-		loadedImages={s.loadedImages}
-		totalImages={s.totalAudioCount}
-		hasMore={s.hasMore}
-		currentPage={s.currentPage}
-		loadFolder={s.loadFolder}
-		isGrouped={s.isGrouped}
-		onSwitchToPagination={s.handleSwitchToPaginationToContinue}
-		onSwitchToVideo={() => { s.isAudioModalOpen = false; s.isVideoModalOpen = true; }}
+		bind:isModalOpen={s.modal.audio.open}
+		bind:selectedImageIndex={s.modal.image.index}
+		loadedImages={s.content.items}
+		totalImages={s.content.totals.audio}
+		hasMore={s.pagination.hasMore}
+		currentPage={s.pagination.page}
+		loadFolder={s.ui.loadFolder}
+		isGrouped={s.content.isGrouped}
+		onSwitchToPagination={s.ui.continueToPagination}
+		onSwitchToVideo={() => { s.modal.audio.open = false; s.modal.video.open = true; }}
 	/>
 {/if}
 
-{#if s.isFolderPickerOpen}
+{#if s.modal.picker.open}
 	<FolderPicker
-		bind:isFolderPickerOpen={s.isFolderPickerOpen}
-		bind:folderPath={s.folderPath}
-		availableDrives={s.availableDrives}
-		isDrivesLoading={s.isDrivesLoading}
-		onRefreshDrives={s.refreshDrives}
+		bind:isFolderPickerOpen={s.modal.picker.open}
+		bind:folderPath={s.folder.path}
+		availableDrives={s.ui.drives}
+		isDrivesLoading={s.ui.drivesLoading}
+		onRefreshDrives={s.ui.refreshDrives}
 		onSelect={() => {
-			const savedPage = s.folderPageHistory[s.folderPath] || 0;
-			s.mediaType = 'all';
-			s.isCoverMode = false;
-			s.coverFolders = [];
-			s.loadFolder(true, savedPage);
+			const savedPage = s.folder.pageHistory[s.folder.path] || 0;
+			s.pagination.type = 'all';
+			s.cover.enabled = false;
+			s.ui.loadFolder(true, savedPage);
 		}}
 		onOpenFile={(path, type) => {
-			s.pendingFile = { path, type };
+			s.ui.pendingFile = { path, type };
 		}}
 	/>
 {/if}

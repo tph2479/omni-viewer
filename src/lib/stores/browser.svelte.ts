@@ -74,8 +74,6 @@ interface UIState {
   isLoading: boolean;
   isDrivesLoading: boolean;
   error: string;
-  isPinned: boolean;
-  showHeader: boolean;
   exclusiveType: string | null;
   groupScrollPosition: number;
   lastOpenedFolder: string | null;
@@ -132,8 +130,6 @@ export function createBrowserStore() {
     isLoading: false,
     isDrivesLoading: false,
     error: "",
-    isPinned: true,
-    showHeader: true,
     exclusiveType: null,
     groupScrollPosition: 0,
     lastOpenedFolder: null,
@@ -172,6 +168,7 @@ export function createBrowserStore() {
 
   async function loadFolder(reset = true, pageToLoad = 0, append = false) {
     if (!folder.path.trim()) {
+      if (ui.availableDrives.length === 0) refreshDrives();
       modal.folderPicker.open = true;
       return;
     }
@@ -492,304 +489,92 @@ export function createBrowserStore() {
   }
 
   return {
-    get folderPath() {
-      return folder.path;
+    folder: {
+      get path() { return folder.path; },
+      set path(v) { folder.path = v; },
+      get isSelected() { return folder.isSelected; },
+      get lastLoadedPath() { return folder.lastLoadedPath; },
+      get pageHistory() { return folder.pageHistory; },
+      set pageHistory(v) { folder.pageHistory = v; },
+      normalize: normalizePath,
+      open: openDir,
+    },
+    content: {
+      get items() { return content.items; },
+      set items(v) { content.items = v; },
+      get groupedData() { return content.groupedData; },
+      get isGrouped() { return content.isGrouped; },
+      get totals() { return content.totals; },
+    },
+    pagination: {
+      get page() { return pagination.currentPage; },
+      set page(v) { pagination.currentPage = v; },
+      get hasMore() { return pagination.hasMore; },
+      get size() { return pagination.pageSize; },
+      get sort() { return pagination.sort; },
+      set sort(v) { pagination.sort = v; },
+      get type() { return pagination.mediaType; },
+      set type(v) { pagination.mediaType = v; },
+      loadNext: loadNextPage,
+      setSort,
+      setType: setMediaType,
+    },
+    cover: {
+      get enabled() { return coverMode.enabled; },
+      set enabled(v) { coverMode.enabled = v; },
+      get folders() { return coverMode.folders; },
+      set folders(v) { coverMode.folders = v; },
+      get total() { return coverMode.total; },
+      set total(v) { coverMode.total = v; },
+      get page() { return coverMode.page; },
+      set page(v) { coverMode.page = v; },
+      get hasMore() { return coverMode.hasMore; },
+      set hasMore(v) { coverMode.hasMore = v; },
+      get savedState() { return coverMode.savedState; },
+      set savedState(v) { coverMode.savedState = v; },
+      get scrollPos() { return coverMode.scrollPosition; },
+      handleClick: handleCoverFolderClick,
+      exit: exitCoverMode,
+      loadPage: loadCoverPage,
+      saveState: saveCoverState,
+    },
+    modal: {
+      get image() { return modal.image; },
+      get video() { return modal.video; },
+      get audio() { return modal.audio; },
+      get pdf() { return modal.pdf; },
+      get webtoon() { return modal.webtoon; },
+      get webtoonActivePath() { return modal.webtoon.cbzPath || folder.path; },
+      get picker() { return modal.folderPicker; },
+      open: openModal,
+      closeAll: closeAllModals,
+      openPdf: openPdfReader,
+      openCbz: openCbzInWebtoon,
+    },
+    ui: {
+      get loading() { return ui.isLoading; },
+      get drivesLoading() { return ui.isDrivesLoading; },
+      get error() { return ui.error; },
+      set error(v) { ui.error = v; },
+      get exclusiveType() { return ui.exclusiveType; },
+      get groupScrollPos() { return ui.groupScrollPosition; },
+      get lastFolder() { return ui.lastOpenedFolder; },
+      get lastFile() { return ui.lastOpenedFile; },
+      set lastFile(v) { ui.lastOpenedFile = v; },
+      get highlightedPath() { return ui.highlightedPath; },
+      set highlightedPath(v) { ui.highlightedPath = v; },
+      get pendingFile() { return ui.pendingFile; },
+      set pendingFile(v) { ui.pendingFile = v; },
+      get popup() { return ui.noImagesPopup; },
+      get drives() { return ui.availableDrives; },
+      refreshDrives,
+      showPopup: showNoImagesPopup,
+      loadFolder,
+      handleOpenWebtoon,
+      continueToPagination: handleSwitchToPaginationToContinue,
+      exitGroupView: handleExitGroupView,
+      openGroup: handleOpenGroup,
     },
-    set folderPath(v) {
-      folder.path = v;
-    },
-    get isFolderSelected() {
-      return folder.isSelected;
-    },
-    set isFolderSelected(v) {
-      folder.isSelected = v;
-    },
-    get lastLoadedPath() {
-      return folder.lastLoadedPath;
-    },
-    get pageHistory() {
-      return folder.pageHistory;
-    },
-    get folderPageHistory() {
-      return folder.pageHistory;
-    },
-
-    set folderPageHistory(v) {
-      folder.pageHistory = v;
-    },
-
-    get loadedImages() {
-      return content.items;
-    },
-    set loadedImages(v) {
-      content.items = v;
-    },
-    get groupedData() {
-      return content.groupedData;
-    },
-    set groupedData(v) {
-      content.groupedData = v;
-    },
-    get isGrouped() {
-      return content.isGrouped;
-    },
-    set isGrouped(v) {
-      content.isGrouped = v;
-    },
-    get totalMedia() {
-      return content.totals.media;
-    },
-    get totalImagesCount() {
-      return content.totals.images;
-    },
-    get totalVideosCount() {
-      return content.totals.videos;
-    },
-    get totalAudioCount() {
-      return content.totals.audio;
-    },
-    get totalEbookCount() {
-      return content.totals.ebook;
-    },
-
-    get currentPage() {
-      return pagination.currentPage;
-    },
-    set currentPage(v) {
-      pagination.currentPage = v;
-    },
-    get hasMore() {
-      return pagination.hasMore;
-    },
-    set hasMore(v) {
-      pagination.hasMore = v;
-    },
-    get PAGE_SIZE() {
-      return pagination.pageSize;
-    },
-    get COVER_PAGE_SIZE() {
-      return COVER_PAGE_SIZE;
-    },
-    get currentSort() {
-      return pagination.sort;
-    },
-    set currentSort(v) {
-      pagination.sort = v;
-    },
-    get mediaType() {
-      return pagination.mediaType;
-    },
-    set mediaType(v) {
-      pagination.mediaType = v;
-    },
-
-    get coverFolders() {
-      return coverMode.folders;
-    },
-    set coverFolders(v) {
-      coverMode.folders = v;
-    },
-    get coverFoldersTotal() {
-      return coverMode.total;
-    },
-    set coverFoldersTotal(v) {
-      coverMode.total = v;
-    },
-    get coverFoldersPage() {
-      return coverMode.page;
-    },
-    set coverFoldersPage(v) {
-      coverMode.page = v;
-    },
-    get coverFoldersHasMore() {
-      return coverMode.hasMore;
-    },
-    set coverFoldersHasMore(v) {
-      coverMode.hasMore = v;
-    },
-    get isCoverMode() {
-      return coverMode.enabled;
-    },
-    set isCoverMode(v) {
-      coverMode.enabled = v;
-    },
-    get savedCoverState() {
-      return coverMode.savedState;
-    },
-    set savedCoverState(v) {
-      coverMode.savedState = v;
-    },
-    get coverScrollPosition() {
-      return coverMode.scrollPosition;
-    },
-    set coverScrollPosition(v) {
-      coverMode.scrollPosition = v;
-    },
-
-    get isImageModalOpen() {
-      return modal.image.open;
-    },
-    set isImageModalOpen(v) {
-      modal.image.open = v;
-    },
-    get selectedImageIndex() {
-      return modal.image.index;
-    },
-    set selectedImageIndex(v) {
-      modal.image.index = v;
-    },
-    get isVideoModalOpen() {
-      return modal.video.open;
-    },
-    set isVideoModalOpen(v) {
-      modal.video.open = v;
-    },
-    get isAudioModalOpen() {
-      return modal.audio.open;
-    },
-    set isAudioModalOpen(v) {
-      modal.audio.open = v;
-    },
-    get isPdfReaderOpen() {
-      return modal.pdf.open;
-    },
-    set isPdfReaderOpen(v) {
-      modal.pdf.open = v;
-    },
-    get selectedPdfPath() {
-      return modal.pdf.path;
-    },
-    set selectedPdfPath(v) {
-      modal.pdf.path = v;
-    },
-    get isWebtoonMode() {
-      return modal.webtoon.open;
-    },
-    set isWebtoonMode(v) {
-      modal.webtoon.open = v;
-    },
-    get webtoonCbzPath() {
-      return modal.webtoon.cbzPath;
-    },
-    set webtoonCbzPath(v) {
-      modal.webtoon.cbzPath = v;
-    },
-    get webtoonActivePath() {
-      return modal.webtoon.cbzPath || folder.path;
-    },
-
-    get isFolderPickerOpen() {
-      return modal.folderPicker.open;
-    },
-    set isFolderPickerOpen(v) {
-      modal.folderPicker.open = v;
-    },
-
-    get isLoading() {
-      return ui.isLoading;
-    },
-    set isLoading(v) {
-      ui.isLoading = v;
-    },
-    get isDrivesLoading() {
-      return ui.isDrivesLoading;
-    },
-    set isDrivesLoading(v) {
-      ui.isDrivesLoading = v;
-    },
-    get errorMsg() {
-      return ui.error;
-    },
-    set errorMsg(v) {
-      ui.error = v;
-    },
-    get isPinned() {
-      return ui.isPinned;
-    },
-    set isPinned(v) {
-      ui.isPinned = v;
-    },
-    get showHeader() {
-      return ui.showHeader;
-    },
-    set showHeader(v) {
-      ui.showHeader = v;
-    },
-    get currentExclusiveType() {
-      return ui.exclusiveType;
-    },
-    set currentExclusiveType(v) {
-      ui.exclusiveType = v;
-    },
-    get groupScrollPosition() {
-      return ui.groupScrollPosition;
-    },
-    set groupScrollPosition(v) {
-      ui.groupScrollPosition = v;
-    },
-    get lastOpenedFolder() {
-      return ui.lastOpenedFolder;
-    },
-    set lastOpenedFolder(v) {
-      ui.lastOpenedFolder = v;
-    },
-    get lastOpenedFile() {
-      return ui.lastOpenedFile;
-    },
-    set lastOpenedFile(v) {
-      ui.lastOpenedFile = v;
-    },
-    get highlightedPath() {
-      return ui.highlightedPath;
-    },
-    set highlightedPath(v) {
-      ui.highlightedPath = v;
-    },
-    get pendingFile() {
-      return ui.pendingFile;
-    },
-    set pendingFile(v) {
-      ui.pendingFile = v;
-    },
-    get isNoImagesPopupOpen() {
-      return ui.noImagesPopup.open;
-    },
-    set isNoImagesPopupOpen(v) {
-      ui.noImagesPopup.open = v;
-    },
-    get noImagesPopupTimer() {
-      return ui.noImagesPopup.timer;
-    },
-    set noImagesPopupTimer(v) {
-      ui.noImagesPopup.timer = v;
-    },
-    get availableDrives() {
-      return ui.availableDrives;
-    },
-    set availableDrives(v) {
-      ui.availableDrives = v;
-    },
-
-    normalizePath,
-    refreshDrives,
-    loadFolder,
-    openModal,
-    openPdfReader,
-    closeAllModals,
-    openDir,
-    openCbzInWebtoon,
-    showPopup: showNoImagesPopup,
-    handleOpenWebtoon,
-    handleSwitchToPaginationToContinue,
-    handleExitGroupView,
-    handleOpenGroup,
-    setSort,
-    setMediaType,
-    saveCoverState,
-    handleCoverFolderClick,
-    exitCoverMode,
-    loadCoverPage,
-    loadNextPage,
     reset() {
       content.items = [];
       content.totals = { images: 0, videos: 0, audio: 0, ebook: 0, media: 0 };
