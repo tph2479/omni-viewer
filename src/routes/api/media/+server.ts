@@ -134,9 +134,14 @@ export async function GET({ url, request }: RequestEvent) {
 }
 
 export async function DELETE() {
-  if (fs.existsSync(THUMB_CACHE_DIR)) {
-    await fsp.rm(THUMB_CACHE_DIR, { recursive: true, force: true });
-    await fsp.mkdir(THUMB_CACHE_DIR, { recursive: true });
+  try {
+    if (fs.existsSync(THUMB_CACHE_DIR)) {
+      await fsp.rm(THUMB_CACHE_DIR, { recursive: true, force: true });
+      await fsp.mkdir(THUMB_CACHE_DIR, { recursive: true });
+    }
+    return json({ success: true });
+  } catch (err: any) {
+    console.error(`[DELETE ERROR]`, err);
+    throw error(500, `Failed to clear cache: ${err?.message || "Unknown error"}`);
   }
-  return json({ success: true });
 }

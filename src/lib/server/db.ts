@@ -1,6 +1,6 @@
 import { JsonDB, Config } from 'node-json-db';
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 
 // Đảm bảo thư mục thiết lập database có tồn tại
 const dbDir = path.resolve('db');
