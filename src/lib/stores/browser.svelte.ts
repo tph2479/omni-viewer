@@ -1,5 +1,6 @@
 import { tick } from "svelte";
 import type { ImageFile } from "$lib/utils/utils";
+import { toaster } from "$lib/stores/toaster";
 
 const PAGE_SIZE = 42;
 const COVER_PAGE_SIZE = 42;
@@ -151,7 +152,8 @@ export function createBrowserStore() {
     return res;
   }
 
-  async function refreshDrives() {
+  async function refreshDrives(force = false) {
+    if (!force && ui.availableDrives.length > 0) return;
     ui.isDrivesLoading = true;
     try {
       const res = await fetch("/api/file?action=directories&path=");
@@ -333,12 +335,11 @@ export function createBrowserStore() {
   }
 
   function showNoImagesPopup() {
-    ui.noImagesPopup.open = true;
-    if (ui.noImagesPopup.timer) clearTimeout(ui.noImagesPopup.timer);
-    ui.noImagesPopup.timer = setTimeout(() => {
-      ui.noImagesPopup.open = false;
-      ui.noImagesPopup.timer = null;
-    }, 3000);
+    toaster.create({
+      type: "warning",
+      title: "No Media Found",
+      description: "Directory has no compatible files.",
+    });
   }
 
   async function handleOpenWebtoon() {
@@ -565,7 +566,6 @@ export function createBrowserStore() {
       set highlightedPath(v) { ui.highlightedPath = v; },
       get pendingFile() { return ui.pendingFile; },
       set pendingFile(v) { ui.pendingFile = v; },
-      get popup() { return ui.noImagesPopup; },
       get drives() { return ui.availableDrives; },
       refreshDrives,
       showPopup: showNoImagesPopup,

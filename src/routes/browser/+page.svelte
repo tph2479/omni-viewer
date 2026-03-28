@@ -2,14 +2,19 @@
     import { onMount, onDestroy } from "svelte";
     import BrowserHeader from "./components/BrowserHeader.svelte";
     import BrowserContent from "./components/BrowserContent.svelte";
-    import BrowserNotifications from "./components/BrowserNotifications.svelte";
 
     import { browserStore as s } from "$lib/stores/browser.svelte";
+
+    const { data } = $props();
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
     onMount(async () => {
         const saved = localStorage.getItem("last-path");
-        if (saved) s.folder.path = saved;
+        if (saved) {
+            s.folder.path = saved;
+        } else if (data.defaultPath) {
+            s.folder.path = data.defaultPath;
+        }
 
         const savedHistory = sessionStorage.getItem("folder-history");
         if (savedHistory) {
@@ -52,5 +57,3 @@
     <BrowserHeader />
     <BrowserContent />
 </div>
-
-    <BrowserNotifications />

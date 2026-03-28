@@ -12,6 +12,7 @@
     } from "lucide-svelte";
     import { Navigation, Portal, Tooltip } from "@skeletonlabs/skeleton-svelte";
     import GalleryModals from "$lib/components/GalleryModals.svelte";
+    import BrowserNotifications from "$lib/components/BrowserNotifications.svelte";
     import type { Snippet } from "svelte";
     import { fade, scale } from "svelte/transition";
 
@@ -223,3 +224,4 @@
 </div>
 
 <GalleryModals />
+<BrowserNotifications />

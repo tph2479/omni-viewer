@@ -75,6 +75,9 @@
     let pickerCurrentPath = $state("This PC");
     let pickerParentPath = $state<string | null>(null);
     let subdirectoryEntries: DirectoryEntry[] = $state([]);
+    const isAtRoot = $derived(
+        pickerCurrentPath === ROOT_LABEL || pickerCurrentPath === "",
+    );
     const pickerDirectories = $derived(
         isAtRoot ? availableDrives : subdirectoryEntries,
     );
@@ -144,6 +147,10 @@
                     target = "/" + target;
                 }
 
+                if (availableDrives.length === 0 && !isDrivesLoading) {
+                    onRefreshDrives?.();
+                }
+
                 loadPickerData(target).catch(() => loadPickerData(""));
                 setTimeout(() => dialogEl?.focus(), 50);
             });
@@ -205,9 +212,7 @@
         return { colorClass: "opacity-30", icon: "file" };
     }
 
-    const isAtRoot = $derived(
-        pickerCurrentPath === ROOT_LABEL || pickerCurrentPath === "",
-    );
+
     const canConfirm = $derived(!isAtRoot && !isPickerLoading && !pickerError);
 
     /** Drive/root label shown in the quick-nav chips.

@@ -225,7 +225,7 @@
         </div>
     {/if}
 {:else if isGrouped && groupedData}
-    <div class="flex flex-col gap-8 p-10">
+    <div class="flex flex-col gap-8 p-4">
     {#each ["folders", "images", "cbz", "pdf", "epub", "audio", "videos"] as groupKey}
             {#if groupedData[groupKey] && groupedData[groupKey].items.length > 0}
                 {@const groupInfo = groupedData[groupKey]}
