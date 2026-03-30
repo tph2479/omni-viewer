@@ -232,6 +232,13 @@
                     strokeWidth={1.5}
                 />
             </div>
+            <img
+                use:lazyThumbnail={`/api/ebook?path=${encodeURIComponent(img.path)}&thumbnail=true&v=${cacheVersion.value}`}
+                decoding="async"
+                fetchpriority="auto"
+                alt={img.name}
+                class="absolute inset-0 w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-700 ease-out z-10"
+            />
             <div class="absolute top-2 left-2 z-10">
                 <div
                     class="bg-emerald-600/90 px-2 py-0.5 rounded shadow-lg group-hover:bg-emerald-600 transition-colors"

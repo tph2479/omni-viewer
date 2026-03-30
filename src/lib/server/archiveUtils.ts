@@ -94,6 +94,8 @@ export async function getArchiveCover(
     try {
       zip = await yauzl.open(archivePath);
       let firstEntry: any = null;
+      let coverEntry: any = null;
+      const isEpub = archivePath.toLowerCase().endsWith('.epub');
 
       for await (const entry of zip) {
         if (signal?.aborted) {
@@ -101,13 +103,26 @@ export async function getArchiveCover(
           return null;
         }
         if (entry.filename.endsWith("/")) continue;
-        if (isImageFile(path.extname(entry.filename).toLowerCase())) {
-          firstEntry = entry;
-          break;
+        
+        const ext = path.extname(entry.filename).toLowerCase();
+        if (isImageFile(ext)) {
+          if (!firstEntry) firstEntry = entry;
+          
+          if (isEpub) {
+            if (entry.filename.toLowerCase().includes('cover')) {
+              coverEntry = entry;
+              break;
+            }
+          } else {
+            // For non-epub (like cbz), the first image is the cover
+            break;
+          }
         }
       }
 
-      if (!firstEntry) {
+      const targetEntry = isEpub ? (coverEntry || firstEntry) : firstEntry;
+
+      if (!targetEntry) {
         await zip.close();
         return null;
       }
@@ -117,7 +132,7 @@ export async function getArchiveCover(
         return null;
       }
 
-      const stream = await firstEntry.openReadStream();
+      const stream = await targetEntry.openReadStream();
       const chunks: Buffer[] = [];
       for await (const chunk of stream) {
         if (signal?.aborted) {
