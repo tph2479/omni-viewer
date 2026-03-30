@@ -10,6 +10,9 @@ export default defineConfig({
 		}
 	},
 	optimizeDeps: {
-		exclude: ['pdfjs-dist']
-	}
+		exclude: ['pdfjs-dist'],
+	},
+	// foliate-js ships native ES modules with relative dynamic imports.
+	// Excluding them prevents Vite from rewriting the paths during pre-bundling.
+	assetsInclude: ['**/*.epub'],
 });

@@ -67,6 +67,7 @@ interface ModalState {
   video: { open: boolean };
   audio: { open: boolean };
   pdf: { open: boolean; path: string };
+  epub: { open: boolean; path: string };
   webtoon: { open: boolean; cbzPath: string };
   folderPicker: { open: boolean };
 }
@@ -123,6 +124,7 @@ export function createBrowserStore() {
     video: { open: false },
     audio: { open: false },
     pdf: { open: false, path: "" },
+    epub: { open: false, path: "" },
     webtoon: { open: false, cbzPath: "" },
     folderPicker: { open: false },
   });
@@ -297,7 +299,10 @@ export function createBrowserStore() {
     } else if (img.isAudio) {
       modal.audio.open = true;
     } else if (img.isPdf) openPdfReader(img.path);
-    else if (img.isEpub) console.log("EPUB clicked:", img.path);
+    else if (img.isEpub) {
+      modal.epub.path = img.path;
+      modal.epub.open = true;
+    }
     else modal.image.open = true;
   }
 
@@ -311,6 +316,7 @@ export function createBrowserStore() {
     modal.video.open = false;
     modal.audio.open = false;
     modal.pdf.open = false;
+    modal.epub.open = false;
     modal.webtoon.open = false;
   }
 
@@ -544,6 +550,7 @@ export function createBrowserStore() {
       get video() { return modal.video; },
       get audio() { return modal.audio; },
       get pdf() { return modal.pdf; },
+      get epub() { return modal.epub; },
       get webtoon() { return modal.webtoon; },
       get webtoonActivePath() { return modal.webtoon.cbzPath || folder.path; },
       get picker() { return modal.folderPicker; },
