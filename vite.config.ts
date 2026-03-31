@@ -2,7 +2,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
-export default defineConfig({ 
+export default defineConfig({
 	plugins: [tailwindcss(), sveltekit()],
 	server: {
 		watch: {
@@ -10,6 +10,7 @@ export default defineConfig({
 		}
 	},
 	optimizeDeps: {
+		include: ['@skeletonlabs/skeleton-svelte', 'lucide-svelte'],
 		exclude: ['pdfjs-dist'],
 	},
 	// foliate-js ships native ES modules with relative dynamic imports.

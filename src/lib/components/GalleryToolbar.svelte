@@ -169,7 +169,7 @@
 </script>
 
 <div
-    class="relative flex items-center w-full max-w-4xl mx-auto h-14 gap-2"
+    class="relative flex items-center w-full sm:w-3/5 mx-auto h-14 gap-2"
 >
     <!-- Left buttons -->
     <div
@@ -203,7 +203,7 @@
 
     <!-- Input -->
     <div
-        class="flex items-center flex-1 min-w-0 h-10 max-w-150
+        class="flex items-center flex-1 min-w-0 h-10
                bg-surface-100 dark:bg-surface-800
                border border-surface-200 dark:border-surface-800 shadow-lg rounded-full"
     >
@@ -261,7 +261,7 @@
             type="button"
             class="flex items-center justify-center w-10 h-10 shrink-0
                    rounded-full hover:preset-tonal-surface transition-colors
-                   disabled:opacity-30 hidden sm:flex"
+                   disabled:opacity-30"
             onclick={() => {
                 if (!document.fullscreenElement) {
                     document.documentElement.requestFullscreen().catch((err) => {
