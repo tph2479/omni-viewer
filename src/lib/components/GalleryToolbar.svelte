@@ -11,6 +11,7 @@
         BookOpen,
         LayoutGrid,
         ChevronsRight,
+        Maximize,
     } from "lucide-svelte";
 
     type FolderState = {
@@ -106,7 +107,16 @@
         if (e.key === "Escape") (e.target as HTMLElement)?.blur();
     }
 
-    const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
+    let innerWidth = $state(1024);
+    const isMobile = $derived(innerWidth < 640);
+    
+    import { onMount } from "svelte";
+    onMount(() => {
+        innerWidth = window.innerWidth;
+        const handleResize = () => (innerWidth = window.innerWidth);
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    });
 
     let menuOpen = $state(false);
     let menuRef = $state<HTMLElement | null>(null);
@@ -208,7 +218,7 @@
             oninput={(e) =>
                 folder.onPathChange?.((e.target as HTMLInputElement).value)}
             onkeydown={handleKeydown}
-            placeholder="Tap to browse…"
+            placeholder={isMobile ? "Tap to browse…" : "Enter folder path or search…"}
             onclick={() => isMobile && actions.onOpenPicker()}
             readonly={isMobile}
         />
@@ -245,6 +255,25 @@
             title="Webtoon / Cover view"
         >
             <Layers size={20} strokeWidth={1.5} />
+        </button>
+
+        <button
+            type="button"
+            class="flex items-center justify-center w-10 h-10 shrink-0
+                   rounded-full hover:preset-tonal-surface transition-colors
+                   disabled:opacity-30 hidden sm:flex"
+            onclick={() => {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch((err) => {
+                        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+                    });
+                } else {
+                    document.exitFullscreen();
+                }
+            }}
+            title="Toggle Fullscreen"
+        >
+            <Maximize size={20} strokeWidth={1.5} />
         </button>
 
         {#if isFolderSelected}

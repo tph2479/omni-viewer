@@ -94,26 +94,14 @@
     <Tooltip openDelay={0} closeDelay={0} positioning={{ placement: "right" }}>
         <Tooltip.Trigger 
             onclick={toggleMode}
-            class="flex flex-col items-center justify-center transition-all duration-300 w-full py-2 text-surface-600 dark:text-surface-400 hover:text-primary-600 dark:hover:text-primary-400 active:scale-95"
+            class="flex flex-col items-center justify-center transition-all duration-100 w-full py-2 text-surface-600 dark:text-surface-400 hover:text-primary-600 dark:hover:text-primary-400 active:scale-95"
             aria-label="Toggle Theme"
         >
             <div class="relative size-7 flex items-center justify-center">
                 {#if isDark}
-                    <div
-                        class="absolute"
-                        in:scale={{ duration: 400, start: 0.7, delay: 100 }}
-                        out:fade={{ duration: 200 }}
-                    >
                         <Moon class="size-[28px] stroke-[1.5px]" />
-                    </div>
                 {:else}
-                    <div
-                        class="absolute"
-                        in:scale={{ duration: 400, start: 0.7, delay: 100 }}
-                        out:fade={{ duration: 200 }}
-                    >
                         <Sun class="size-[28px] stroke-[1.5px]" />
-                    </div>
                 {/if}
             </div>
         </Tooltip.Trigger>

@@ -9,14 +9,14 @@
         items: s.content.items,
         isGrouped: s.content.isGrouped,
         groupedData: s.content.groupedData,
-        isLoading: s.ui.loading,
+        isLoading: s.ui.isLoading,
         highlightedPath: s.ui.highlightedPath,
         pagination: {
-            currentPage: s.pagination.page,
+            currentPage: s.pagination.currentPage,
             hasMore: s.pagination.hasMore,
-            pageSize: s.pagination.size,
+            pageSize: s.pagination.pageSize,
             total: s.content.totals.media,
-            onPageChange: s.pagination.loadNext,
+            onPageChange: s.actions.loadNextPage,
         },
         coverMode: {
             enabled: s.cover.enabled,
@@ -24,20 +24,20 @@
             total: s.cover.total,
             page: s.cover.page,
             hasMore: s.cover.hasMore,
-            onFolderClick: s.cover.handleClick,
-            onExit: s.cover.exit,
-            onPageChange: s.cover.loadPage,
+            onFolderClick: s.actions.handleCoverFolderClick,
+            onExit: s.actions.exitCoverMode,
+            onPageChange: s.actions.loadCoverPage,
         },
         exclusiveMode: {
             type: s.ui.exclusiveType,
             total: s.content.totals.media,
-            onExit: s.ui.exitGroupView,
+            onExit: s.actions.handleExitGroupView,
         },
         actions: {
-            openModal: s.modal.open,
-            openCbz: s.modal.openCbz,
-            openDir: s.folder.open,
-            openGroup: s.ui.openGroup,
+            openModal: s.actions.openModal,
+            openCbz: s.actions.openCbzInWebtoon,
+            openDir: s.actions.openDir,
+            openGroup: s.actions.handleOpenGroup,
         },
     });
 
@@ -48,9 +48,9 @@
             s.modal.webtoon.open ||
             s.modal.audio.open ||
             s.modal.pdf.open;
-        if (wasModalOpen && !isAnyModalOpen && s.ui.lastFile) {
-            s.ui.highlightedPath = s.ui.lastFile;
-            s.ui.lastFile = null;
+        if (wasModalOpen && !isAnyModalOpen && s.ui.lastOpenedFile) {
+            s.ui.highlightedPath = s.ui.lastOpenedFile;
+            s.ui.lastOpenedFile = null;
             setTimeout(() => {
                 const el = document.getElementById(
                     `item-${s.ui.highlightedPath?.replace(/[^a-zA-Z0-9]/g, "-")}`,
@@ -75,8 +75,8 @@
         </aside>
     {/if}
 
-    {#if !s.folder.isSelected && !s.ui.loading && !s.ui.error}
-        <EmptyState onOpenPicker={() => (s.modal.picker.open = true)} />
+    {#if !s.folder.isSelected && !s.ui.isLoading && !s.ui.error}
+        <EmptyState onOpenPicker={() => (s.modal.folderPicker.open = true)} />
     {:else if s.folder.isSelected}
         <GalleryGrid {...gridProps} />
     {/if}

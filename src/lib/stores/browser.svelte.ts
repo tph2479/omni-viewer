@@ -1,4 +1,5 @@
 import { tick } from "svelte";
+import { pushState } from "$app/navigation";
 import type { ImageFile } from "$lib/utils/utils";
 import { toaster } from "$lib/stores/toaster";
 
@@ -87,11 +88,12 @@ interface UIState {
 }
 
 export function createBrowserStore() {
-  const folder: FolderState = $state({
+  const folder: FolderState & { normalize: (p: string) => string } = $state({
     path: "",
     isSelected: false,
     lastLoadedPath: "",
     pageHistory: {},
+    normalize: (p: string) => normalizePath(p),
   });
 
   const content: ContentState = $state({
@@ -108,6 +110,7 @@ export function createBrowserStore() {
     sort: "date_desc",
     mediaType: "all",
   });
+
 
   const coverMode: CoverModeState = $state({
     enabled: false,
@@ -172,7 +175,7 @@ export function createBrowserStore() {
 
   async function loadFolder(reset = true, pageToLoad = 0, append = false) {
     if (!folder.path.trim()) {
-      if (ui.availableDrives.length === 0) refreshDrives();
+      if (ui.availableDrives.length === 0) await refreshDrives();
       modal.folderPicker.open = true;
       return;
     }
@@ -320,9 +323,19 @@ export function createBrowserStore() {
     modal.webtoon.open = false;
   }
 
-  function openDir(dirPath: string, isGoingUp = false) {
+  function closePicker() {
+    modal.folderPicker.open = false;
+  }
+
+  function openDir(dirPath: string, isGoingUp = false, isFromHistory = false) {
     const normalized = normalizePath(dirPath);
     ui.lastOpenedFolder = isGoingUp ? folder.path : null;
+
+    if (!isFromHistory && typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("path", normalized);
+      pushState(url.toString(), {});
+    }
 
     folder.path = normalized;
     localStorage.setItem("last-path", normalized);
@@ -496,97 +509,42 @@ export function createBrowserStore() {
   }
 
   return {
-    folder: {
-      get path() { return folder.path; },
-      set path(v) { folder.path = v; },
-      get isSelected() { return folder.isSelected; },
-      get lastLoadedPath() { return folder.lastLoadedPath; },
-      get pageHistory() { return folder.pageHistory; },
-      set pageHistory(v) { folder.pageHistory = v; },
-      normalize: normalizePath,
-      open: openDir,
-    },
-    content: {
-      get items() { return content.items; },
-      set items(v) { content.items = v; },
-      get groupedData() { return content.groupedData; },
-      get isGrouped() { return content.isGrouped; },
-      get totals() { return content.totals; },
-    },
-    pagination: {
-      get page() { return pagination.currentPage; },
-      set page(v) { pagination.currentPage = v; },
-      get hasMore() { return pagination.hasMore; },
-      get size() { return pagination.pageSize; },
-      get sort() { return pagination.sort; },
-      set sort(v) { pagination.sort = v; },
-      get type() { return pagination.mediaType; },
-      set type(v) { pagination.mediaType = v; },
-      loadNext: loadNextPage,
-      setSort,
-      setType: setMediaType,
-    },
-    cover: {
-      get enabled() { return coverMode.enabled; },
-      set enabled(v) { coverMode.enabled = v; },
-      get folders() { return coverMode.folders; },
-      set folders(v) { coverMode.folders = v; },
-      get total() { return coverMode.total; },
-      set total(v) { coverMode.total = v; },
-      get page() { return coverMode.page; },
-      set page(v) { coverMode.page = v; },
-      get hasMore() { return coverMode.hasMore; },
-      set hasMore(v) { coverMode.hasMore = v; },
-      get savedState() { return coverMode.savedState; },
-      set savedState(v) { coverMode.savedState = v; },
-      get scrollPos() { return coverMode.scrollPosition; },
-      handleClick: handleCoverFolderClick,
-      exit: exitCoverMode,
-      loadPage: loadCoverPage,
-      saveState: saveCoverState,
-    },
-    modal: {
-      get image() { return modal.image; },
-      get video() { return modal.video; },
-      get audio() { return modal.audio; },
-      get pdf() { return modal.pdf; },
-      get epub() { return modal.epub; },
-      get webtoon() { return modal.webtoon; },
-      get webtoonActivePath() { return modal.webtoon.cbzPath || folder.path; },
-      get picker() { return modal.folderPicker; },
-      open: openModal,
-      closeAll: closeAllModals,
-      openPdf: openPdfReader,
-      openCbz: openCbzInWebtoon,
-    },
-    ui: {
-      get loading() { return ui.isLoading; },
-      get drivesLoading() { return ui.isDrivesLoading; },
-      get error() { return ui.error; },
-      set error(v) { ui.error = v; },
-      get exclusiveType() { return ui.exclusiveType; },
-      get groupScrollPos() { return ui.groupScrollPosition; },
-      get lastFolder() { return ui.lastOpenedFolder; },
-      get lastFile() { return ui.lastOpenedFile; },
-      set lastFile(v) { ui.lastOpenedFile = v; },
-      get highlightedPath() { return ui.highlightedPath; },
-      set highlightedPath(v) { ui.highlightedPath = v; },
-      get pendingFile() { return ui.pendingFile; },
-      set pendingFile(v) { ui.pendingFile = v; },
-      get drives() { return ui.availableDrives; },
-      refreshDrives,
-      showPopup: showNoImagesPopup,
+    get folder() { return folder; },
+    get content() { return content; },
+    get pagination() { return pagination; },
+    get cover() { return coverMode; },
+    get modal() { return modal; },
+    get ui() { return ui; },
+    
+    // Actions/Methods
+    actions: {
+      openDir,
       loadFolder,
+      refreshDrives: (force = false) => refreshDrives(force),
+      setSort,
+      setMediaType,
+      loadNextPage,
+      closePicker,
+      openModal,
+      closeAllModals,
+      openPdfReader,
+      openCbzInWebtoon,
       handleOpenWebtoon,
-      continueToPagination: handleSwitchToPaginationToContinue,
-      exitGroupView: handleExitGroupView,
-      openGroup: handleOpenGroup,
+      handleSwitchToPaginationToContinue,
+      handleExitGroupView,
+      handleOpenGroup,
+      saveCoverState,
+      handleCoverFolderClick,
+      exitCoverMode,
+      loadCoverPage,
     },
+
     reset() {
       content.items = [];
       content.totals = { images: 0, videos: 0, audio: 0, ebook: 0, media: 0 };
       pagination.currentPage = 0;
       pagination.hasMore = false;
+      folder.path = "";
       folder.isSelected = false;
     },
   };

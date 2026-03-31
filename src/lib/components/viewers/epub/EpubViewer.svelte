@@ -1,12 +1,12 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount, onDestroy, untrack } from 'svelte';
 	import { createEpubViewerState, FONT_OPTIONS } from './epubViewer.svelte.ts';
 
 	let { filePath }: { filePath: string } = $props();
 	// Note: filePath is intentionally captured once at mount — re-opening needs destroy+reinit
 
 	// ── Controller ──────────────────────────────────────────────────────
-	const ctrl = createEpubViewerState(filePath);
+	const ctrl = createEpubViewerState(untrack(() => filePath));
 	const { ui, book, reading, settings, search } = ctrl;
 
 	// ── DOM refs ────────────────────────────────────────────────────────

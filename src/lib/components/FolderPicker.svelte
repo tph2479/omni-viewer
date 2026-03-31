@@ -34,7 +34,7 @@
         availableDrives: DirectoryEntry[];
         isDrivesLoading: boolean;
         onRefreshDrives?: () => Promise<void>;
-        onSelect: () => void;
+        onSelect: (path: string) => void;
         onOpenFile?: (path: string, type: "media" | "cbz") => void;
     } = $props();
 
@@ -170,9 +170,10 @@
     function confirm() {
         if (pickerCurrentPath === ROOT_LABEL || pickerCurrentPath === "")
             return;
-        folderPath = stripTrailingSep(pickerCurrentPath);
+        const finalPath = stripTrailingSep(pickerCurrentPath);
+        folderPath = finalPath;
         isFolderPickerOpen = false;
-        onSelect();
+        onSelect(finalPath);
     }
 
     function handleEntryClick(dir: DirectoryEntry) {

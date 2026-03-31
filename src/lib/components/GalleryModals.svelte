@@ -12,7 +12,7 @@
 {#if s.modal.webtoon.open}
 	<WebtoonReader
 		bind:isWebtoonMode={s.modal.webtoon.open}
-		folderPath={s.modal.webtoonActivePath}
+		folderPath={s.modal.webtoon.cbzPath || s.folder.path}
 		onCloseCallback={() => { s.modal.webtoon.cbzPath = ""; }}
 	/>
 {/if}
@@ -24,10 +24,10 @@
 		loadedImages={s.content.items}
 		totalImages={s.content.totals.images}
 		hasMore={s.pagination.hasMore}
-		currentPage={s.pagination.page}
-		loadFolder={s.ui.loadFolder}
+		currentPage={s.pagination.currentPage}
+		loadFolder={s.actions.loadFolder}
 		isGrouped={s.content.isGrouped}
-		onSwitchToPagination={s.ui.continueToPagination}
+		onSwitchToPagination={s.actions.handleSwitchToPaginationToContinue}
 	/>
 {/if}
 
@@ -61,10 +61,10 @@
 		loadedImages={s.content.items}
 		totalImages={s.content.totals.videos}
 		hasMore={s.pagination.hasMore}
-		currentPage={s.pagination.page}
-		loadFolder={s.ui.loadFolder}
+		currentPage={s.pagination.currentPage}
+		loadFolder={s.actions.loadFolder}
 		isGrouped={s.content.isGrouped}
-		onSwitchToPagination={s.ui.continueToPagination}
+		onSwitchToPagination={s.actions.handleSwitchToPaginationToContinue}
 		onSwitchToAudio={() => { s.modal.video.open = false; s.modal.audio.open = true; }}
 	/>
 {/if}
@@ -76,29 +76,28 @@
 		loadedImages={s.content.items}
 		totalImages={s.content.totals.audio}
 		hasMore={s.pagination.hasMore}
-		currentPage={s.pagination.page}
-		loadFolder={s.ui.loadFolder}
+		currentPage={s.pagination.currentPage}
+		loadFolder={s.actions.loadFolder}
 		isGrouped={s.content.isGrouped}
-		onSwitchToPagination={s.ui.continueToPagination}
+		onSwitchToPagination={s.actions.handleSwitchToPaginationToContinue}
 		onSwitchToVideo={() => { s.modal.audio.open = false; s.modal.video.open = true; }}
 	/>
 {/if}
 
-{#if s.modal.picker.open}
+{#if s.modal.folderPicker.open}
 	<FolderPicker
-		bind:isFolderPickerOpen={s.modal.picker.open}
+		bind:isFolderPickerOpen={s.modal.folderPicker.open}
 		bind:folderPath={s.folder.path}
-		availableDrives={s.ui.drives}
-		isDrivesLoading={s.ui.drivesLoading}
-		onRefreshDrives={s.ui.refreshDrives}
-		onSelect={() => {
-			const savedPage = s.folder.pageHistory[s.folder.path] || 0;
-			s.pagination.type = 'all';
-			s.cover.enabled = false;
-			s.ui.loadFolder(true, savedPage);
+		availableDrives={s.ui.availableDrives}
+		isDrivesLoading={s.ui.isDrivesLoading}
+		onRefreshDrives={s.actions.refreshDrives}
+		onSelect={(path) => {
+			s.actions.closePicker();
+			s.actions.openDir(path);
 		}}
 		onOpenFile={(path, type) => {
 			s.ui.pendingFile = { path, type };
 		}}
 	/>
 {/if}
+

@@ -121,7 +121,9 @@
 					const ptW = textLayerDiv.getAttribute('data-pt-w');
 					if (ptW) {
 						const totalScaleFactor = width / parseFloat(ptW);
-						textLayerDiv.style.setProperty('--total-scale-factor', String(totalScaleFactor));
+						requestAnimationFrame(() => {
+							textLayerDiv.style.setProperty('--total-scale-factor', String(totalScaleFactor));
+						});
 					}
 				}
 			});

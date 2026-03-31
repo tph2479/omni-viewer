@@ -32,4 +32,13 @@
             browsing your collection.
         </p>
     </div>
+
+    <!-- Call to action button -->
+    <button 
+        onclick={onOpenPicker}
+        class="btn flex items-center gap-2 preset-filled-primary-500 hover:scale-105 transition-all shadow-xl font-bold py-3 px-8 rounded-2xl"
+    >
+        <Plus size={20} />
+        <span>Select Library Folder</span>
+    </button>
 </div>

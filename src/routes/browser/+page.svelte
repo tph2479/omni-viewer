@@ -29,7 +29,7 @@
         if (s.folder.path) {
             s.folder.path = s.folder.normalize(s.folder.path);
             const savedPage = s.folder.pageHistory[s.folder.path] || 0;
-            s.ui.loadFolder(true, savedPage);
+            s.actions.loadFolder(true, savedPage);
         }
     });
 

@@ -33,7 +33,7 @@
     // --- Folder Picker ---
     let isFolderPickerOpen = $state(false);
     function openPicker() {
-        browserStore.ui.refreshDrives();
+        browserStore.actions.refreshDrives();
         isFolderPickerOpen = true;
     }
 
@@ -149,6 +149,7 @@
                                 onkeydown={(e) => e.key === "Enter" && handleSave()}
                                 onblur={handleSave}
                                 placeholder="Type or browse to select folder…"
+                                onclick={() => !pickerPath && openPicker()}
                             />
                             <div
                                 class="w-px h-6 bg-surface-200 dark:bg-surface-800/10 shrink-0 mx-1"
@@ -221,10 +222,11 @@
     <FolderPicker
         bind:isFolderPickerOpen
         bind:folderPath={pickerPath}
-        availableDrives={browserStore.ui.drives}
-        isDrivesLoading={browserStore.ui.drivesLoading}
-        onRefreshDrives={browserStore.ui.refreshDrives}
-        onSelect={() => {
+        availableDrives={browserStore.ui.availableDrives}
+        isDrivesLoading={browserStore.ui.isDrivesLoading}
+        onRefreshDrives={browserStore.actions.refreshDrives}
+        onSelect={(path) => {
+            pickerPath = path;
             formEl.requestSubmit();
         }}
     />

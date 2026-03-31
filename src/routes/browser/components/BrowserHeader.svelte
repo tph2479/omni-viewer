@@ -12,20 +12,20 @@
             | "size_asc"
             | "size_desc",
     ) {
-        s.pagination.setSort(v);
+        s.actions.setSort(v);
     }
 
     function setFilter(v: "all" | "images" | "videos" | "audio" | "ebook") {
-        s.pagination.setType(v);
+        s.actions.setMediaType(v);
     }
 
-    const actions = $derived({
+    const toolbarActions = $derived({
         onLoad: () => {
             const savedPage = s.folder.pageHistory[s.folder.path] || 0;
-            s.ui.loadFolder(true, savedPage);
+            s.actions.loadFolder(true, savedPage);
         },
-        onOpenPicker: () => (s.modal.picker.open = true),
-        onOpenWebtoon: s.ui.handleOpenWebtoon,
+        onOpenPicker: () => (s.modal.folderPicker.open = true),
+        onOpenWebtoon: s.actions.handleOpenWebtoon,
         onGoUp: async (path: string) => {
             if (s.cover.savedState && s.cover.savedState.path === path) {
                 s.cover.enabled = true;
@@ -48,7 +48,7 @@
                 }, 0);
                 return;
             }
-            s.folder.open(path, true);
+            s.actions.openDir(path, true);
         },
     });
 </script>
@@ -73,9 +73,9 @@
                 ebook: s.cover.enabled ? 0 : s.content.totals.ebook,
             }}
             sort={{ current: s.pagination.sort, onChange: setSort }}
-            filter={{ type: s.pagination.type, onChange: setFilter }}
-            {actions}
-            isLoading={s.ui.loading}
+            filter={{ type: s.pagination.mediaType, onChange: setFilter }}
+            actions={toolbarActions}
+            isLoading={s.ui.isLoading}
         />
     </div>
 </header>

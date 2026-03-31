@@ -9,6 +9,7 @@ export function createPdfController(initialPdfPath: string) {
     numPages: 0,
     isLoading: false,
     errorMsg: "",
+    isDestroyed: false,
 
     controlsVisible: false,
     isEditingPage: false,
@@ -160,6 +161,7 @@ export function createPdfController(initialPdfPath: string) {
         for (let i = 0; i < s.numPages; i++) {
           // Skip if already discovered
           if (s.aspectRatios[i]) continue;
+          if (s.isDestroyed || !s.pdfDoc) break;
           try {
             const page = await s.pdfDoc.getPage(i + 1);
             const viewport = page.getViewport({ scale: 1.0 });
@@ -167,7 +169,8 @@ export function createPdfController(initialPdfPath: string) {
             if (typeof page.cleanup === "function") page.cleanup();
             // Yield to main thread every 10 pages
             if (i % 10 === 0) await tick();
-          } catch (e) {
+          } catch (e: any) {
+            if (e.name === "TransportDestroyedException") break;
             console.warn(`Failed to discover ratio for page ${i}:`, e);
           }
         }
@@ -580,7 +583,9 @@ export function createPdfController(initialPdfPath: string) {
         s.pdfDoc.cleanup();
       }
     } catch (e) {}
+    s.isDestroyed = true;
     if (s.pdfDoc) s.pdfDoc.destroy();
+    s.pdfDoc = null;
     for (const task of renderTasks.values()) {
       try {
         task.cancel();
