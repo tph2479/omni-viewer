@@ -78,6 +78,10 @@
     {#if !s.folder.isSelected && !s.ui.isLoading && !s.ui.error}
         <EmptyState onOpenPicker={() => (s.modal.folderPicker.open = true)} />
     {:else if s.folder.isSelected}
-        <GalleryGrid {...gridProps} />
+        <GalleryGrid
+            bind:items={s.content.items}
+            bind:groupedData={s.content.groupedData}
+            {...gridProps}
+        />
     {/if}
 </div>

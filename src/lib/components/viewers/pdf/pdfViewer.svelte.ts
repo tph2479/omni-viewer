@@ -34,9 +34,7 @@ export function createPdfController(initialPdfPath: string) {
     get smoothPercent() {
       const maxScroll = Math.max(
         1,
-        virtualData.offsets[this.numPages - 1] +
-          getPageHeight(this.numPages - 1) -
-          this.viewportHeight,
+        layout.totalHeight - this.viewportHeight,
       );
       return Math.min(100, Math.max(0, (this.scrollY / maxScroll) * 100));
     },
@@ -68,46 +66,57 @@ export function createPdfController(initialPdfPath: string) {
     return s.baseWidth * zoom * (s.aspectRatios[index] || defaultAspectRatio);
   }
 
-  const virtualData = $derived.by(() => {
-    if (s.numPages === 0)
-      return { start: 0, end: 0, topOffset: 0, bottomOffset: 0, offsets: [] };
+  const layout = $derived.by(() => {
+    if (s.numPages === 0) return { totalHeight: 0, offsets: new Float64Array(0) };
+    const offsets = new Float64Array(s.numPages);
     let total = 0;
-    let start = 0;
-    let topOffset = 0;
-    let end = 0;
-    let offsets = new Array(s.numPages);
+    for (let i = 0; i < s.numPages; i++) {
+        offsets[i] = total;
+        total += getPageHeight(i) + GAP;
+    }
+    return { totalHeight: total, offsets };
+  });
+
+  const virtualData = $derived.by(() => {
+    const { totalHeight, offsets } = layout;
+    if (s.numPages === 0 || offsets.length === 0)
+      return { start: 0, end: 0, topOffset: 0, bottomOffset: 0, offsets: new Float64Array(0) };
 
     const preloadPixels = s.viewportHeight * 3.5;
+    const viewTop = Math.max(0, s.scrollY - preloadPixels);
+    const viewBottom = s.scrollY + s.viewportHeight + preloadPixels;
 
-    for (let i = 0; i < s.numPages; i++) {
-      offsets[i] = total;
-      let h = getPageHeight(i) + GAP;
-
-      if (total + h >= s.scrollY - preloadPixels) {
-        if (start === 0 && i !== 0) {
-          start = i;
-          topOffset = total;
-        }
-      }
-      total += h;
-
-      if (start !== 0 || i === 0) {
-        if (
-          total >= s.scrollY + s.viewportHeight + preloadPixels &&
-          end === 0
-        ) {
-          end = i;
-        }
+    // Binary search for 'start' index (O(log N))
+    let low = 0;
+    let high = s.numPages - 1;
+    let start = 0;
+    while (low <= high) {
+      const mid = (low + high) >> 1;
+      const midBottom = offsets[mid] + getPageHeight(mid) + GAP;
+      if (midBottom >= viewTop) {
+        start = mid;
+        high = mid - 1;
+      } else {
+        low = mid + 1;
       }
     }
 
-    if (end === 0) end = s.numPages - 1;
-    let bottomOffset = total - (offsets[end] + getPageHeight(end) + GAP);
-
-    if (s.scrollY - preloadPixels <= 0) {
-      start = 0;
-      topOffset = 0;
+    // Binary search for 'end' index (O(log N))
+    low = start;
+    high = s.numPages - 1;
+    let end = s.numPages - 1;
+    while (low <= high) {
+      const mid = (low + high) >> 1;
+      if (offsets[mid] <= viewBottom) {
+        end = mid;
+        low = mid + 1;
+      } else {
+        high = mid - 1;
+      }
     }
+
+    const topOffset = offsets[start];
+    const bottomOffset = totalHeight - (offsets[end] + getPageHeight(end) + GAP);
 
     return {
       start,
@@ -127,18 +136,30 @@ export function createPdfController(initialPdfPath: string) {
       : [],
   );
 
-  function updateCurrentPageAndScroll() {
-    if (s.numPages > 0 && virtualData.offsets.length > 0 && !s.isDraggingSeek) {
-      const centerPoint = s.scrollY + s.viewportHeight / 2;
-      let closestIndex = 0;
-      for (let i = 0; i < s.numPages; i++) {
-        if (virtualData.offsets[i] > centerPoint) {
-          closestIndex = Math.max(0, i - 1);
-          break;
-        }
-        closestIndex = i;
+  function indexAtOffset(y: number) {
+    const { offsets } = layout;
+    if (s.numPages === 0 || offsets.length === 0) return 0;
+
+    let low = 0;
+    let high = s.numPages - 1;
+    let index = 0;
+    while (low <= high) {
+      const mid = (low + high) >> 1;
+      if (offsets[mid] <= y) {
+        index = mid;
+        low = mid + 1;
+      } else {
+        high = mid - 1;
       }
-      s.currentPageIndex = closestIndex;
+    }
+    return index;
+  }
+
+  function updateCurrentPageAndScroll() {
+    const currentScroll = s.pdfScrollContainer?.scrollTop ?? s.scrollY;
+    if (s.numPages > 0 && layout.offsets.length > 0 && !s.isDraggingSeek) {
+      const centerPoint = currentScroll + s.viewportHeight / 2;
+      s.currentPageIndex = indexAtOffset(centerPoint);
     }
   }
 
@@ -156,19 +177,54 @@ export function createPdfController(initialPdfPath: string) {
       s.numPages = s.pdfDoc.numPages;
 
       // Background Ratio Discovery: Discover all page dimensions for perfect virtualization math
-      // We do this in chunks to avoid overwhelming the message bus
+      // We do this in chunks to avoid overwhelming the message bus and causing "shaking"
       (async () => {
+        let batch: Record<number, number> = {};
         for (let i = 0; i < s.numPages; i++) {
-          // Skip if already discovered
           if (s.aspectRatios[i]) continue;
           if (s.isDestroyed || !s.pdfDoc) break;
+
+          // PAUSE WHILE SEEKING: Prevent feedback loops during drag
+          while (s.isDraggingSeek && !s.isDestroyed) {
+             await new Promise(r => setTimeout(r, 100));
+          }
+          if (s.isDestroyed) break;
+
           try {
             const page = await s.pdfDoc.getPage(i + 1);
             const viewport = page.getViewport({ scale: 1.0 });
-            s.aspectRatios[i] = viewport.height / viewport.width;
+            batch[i] = viewport.height / viewport.width;
+
             if (typeof page.cleanup === "function") page.cleanup();
-            // Yield to main thread every 10 pages
-            if (i % 10 === 0) await tick();
+
+            // Yield to main thread every 100 pages or on final page
+            const batchSize = s.numPages > 1000 ? 100 : 20;
+            if (Object.keys(batch).length >= batchSize || i === s.numPages - 1) {
+              // ANCHORING: Calculate shift for pages ABOVE current scroll position
+              let scrollShift = 0;
+              const currentScroll = s.pdfScrollContainer?.scrollTop || 0;
+              if (currentScroll > 0 && layout.offsets) {
+                for (const [idxStr, newRatio] of Object.entries(batch)) {
+                  const idx = parseInt(idxStr);
+                  // We check if the page's START is above the current view
+                  if (layout.offsets[idx] < currentScroll) {
+                    const oldHeight = getPageHeight(idx);
+                    const newHeight = s.baseWidth * s.zoomLevel * newRatio;
+                    scrollShift += newHeight - oldHeight;
+                  }
+                }
+              }
+
+              s.aspectRatios = { ...s.aspectRatios, ...batch };
+              batch = {};
+
+              if (scrollShift !== 0 && s.pdfScrollContainer) {
+                s.pdfScrollContainer.scrollTop += scrollShift;
+                s.scrollY = s.pdfScrollContainer.scrollTop;
+              }
+
+              await tick();
+            }
           } catch (e: any) {
             if (e.name === "TransportDestroyedException") break;
             console.warn(`Failed to discover ratio for page ${i}:`, e);
@@ -201,9 +257,10 @@ export function createPdfController(initialPdfPath: string) {
 
   function scrollToIndex(index: number, behavior: ScrollBehavior = "smooth") {
     if (!s.pdfScrollContainer) return;
-    if (virtualData.offsets && virtualData.offsets[index] !== undefined) {
+    const { offsets } = layout;
+    if (offsets && offsets[index] !== undefined) {
       s.pdfScrollContainer.scrollTo({
-        top: virtualData.offsets[index],
+        top: offsets[index],
         behavior,
       });
     }
@@ -604,6 +661,7 @@ export function createPdfController(initialPdfPath: string) {
       return visiblePages;
     },
 
+    indexAtOffset,
     getPageHeight,
     loadLibraries,
     updateCurrentPageAndScroll,

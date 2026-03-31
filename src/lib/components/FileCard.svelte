@@ -27,7 +27,7 @@
 
 
     let {
-        img,
+        img = $bindable(),
         index,
         highlighted = false,
         actions,

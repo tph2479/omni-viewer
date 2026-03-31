@@ -45,9 +45,9 @@
     };
 
     let {
-        items = [],
+        items = $bindable([]),
         isGrouped = false,
-        groupedData = null,
+        groupedData = $bindable(null),
         isLoading = false,
         highlightedPath = null,
         pagination = {
@@ -245,7 +245,7 @@
                     >
                         {#each groupInfo.items as img, i}
                             <FileCard
-                                {img}
+                                bind:img={groupedData[groupKey].items[i]}
                                 index={i}
                                 highlighted={highlightedPath === img.path}
                                 actions={{
@@ -317,7 +317,7 @@
         >
             {#each items as _, i}
                 <FileCard
-                    img={items[i]}
+                    bind:img={items[i]}
                     index={i}
                     highlighted={highlightedPath === items[i].path}
                     actions={{

@@ -74,15 +74,7 @@
 
 		// SYNC DETECTION IN RESIZE (Eliminate lag)
 		const centerPoint = s.pdfScrollContainer.scrollTop + (s.viewportHeight / 2);
-		let capturedIdx = 0;
-		const offsets = pdf.virtualData.offsets;
-		for (let i = 0; i < s.numPages; i++) {
-			if (offsets[i] > centerPoint) {
-				capturedIdx = Math.max(0, i - 1);
-				break;
-			}
-			capturedIdx = i;
-		}
+		let capturedIdx = pdf.indexAtOffset(centerPoint);
 
 		const capturedPagePercent = s.anchorPercentInPage;
 		const capturedDocPercent = s.lastScrollPercent;
@@ -161,7 +153,7 @@
 <style>
 	:global(.pdf-scroll) {
 		scrollbar-width: none;
-		overflow-anchor: auto;
+		overflow-anchor: none;
 	}
 	:global(.pdf-scroll::-webkit-scrollbar) {
 		display: none;
@@ -302,15 +294,7 @@
 
 			// SYNC PAGE DETECTION (Eliminate 1-page lag)
 			const centerPoint = target.scrollTop + (s.viewportHeight / 2);
-			let detectedIdx = 0;
-			const offsets = pdf.virtualData.offsets;
-			for (let i = 0; i < s.numPages; i++) {
-				if (offsets[i] > centerPoint) {
-					detectedIdx = Math.max(0, i - 1);
-					break;
-				}
-				detectedIdx = i;
-			}
+			let detectedIdx = pdf.indexAtOffset(centerPoint);
 
 			// Pro-Reader Anchoring: Track precise offset into the CORRECT page instantly
 			const anchorEl = document.getElementById(`pdf-page-${detectedIdx}`);
