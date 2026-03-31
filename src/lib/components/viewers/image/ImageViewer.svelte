@@ -1,8 +1,23 @@
 <script lang="ts">
-	import { handleImageError, formatBytes, formatDateTime, type ImageFile } from '$lib/utils/utils';
-	import { onDestroy, tick } from 'svelte';
-	import { createImageModalState } from './imageViewer.svelte.ts';
-	import { X, ChevronLeft, ChevronRight, Maximize2, Minimize2, RotateCw, Grid3x3 } from 'lucide-svelte';
+	import {
+		handleImageError,
+		formatBytes,
+		formatDateTime,
+		type ImageFile,
+	} from "$lib/utils/utils";
+	import { onDestroy, tick } from "svelte";
+	import { createImageModalState } from "./imageViewer.svelte.ts";
+	import {
+		X,
+		ChevronLeft,
+		ChevronRight,
+		Maximize2,
+		Minimize2,
+		RotateCw,
+		Grid3x3,
+		Plus,
+		Minus,
+	} from "lucide-svelte";
 
 	// Props using Svelte 5 runes
 	let {
@@ -14,7 +29,7 @@
 		currentPage = 0,
 		loadFolder,
 		isGrouped = false,
-		onSwitchToPagination
+		onSwitchToPagination,
 	}: {
 		isModalOpen: boolean;
 		selectedImageIndex: number;
@@ -22,23 +37,49 @@
 		totalImages: number;
 		hasMore: boolean;
 		currentPage: number;
-		loadFolder: (reset: boolean, page: number, append?: boolean) => Promise<void>;
+		loadFolder: (
+			reset: boolean,
+			page: number,
+			append?: boolean,
+		) => Promise<void>;
 		isGrouped?: boolean;
 		onSwitchToPagination?: () => Promise<void>;
 	} = $props();
 
 	const imgState = createImageModalState({
-		get isModalOpen() { return isModalOpen; },
-		set isModalOpen(v) { isModalOpen = v; },
-		get selectedImageIndex() { return selectedImageIndex; },
-		set selectedImageIndex(v) { selectedImageIndex = v; },
-		get loadedImages() { return loadedImages; },
-		get totalImages() { return totalImages; },
-		get hasMore() { return hasMore; },
-		get currentPage() { return currentPage; },
-		get loadFolder() { return loadFolder; },
-		get isGrouped() { return isGrouped; },
-		onSwitchToPagination: async () => { if (onSwitchToPagination) await onSwitchToPagination(); }
+		get isModalOpen() {
+			return isModalOpen;
+		},
+		set isModalOpen(v) {
+			isModalOpen = v;
+		},
+		get selectedImageIndex() {
+			return selectedImageIndex;
+		},
+		set selectedImageIndex(v) {
+			selectedImageIndex = v;
+		},
+		get loadedImages() {
+			return loadedImages;
+		},
+		get totalImages() {
+			return totalImages;
+		},
+		get hasMore() {
+			return hasMore;
+		},
+		get currentPage() {
+			return currentPage;
+		},
+		get loadFolder() {
+			return loadFolder;
+		},
+		get isGrouped() {
+			return isGrouped;
+		},
+		onSwitchToPagination: async () => {
+			if (onSwitchToPagination) await onSwitchToPagination();
+		},
 	});
 
 	let modalContainer: HTMLElement | null = $state(null);
@@ -50,12 +91,14 @@
 	});
 
 	$effect(() => {
-		const scrollContainer = document.querySelector('.drawer-content');
+		const scrollContainer = document.querySelector(".drawer-content");
 		if (scrollContainer) {
-			const originalOverflow = (scrollContainer as HTMLElement).style.overflow;
-			(scrollContainer as HTMLElement).style.overflow = 'hidden';
+			const originalOverflow = (scrollContainer as HTMLElement).style
+				.overflow;
+			(scrollContainer as HTMLElement).style.overflow = "hidden";
 			return () => {
-				(scrollContainer as HTMLElement).style.overflow = originalOverflow || 'auto';
+				(scrollContainer as HTMLElement).style.overflow =
+					originalOverflow || "auto";
 			};
 		}
 	});
@@ -63,7 +106,6 @@
 	onDestroy(() => {
 		imgState.cleanup();
 	});
-
 </script>
 
 <svelte:window onkeydown={imgState.handleKeyDown} />
@@ -80,11 +122,17 @@
 	>
 		<!-- TOP BACKGROUND SHADOW (Full Width) -->
 		<div
-			class="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-black/60 to-transparent pointer-events-none transition-opacity duration-300 {imgState.topControlsVisible ? 'opacity-100' : 'opacity-0'} z-[110]"
+			class="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-black/60 to-transparent pointer-events-none transition-opacity duration-300 {imgState.topControlsVisible
+				? 'opacity-100'
+				: 'opacity-0'} z-[110]"
 		></div>
 
 		<!-- Toolbar (Top) -->
-		<div class="absolute top-0 w-full p-4 flex justify-between items-start z-[110] bg-transparent pointer-events-none transition-all duration-300 {imgState.topControlsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}">
+		<div
+			class="absolute top-0 w-full p-4 flex justify-between items-start z-[110] bg-transparent pointer-events-none transition-all duration-300 {imgState.topControlsVisible
+				? 'opacity-100 translate-y-0'
+				: 'opacity-0 -translate-y-4'}"
+		>
 			<!-- TOP LEFT: Info Area -->
 			<div
 				class="text-white/90 pointer-events-auto flex flex-col max-w-[70%]"
@@ -95,27 +143,40 @@
 				role="presentation"
 			>
 				{#if imgState.currentItem}
-					<p class="select-text text-white font-black text-lg sm:text-2xl tracking-tight whitespace-normal break-words leading-tight">
+					<p
+						class="select-text text-white font-black text-lg sm:text-2xl tracking-tight whitespace-normal break-words leading-tight"
+					>
 						<span class="px-2 py-0.5 -mx-2 rounded-lg">
-							{imgState.currentImageIndexDisplay} / {totalImages} — {imgState.currentItem.name}
+							{imgState.currentImageIndexDisplay} / {totalImages} —
+							{imgState.currentItem.name}
 						</span>
 					</p>
 					{#if imgState.currentMetadata}
-						<p class="select-text text-white/50 text-[10px] sm:text-xs font-mono mt-1">
+						<p
+							class="select-text text-white/50 text-[10px] sm:text-xs font-mono mt-1"
+						>
 							<span class="px-1 rounded-sm">
 								{formatBytes(imgState.currentMetadata.size)}
 								{#if imgState.naturalWidth > 0 && imgState.naturalHeight > 0}
 									• {imgState.naturalWidth} x {imgState.naturalHeight}
 								{:else if imgState.currentMetadata.width && imgState.currentMetadata.height}
-									• {imgState.currentMetadata.width} x {imgState.currentMetadata.height}
+									• {imgState.currentMetadata.width} x {imgState
+										.currentMetadata.height}
 								{/if}
-								• {formatDateTime(imgState.currentMetadata.lastModified)}
+								• {formatDateTime(
+									imgState.currentMetadata.lastModified,
+								)}
 							</span>
 						</p>
 					{:else}
 						<div class="flex items-center gap-2 mt-2">
-							<span class="loading loading-spinner loading-[10px] opacity-20"></span>
-							<span class="text-white/20 text-[10px] font-mono italic">Loading details...</span>
+							<span
+								class="loading loading-spinner loading-[10px] opacity-20"
+							></span>
+							<span
+								class="text-white/20 text-[10px] font-mono italic"
+								>Loading details...</span
+							>
 						</div>
 					{/if}
 				{/if}
@@ -132,36 +193,65 @@
 				<button
 					aria-label="Close"
 					class="btn rounded-xl w-12 h-12 min-h-0 p-0 bg-zinc-900/95 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl transition-all hover:scale-110 mb-2"
-					onclick={(e) => { e.stopPropagation(); imgState.closeModal(); }}
+					onclick={(e) => {
+						e.stopPropagation();
+						imgState.closeModal();
+					}}
 					onmousedown={(e) => e.preventDefault()}
 				>
 					<X class="h-6 w-6" />
 				</button>
 
 				<!-- Navigation Group -->
-				<div class="flex flex-col bg-zinc-900/95 rounded-xl backdrop-blur-xl border border-white/10 overflow-hidden shadow-2xl w-12 mb-3 pointer-events-auto">
-					<button aria-label="Previous" class="btn btn-ghost w-12 h-12 min-h-0 p-0 text-white rounded-none border-b border-white/10 transition-colors hover:bg-white/5" onclick={(e) => { e.stopPropagation(); imgState.prevImage(); }} onmousedown={(e) => e.preventDefault()}>
+				<div
+					class="flex flex-col bg-zinc-900/95 rounded-xl backdrop-blur-xl border border-white/10 overflow-hidden shadow-2xl w-12 mb-3 pointer-events-auto"
+				>
+					<button
+						aria-label="Previous"
+						class="btn btn-ghost w-12 h-12 min-h-0 p-0 text-white rounded-none border-b border-white/10 transition-colors hover:bg-white/5"
+						onclick={(e) => {
+							e.stopPropagation();
+							imgState.prevImage();
+						}}
+						onmousedown={(e) => e.preventDefault()}
+					>
 						<ChevronLeft class="h-6 w-6" />
 					</button>
-					<button aria-label="Next" class="btn btn-ghost border-none w-12 h-12 min-h-0 p-0 text-white rounded-none transition-colors hover:bg-white/5" onclick={(e) => { e.stopPropagation(); imgState.nextImage(); }} onmousedown={(e) => e.preventDefault()}>
+					<button
+						aria-label="Next"
+						class="btn btn-ghost border-none w-12 h-12 min-h-0 p-0 text-white rounded-none transition-colors hover:bg-white/5"
+						onclick={(e) => {
+							e.stopPropagation();
+							imgState.nextImage();
+						}}
+						onmousedown={(e) => e.preventDefault()}
+					>
 						<ChevronRight class="h-6 w-6" />
 					</button>
 				</div>
 
 				<!-- Zoom Modes -->
-				<div class="flex flex-col bg-zinc-900/95 rounded-xl backdrop-blur-xl border border-white/10 overflow-hidden shadow-2xl w-12 mb-3 pointer-events-auto">
+				<div
+					class="flex flex-col bg-zinc-900/95 rounded-xl backdrop-blur-xl border border-white/10 overflow-hidden shadow-2xl w-12 mb-3 pointer-events-auto"
+				>
 					<button
 						aria-label="Fit Width"
 						class="btn btn-ghost w-12 h-12 min-h-0 p-0 text-white rounded-none border-b border-white/10 flex items-center justify-center transition-colors hover:bg-white/5"
-						onclick={(e) => { e.stopPropagation(); imgState.toggleFitWidth(); }}
+						onclick={(e) => {
+							e.stopPropagation();
+							imgState.toggleFitWidth();
+						}}
 						onmousedown={(e) => e.preventDefault()}
 					>
-						<Maximize2 class="h-5 w-5" />
+						<Maximize2 class="h-6 w-6" />
 					</button>
 					<button
 						aria-label="Toggle 1:1"
 						class="btn btn-ghost border-none w-12 h-12 min-h-0 p-0 text-white rounded-none font-black font-mono flex items-center justify-center text-[10px] transition-colors hover:bg-white/5"
-						onclick={(e) => { e.stopPropagation(); imgState.toggleZoom(e.clientX, e.clientY); }}
+						onclick={(e) => {
+							e.stopPropagation();
+							imgState.toggleZoom(e.clientX, e.clientY);
+						}}
 						onmousedown={(e) => e.preventDefault()}
 					>
 						1:1
@@ -169,34 +259,57 @@
 					<button
 						aria-label="Rotate"
 						class="btn btn-ghost w-12 h-12 min-h-0 p-0 text-white rounded-none transition-colors hover:bg-white/5 border-t border-white/10 flex items-center justify-center"
-						onclick={(e) => { e.stopPropagation(); imgState.rotateImage(); }}
+						onclick={(e) => {
+							e.stopPropagation();
+							imgState.rotateImage();
+						}}
 						onmousedown={(e) => e.preventDefault()}
 					>
-						<RotateCw class="h-5 w-5" />
+						<RotateCw class="h-6 w-6" />
 					</button>
 				</div>
 
 				<!-- Zoom Controls -->
-				<div class="flex flex-col bg-zinc-900/95 rounded-xl backdrop-blur-xl border border-white/10 overflow-hidden shadow-2xl w-12 pointer-events-auto">
-					<button aria-label="Zoom In" class="btn btn-ghost w-12 h-12 min-h-0 p-0 text-white rounded-none border-b border-white/10 transition-colors hover:bg-white/5" onclick={(e) => {
-						e.stopPropagation();
-						imgState.performZoom(Math.min(500, imgState.zoomLevel * 1.35));
-					}} onmousedown={(e) => e.preventDefault()}>
-						<Maximize2 class="h-6 w-6" />
+				<div
+					class="flex flex-col bg-zinc-900/95 rounded-xl backdrop-blur-xl border border-white/10 overflow-hidden shadow-2xl w-12 pointer-events-auto"
+				>
+					<button
+						aria-label="Zoom In"
+						class="btn btn-ghost w-12 h-12 min-h-0 p-0 text-white rounded-none border-b border-white/10 transition-colors hover:bg-white/5"
+						style="touch-action: manipulation;"
+						onclick={(e) => {
+							e.stopPropagation();
+							imgState.performZoom(
+								Math.min(500, imgState.zoomLevel * 1.35),
+							);
+						}}
+						onpointerdown={(e) => e.preventDefault()}
+					>
+						<Plus class="h-6 w-6" />
 					</button>
 					<button
 						aria-label="Current Zoom"
 						class="w-full py-2 text-[10px] font-mono font-black text-white hover:bg-white/10 transition-colors bg-white/5 flex items-center justify-center tracking-tighter vertical-text"
-						onclick={(e) => { e.stopPropagation(); imgState.resetAll(); }}
-						onmousedown={(e) => e.preventDefault()}
+						onclick={(e) => {
+							e.stopPropagation();
+							imgState.resetAll();
+						}}
+						onpointerdown={(e) => e.preventDefault()}
 					>
 						{imgState.absoluteZoomPercent}%
 					</button>
-					<button aria-label="Zoom Out" class="btn btn-ghost w-12 h-12 min-h-0 p-0 text-white rounded-none border-t border-white/10 transition-colors hover:bg-white/5" onclick={(e) => {
-						e.stopPropagation();
-						imgState.performZoom(Math.max(0.001, imgState.zoomLevel / 1.35));
-					}} onmousedown={(e) => e.preventDefault()}>
-						<Minimize2 class="h-6 w-6" />
+					<button
+						aria-label="Zoom Out"
+						class="btn btn-ghost w-12 h-12 min-h-0 p-0 text-white rounded-none border-t border-white/10 transition-colors hover:bg-white/5"
+						onclick={(e) => {
+							e.stopPropagation();
+							imgState.performZoom(
+								Math.max(0.001, imgState.zoomLevel / 1.35),
+							);
+						}}
+						onmousedown={(e) => e.preventDefault()}
+					>
+						<Minus class="h-6 w-6" />
 					</button>
 				</div>
 			</div>
@@ -211,16 +324,20 @@
 			{#if imgState.currentItem}
 				<div
 					class="relative flex items-center justify-center w-full h-full overflow-hidden"
+					style="touch-action: none;"
 					onwheel={imgState.handleWheel}
-					onmousedown={imgState.startDrag}
-					onmousemove={imgState.onDrag}
-					onmouseup={imgState.stopDrag}
-					onmouseleave={imgState.stopDrag}
+					onpointerdown={imgState.startDrag}
+					onpointermove={imgState.onDrag}
+					onpointerup={imgState.stopDrag}
+					onpointerleave={imgState.stopDrag}
 					onclick={(e) => e.stopPropagation()}
-					ondblclick={(e) => { e.stopPropagation(); imgState.toggleZoom(e.clientX, e.clientY); }}
+					ondblclick={(e) => {
+						e.stopPropagation();
+						imgState.toggleZoom(e.clientX, e.clientY);
+					}}
 					role="presentation"
 				>
-						{#key imgState.imageKey}
+					{#key imgState.imageKey}
 						<img
 							src={imgState.currentImageSrc}
 							onload={async (e) => {
@@ -229,7 +346,9 @@
 
 								imgState.naturalWidth = img.naturalWidth;
 								imgState.naturalHeight = img.naturalHeight;
-								imgState.isPortraitImage = imgState.naturalHeight > imgState.naturalWidth;
+								imgState.isPortraitImage =
+									imgState.naturalHeight >
+									imgState.naturalWidth;
 
 								// Ensure transitions are OFF and image HIDDEN while we find the fit
 								imgState.isFullImageLoaded = false;
@@ -240,24 +359,33 @@
 								if (imgState.renderedWidth > 0) {
 									imgState.fitImageToViewport();
 								} else {
-									await new Promise(r => setTimeout(r, 60));
-									imgState.renderedWidth = img?.naturalWidth || 0;
+									await new Promise((r) => setTimeout(r, 60));
+									imgState.renderedWidth =
+										img?.naturalWidth || 0;
 									imgState.fitImageToViewport();
 								}
 
 								// CRITICAL: We need TWO frames to ensure the browser paints the "scale(fit)"
 								// with "transition: none" BEFORE we turn "transition: transform" back on.
 								await tick();
-								await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+								await new Promise((r) =>
+									requestAnimationFrame(() =>
+										requestAnimationFrame(r),
+									),
+								);
 
 								imgState.isFullImageLoaded = true;
 							}}
 							class="pointer-events-auto select-none"
-							style="opacity: {imgState.isFullImageLoaded ? 1 : 0}; transform: translate({imgState.translateX}px, {imgState.translateY}px) scale({imgState.zoomLevel}) rotate({imgState.rotation}deg); transition: {imgState.isFullImageLoaded ? 'transform 0.2s ease-out' : 'none'}; max-width: none !important; max-height: none !important;"
+							style="opacity: {imgState.isFullImageLoaded
+								? 1
+								: 0}; transform: translate({imgState.translateX}px, {imgState.translateY}px) scale({imgState.zoomLevel}) rotate({imgState.rotation}deg); transition: {imgState.isFullImageLoaded
+								? 'transform 0.15s ease-out'
+								: 'none'}; max-width: none !important; max-height: none !important;"
 							decoding="async"
 							fetchpriority="high"
-							draggable="false"
-							onerror={(e) => handleImageError(e, imgState.currentItem.path)}
+							onerror={(e) =>
+								handleImageError(e, imgState.currentItem.path)}
 							alt={imgState.currentItem.name}
 						/>
 					{/key}
