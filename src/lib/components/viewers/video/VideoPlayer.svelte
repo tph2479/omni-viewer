@@ -3,7 +3,7 @@
 	import { onDestroy } from 'svelte';
 	import { cacheVersion } from '$lib/stores/cache.svelte';
 	import { createVideoController } from './videoPlayer.svelte.ts';
-	import { X, ChevronLeft, ChevronRight, Play, Pause, Volume2, VolumeX, RotateCw, Maximize, Minimize, Music, Repeat } from 'lucide-svelte';
+	import { X, ChevronLeft, ChevronRight, Play, Pause, Volume2, VolumeX, RotateCw, Maximize, Minimize, Music, Repeat, Lock, Unlock } from 'lucide-svelte';
 
 	let {
 		isModalOpen = $bindable(),
@@ -159,6 +159,18 @@
 				(scrollContainer as HTMLElement).style.overflow = originalOverflow || 'auto';
 			};
 		}
+	});
+
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		ctrl.setOrientation(window.innerHeight > window.innerWidth);
+
+		function handleResize() {
+			ctrl.setOrientation(window.innerHeight > window.innerWidth);
+		}
+
+		window.addEventListener('resize', handleResize);
+		return () => window.removeEventListener('resize', handleResize);
 	});
 
 	$effect(() => {
@@ -395,6 +407,13 @@
 								</div>
 								<div class="w-px h-6 bg-white/20"></div>
 								<div class="flex items-center gap-0.5">
+									<button aria-label="Toggle Rotation Lock" class="w-10 h-10 flex items-center justify-center text-white hover:bg-white/10 rounded transition-colors cursor-pointer" tabindex="-1" onclick={(e) => { e.stopPropagation(); ctrl.toggleRotationLock(); }} onpointerdown={(e) => e.preventDefault()}>
+										{#if s.isRotationLocked}
+											<Lock class="h-5 w-5" />
+										{:else}
+											<Unlock class="h-5 w-5" />
+										{/if}
+									</button>
 									<button aria-label="Rotate" class="w-10 h-10 flex items-center justify-center text-white hover:bg-white/10 rounded transition-colors cursor-pointer" tabindex="-1" onclick={(e) => { e.stopPropagation(); ctrl.rotateVideo(); }} onpointerdown={(e) => e.preventDefault()}>
 										<RotateCw class="h-5 w-5" />
 									</button>

@@ -36,7 +36,7 @@
                 <div class="flex flex-col gap-2">
 
                     
-                    <div class="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3 sm:gap-4">
+                    <div class="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3 sm:gap-4">
                         <FileGridBase
                             bind:items={groupedData[groupKey].items}
                             {isLoading}

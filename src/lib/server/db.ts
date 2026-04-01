@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 // Đảm bảo thư mục thiết lập database có tồn tại
-const dbDir = path.resolve('db');
+const dbDir = path.resolve(process.cwd(), 'db');
 if (!fs.existsSync(dbDir)) {
     fs.mkdirSync(dbDir, { recursive: true });
 }

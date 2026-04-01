@@ -7,6 +7,9 @@ export function createVideoController() {
 		videoVolume: 1,
 		isVideoLoop: false,
 		videoRotation: 0,
+		baseRotation: 0,
+		isPortrait: false,
+		isRotationLocked: true,
 		controlsVisible: false,
 		isHoveringControls: false,
 		hideTimerId: null as any,
@@ -22,8 +25,25 @@ export function createVideoController() {
 		isFullscreen: false
 	});
 
+	function updateRotation() {
+		s.videoRotation = (s.baseRotation + (s.isPortrait && !s.isRotationLocked ? 90 : 0)) % 360;
+	}
+
 	function rotateVideo() {
-		s.videoRotation = (s.videoRotation + 90) % 360;
+		s.baseRotation = (s.baseRotation + 90) % 360;
+		updateRotation();
+	}
+
+	function toggleRotationLock() {
+		s.isRotationLocked = !s.isRotationLocked;
+		updateRotation();
+	}
+
+	function setOrientation(portrait: boolean) {
+		if (s.isPortrait !== portrait) {
+			s.isPortrait = portrait;
+			updateRotation();
+		}
 	}
 
 	function releaseVideo() {
@@ -87,6 +107,8 @@ export function createVideoController() {
 	return {
 		state: s,
 		rotateVideo,
+		toggleRotationLock,
+		setOrientation,
 		releaseVideo,
 		toggleFullscreen,
 		handleMouseMoveVisibility,
