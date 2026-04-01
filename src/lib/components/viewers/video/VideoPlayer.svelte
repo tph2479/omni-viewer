@@ -278,11 +278,11 @@
 						onended={() => { s.isVideoPaused = true; }}
 					></video>
 
-					<!-- VIDEO CONTROLS (Khung Tranh Style) -->
+					<!-- VIDEO CONTROLS -->
 					<div
-							class="absolute inset-0 z-[120] pointer-events-none transition-all duration-300 {s.controlsVisible ? 'opacity-100' : 'opacity-0'}"
-							role="presentation"
-							onmouseenter={() => (s.isHoveringControls = true)}
+						class="absolute inset-0 z-[120] pointer-events-none transition-all duration-300 {s.controlsVisible ? 'opacity-100' : 'opacity-0'}"
+						role="presentation"
+						onmouseenter={() => (s.isHoveringControls = true)}
 						onmouseleave={() => {
 							s.isHoveringControls = false;
 							if (s.hideTimerId) clearTimeout(s.hideTimerId);
@@ -294,153 +294,133 @@
 							}, 2000);
 						}}
 					>
-						<!-- TOP BACKGROUND SHADOW (Full Width) -->
-						<div
-							class="absolute top-0 left-0 w-full h-48 bg-gradient-to-b from-black/90 via-black/40 to-transparent pointer-events-none transition-opacity duration-300 {s.controlsVisible ? 'opacity-100' : 'opacity-0'} z-[110]"
-						></div>
-
-						<!-- TOP BACKGROUND SHADOW (Full Width) -->
+						<!-- TOP BACKGROUND SHADOW -->
 						<div
 							class="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-black/60 to-transparent pointer-events-none transition-opacity duration-300 {s.controlsVisible ? 'opacity-100' : 'opacity-0'} z-[110]"
 						></div>
 
-						<!-- INTEGRATED REFINED 2-ROW CONTROL SYSTEM -->
+						<!-- TOP LEFT: Title Area -->
 						<div
-							class="absolute top-0 left-0 w-full p-4 z-[130] transition-all duration-300 {s.controlsVisible ? 'translate-y-0' : '-translate-y-4'} pointer-events-none flex flex-col gap-1"
+							class="absolute top-0 left-0 w-full p-4 z-[130] pointer-events-none transition-all duration-300 {s.controlsVisible ? 'translate-y-0' : '-translate-y-4'}"
 							role="presentation"
+							onclick={(e) => e.stopPropagation()}
+							onkeydown={(e) => e.stopPropagation()}
 							onmouseenter={() => (s.isHoveringControls = true)}
 							onmouseleave={() => (s.isHoveringControls = false)}
 						>
-							<!-- ROW 1: Metadata --- Seekbar (flex-1) --- Time | Close -->
-							<div class="flex items-center gap-6 w-full pointer-events-none">
-								<!-- Left/Center Content Wrapper (flex-1) -->
-								<div class="flex items-center gap-6 flex-1 pointer-events-auto">
+							<div class="flex items-start justify-between gap-4 pointer-events-auto">
+								<!-- Title (Left) -->
+								<div class="flex-1 min-w-0">
+									<p class="select-text text-white font-black text-lg sm:text-2xl tracking-tight whitespace-normal break-words leading-tight video-title-scroll">
+										<span class="px-2 py-0.5 -mx-2 rounded-lg">
+											{currentVideoIndexDisplay} / {totalImages} — {currentItem?.name}
+										</span>
+									</p>
 									{#if s.currentMetadata}
-										<p class="select-text text-white/70 text-[10px] sm:text-xs font-mono shrink-0">
-											<span class="bg-black/10 shadow-[0_0_10px_6px_rgba(0,0,0,0.3)] px-1 rounded-sm box-decoration-clone">
+										<p class="select-text text-white/50 text-[10px] sm:text-xs font-mono mt-1">
+											<span class="px-1 rounded-sm">
 												{formatBytes(s.currentMetadata.size)} • {formatDateTime(s.currentMetadata.lastModified)}
 											</span>
 										</p>
 									{/if}
-
-									<div class="flex items-center gap-4 flex-1">
-										<!-- Seekbar -->
-										<div
-											role="slider"
-											aria-label="Seek Bar"
-											aria-valuemin="0"
-											aria-valuemax={s.videoDuration}
-											aria-valuenow={s.videoTime}
-											tabindex="0"
-											class="relative flex-1 h-3 flex items-center cursor-pointer group/progress"
-											onclick={(e) => { e.stopPropagation(); const rect = e.currentTarget.getBoundingClientRect(); if (s.videoDuration > 0) s.videoTime = ((e.clientX - rect.left) / rect.width) * s.videoDuration; }}
-											onmousedown={(e) => e.preventDefault()}
-											onkeydown={(e) => {
-												if (e.key === 'ArrowRight') s.videoTime = Math.min(s.videoDuration, s.videoTime + 5);
-												if (e.key === 'ArrowLeft') s.videoTime = Math.max(0, s.videoTime - 5);
-											}}
-										>
-											<div class="relative w-full h-[3px] bg-white/10 overflow-hidden rounded-full">
-												<div class="absolute top-0 left-0 h-full bg-white shadow-[0_0_15px_rgba(255,255,255,0.8)]" style="width: {progressPercent}%"></div>
-											</div>
-											<div class="absolute w-3.5 h-3.5 bg-white rounded-full opacity-0 group-hover/progress:opacity-100 transition-opacity duration-150 z-30 shadow-[0_0_20px_rgba(255,255,255,1)]" style="left: calc({progressPercent}% - 7px)"></div>
-										</div>
-
-										<!-- Time Display (Right of Seekbar) - Fixed width for alignment -->
-										<div class="text-white/90 text-[11px] sm:text-xs font-black tracking-tight tabular-nums w-24 shrink-0 text-right">
-											<span class="bg-black/5 shadow-[0_0_8px_4px_rgba(0,0,0,0.2)] px-1 rounded-sm">
-												{formatVideoTime(s.videoTime)} / {formatVideoTime(s.videoDuration)}
-											</span>
-										</div>
-									</div>
 								</div>
 
-								<!-- Right: Close Button -->
-								<div class="shrink-0 ml-2">
-									<button
-										aria-label="Close"
-										class="w-12 h-12 flex items-center justify-center rounded-xl bg-zinc-900/95 hover:bg-zinc-800 text-white border border-white/10 shadow-2xl transition-all hover:scale-110 cursor-pointer"
-										tabindex="-1"
-										onclick={(e) => { e.stopPropagation(); closeModal(); }}
-										onpointerdown={(e) => e.preventDefault()}
-									>
-										<X class="h-6 w-6" />
-									</button>
-								</div>
+								<!-- Close Button (Right) -->
+								<button
+									aria-label="Close"
+									class="w-12 h-12 flex items-center justify-center rounded-xl bg-zinc-900/95 hover:bg-zinc-800 text-white border border-white/10 shadow-2xl transition-all hover:scale-110 cursor-pointer shrink-0"
+									tabindex="-1"
+									onclick={(e) => { e.stopPropagation(); closeModal(); }}
+									onpointerdown={(e) => e.preventDefault()}
+								>
+									<X class="h-6 w-6" />
+								</button>
 							</div>
+						</div>
 
-							<!-- ROW 2: Title (Left) --- Secondary Buttons (Right, under Seekbar) | Spacer -->
-							<div class="flex items-start gap-6 w-full pointer-events-none">
-								<!-- Content Wrapper (flex-1) -->
-								<div class="flex items-start gap-6 flex-1 pointer-events-auto">
-									<!-- Left: Wrapped Title (Now takes all remaining space) -->
-									<div class="flex-1 min-w-0">
-										<p class="select-text text-white font-black text-lg sm:text-2xl tracking-tight whitespace-normal break-words leading-tight">
-											<span class="px-2 py-0.5 -mx-2 rounded-lg">
-												{currentVideoIndexDisplay} / {totalImages} — {currentItem?.name}
-											</span>
-										</p>
+						<!-- SEEKBAR ROW (Below Title) -->
+						<div
+							class="absolute top-24 left-0 w-full px-4 z-[130] pointer-events-none transition-all duration-300 {s.controlsVisible ? 'translate-y-0' : '-translate-y-4'}"
+							role="presentation"
+							onclick={(e) => e.stopPropagation()}
+							onkeydown={(e) => e.stopPropagation()}
+							onmouseenter={() => (s.isHoveringControls = true)}
+							onmouseleave={() => (s.isHoveringControls = false)}
+						>
+							<div class="flex flex-col gap-1 pointer-events-auto">
+								<!-- Seekbar (Row 1) -->
+								<div
+									role="slider"
+									aria-label="Seek Bar"
+									aria-valuemin="0"
+									aria-valuemax={s.videoDuration}
+									aria-valuenow={s.videoTime}
+									tabindex="0"
+									class="relative flex-1 h-3 flex items-center cursor-pointer group/progress"
+									onclick={(e) => { e.stopPropagation(); const rect = e.currentTarget.getBoundingClientRect(); if (s.videoDuration > 0) s.videoTime = ((e.clientX - rect.left) / rect.width) * s.videoDuration; }}
+									onpointerdown={(e) => e.preventDefault()}
+									onkeydown={(e) => {
+										if (e.key === 'ArrowRight') s.videoTime = Math.min(s.videoDuration, s.videoTime + 5);
+										if (e.key === 'ArrowLeft') s.videoTime = Math.max(0, s.videoTime - 5);
+									}}
+								>
+									<div class="relative w-full h-[3px] bg-white/10 overflow-hidden rounded-full">
+										<div class="absolute top-0 left-0 h-full bg-white shadow-[0_0_15px_rgba(255,255,255,0.8)]" style="width: {progressPercent}%"></div>
 									</div>
-
-									<!-- Right Area: All Buttons Grouped for Row 1 Alignment (Fixed w-24 area) -->
-									<div class="shrink-0 mt-1 flex justify-end items-start">
-										<!-- Consolidated Button Group aligned to right edge of Time -->
-										<div class="flex items-center gap-2 mr-[-6px]">
-											<!-- Navigation -->
-											<div class="flex items-center border-r border-white/20 pr-2 gap-1">
-												<button aria-label="Previous" class="w-8 h-8 flex items-center justify-center bg-transparent text-white transition-colors hover:bg-white/10 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed" tabindex="-1" onclick={(e) => { e.stopPropagation(); prevVideo(); }} disabled={selectedImageIndex === 0 && currentPage === 0} onpointerdown={(e) => e.preventDefault()}>
-													<ChevronLeft class="h-5 w-5" />
-												</button>
-												<button aria-label="Next" class="w-8 h-8 flex items-center justify-center bg-transparent text-white transition-colors hover:bg-white/10 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed" tabindex="-1" onclick={(e) => { e.stopPropagation(); nextVideo(); }} disabled={selectedImageIndex >= loadedImages.length - 1 && !hasMore} onpointerdown={(e) => e.preventDefault()}>
-													<ChevronRight class="h-5 w-5" />
-												</button>
-											</div>
-
-											<!-- Playback -->
-											<div class="flex items-center border-r border-white/20 pr-2 gap-1">
-												<button aria-label={s.isVideoPaused ? "Play" : "Pause"} class="w-8 h-8 flex items-center justify-center bg-transparent text-white transition-colors hover:bg-white/10 cursor-pointer" tabindex="-1" onclick={(e) => { e.stopPropagation(); s.isVideoPaused = !s.isVideoPaused; }} onpointerdown={(e) => e.preventDefault()}>
-													{#if s.isVideoPaused}
-														<Play class="h-5 w-5" />
-													{:else}
-														<Pause class="h-5 w-5" />
-													{/if}
-												</button>
-												<button aria-label="Toggle Loop" class="w-8 h-8 flex items-center justify-center bg-transparent transition-all hover:bg-white/10 cursor-pointer {s.isVideoLoop ? 'text-primary-500' : 'text-white'}" tabindex="-1" onclick={(e) => { e.stopPropagation(); s.isVideoLoop = !s.isVideoLoop; }} onpointerdown={(e) => e.preventDefault()}>
-													<Repeat class="h-5 w-5" />
-												</button>
-												<button aria-label="Toggle Mute" class="w-8 h-8 flex items-center justify-center bg-transparent transition-all hover:bg-white/10 cursor-pointer {s.isVideoMuted ? 'text-red-500' : 'text-white'}" tabindex="-1" onclick={(e) => { e.stopPropagation(); s.isVideoMuted = !s.isVideoMuted; }} onpointerdown={(e) => e.preventDefault()}>
-													{#if s.isVideoMuted}
-														<VolumeX class="h-5 w-5" />
-													{:else}
-														<Volume2 class="h-5 w-5" />
-													{/if}
-												</button>
-											</div>
-
-											<!-- Other Functions -->
-											<div class="flex items-center gap-1">
-												{#if onSwitchToAudio}
-													<button aria-label="Audio Only" class="w-8 h-8 flex items-center justify-center bg-transparent text-white transition-colors hover:bg-white/10 cursor-pointer" tabindex="-1" onclick={(e) => { e.stopPropagation(); onSwitchToAudio(); }} title="Audio Only Mode" onpointerdown={(e) => e.preventDefault()}>
-														<Music class="h-5 w-5" />
-													</button>
-												{/if}
-												<button aria-label="Rotate" class="w-8 h-8 flex items-center justify-center bg-transparent text-white transition-colors hover:bg-white/10 cursor-pointer" tabindex="-1" onclick={(e) => { e.stopPropagation(); ctrl.rotateVideo(); }} onpointerdown={(e) => e.preventDefault()}>
-													<RotateCw class="h-5 w-5" />
-												</button>
-												<button aria-label="Toogle Fullscreen" class="w-8 h-8 flex items-center justify-center bg-transparent text-white transition-colors hover:bg-white/10 cursor-pointer" tabindex="-1" onclick={(e) => { e.stopPropagation(); ctrl.toggleFullscreen(); }} onpointerdown={(e) => e.preventDefault()}>
-													{#if s.isFullscreen}
-														<Minimize class="h-5 w-5" />
-													{:else}
-														<Maximize class="h-5 w-5" />
-													{/if}
-												</button>
-											</div>
-										</div>
-									</div>
+									<div class="absolute w-3.5 h-3.5 bg-white rounded-full opacity-0 group-hover/progress:opacity-100 transition-opacity duration-150 z-30 shadow-[0_0_20px_rgba(255,255,255,1)]" style="left: calc({progressPercent}% - 7px)"></div>
 								</div>
 
-								<!-- Close Button Area Mirroring Close Button Width (shrink-0 ml-2 w-12) -->
-								<div class="shrink-0 ml-2 w-12"></div>
+								<!-- Buttons + Time (Row 2) -->
+								<div class="flex items-center justify-end gap-2">
+									<!-- Buttons (Before Time) -->
+									<div class="flex items-center gap-0.5">
+										<button aria-label="Previous" class="w-8 h-8 flex items-center justify-center bg-transparent text-white transition-colors hover:bg-white/10 rounded-lg cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed" tabindex="-1" onclick={(e) => { e.stopPropagation(); prevVideo(); }} disabled={selectedImageIndex === 0 && currentPage === 0} onpointerdown={(e) => e.preventDefault()}>
+											<ChevronLeft class="h-4 w-4" />
+										</button>
+										<button aria-label="Next" class="w-8 h-8 flex items-center justify-center bg-transparent text-white transition-colors hover:bg-white/10 rounded-lg cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed" tabindex="-1" onclick={(e) => { e.stopPropagation(); nextVideo(); }} disabled={selectedImageIndex >= loadedImages.length - 1 && !hasMore} onpointerdown={(e) => e.preventDefault()}>
+											<ChevronRight class="h-4 w-4" />
+										</button>
+										<button aria-label={s.isVideoPaused ? "Play" : "Pause"} class="w-8 h-8 flex items-center justify-center bg-transparent text-white transition-colors hover:bg-white/10 rounded-lg cursor-pointer" tabindex="-1" onclick={(e) => { e.stopPropagation(); s.isVideoPaused = !s.isVideoPaused; }} onpointerdown={(e) => e.preventDefault()}>
+											{#if s.isVideoPaused}
+												<Play class="h-4 w-4" />
+											{:else}
+												<Pause class="h-4 w-4" />
+											{/if}
+										</button>
+										<button aria-label="Toggle Loop" class="w-8 h-8 flex items-center justify-center bg-transparent transition-all hover:bg-white/10 rounded-lg cursor-pointer {s.isVideoLoop ? 'text-primary-500' : 'text-white'}" tabindex="-1" onclick={(e) => { e.stopPropagation(); s.isVideoLoop = !s.isVideoLoop; }} onpointerdown={(e) => e.preventDefault()}>
+											<Repeat class="h-4 w-4" />
+										</button>
+										<button aria-label="Toggle Mute" class="w-8 h-8 flex items-center justify-center bg-transparent transition-all hover:bg-white/10 rounded-lg cursor-pointer {s.isVideoMuted ? 'text-red-500' : 'text-white'}" tabindex="-1" onclick={(e) => { e.stopPropagation(); s.isVideoMuted = !s.isVideoMuted; }} onpointerdown={(e) => e.preventDefault()}>
+											{#if s.isVideoMuted}
+												<VolumeX class="h-4 w-4" />
+											{:else}
+												<Volume2 class="h-4 w-4" />
+											{/if}
+										</button>
+										{#if onSwitchToAudio}
+											<button aria-label="Audio Only" class="w-8 h-8 flex items-center justify-center bg-transparent text-white transition-colors hover:bg-white/10 rounded-lg cursor-pointer" tabindex="-1" onclick={(e) => { e.stopPropagation(); onSwitchToAudio(); }} title="Audio Only Mode" onpointerdown={(e) => e.preventDefault()}>
+												<Music class="h-4 w-4" />
+											</button>
+										{/if}
+										<button aria-label="Rotate" class="w-8 h-8 flex items-center justify-center bg-transparent text-white transition-colors hover:bg-white/10 rounded-lg cursor-pointer" tabindex="-1" onclick={(e) => { e.stopPropagation(); ctrl.rotateVideo(); }} onpointerdown={(e) => e.preventDefault()}>
+											<RotateCw class="h-4 w-4" />
+										</button>
+										<button aria-label="Toggle Fullscreen" class="w-8 h-8 flex items-center justify-center bg-transparent text-white transition-colors hover:bg-white/10 rounded-lg cursor-pointer" tabindex="-1" onclick={(e) => { e.stopPropagation(); ctrl.toggleFullscreen(); }} onpointerdown={(e) => e.preventDefault()}>
+											{#if s.isFullscreen}
+												<Minimize class="h-4 w-4" />
+											{:else}
+												<Maximize class="h-4 w-4" />
+											{/if}
+										</button>
+									</div>
+
+									<!-- Time Display (Rightmost) -->
+									<div class="text-white/90 text-[11px] sm:text-xs font-black tracking-tight tabular-nums">
+										<span class="bg-black/5 shadow-[0_0_8px_4px_rgba(0,0,0,0.2)] px-1 rounded-sm">
+											{formatVideoTime(s.videoTime)} / {formatVideoTime(s.videoDuration)}
+										</span>
+									</div>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -449,3 +429,17 @@
 		</div>
 	</div>
 {/if}
+
+<style>
+	/* Scrollable title - hidden scrollbar */
+	:global(.video-title-scroll) {
+		overflow-x: auto;
+		white-space: nowrap;
+		/* Hide scrollbar for all browsers */
+		scrollbar-width: none; /* Firefox */
+		-ms-overflow-style: none; /* IE/Edge */
+	}
+	:global(.video-title-scroll::-webkit-scrollbar) {
+		display: none; /* Chrome/Safari/Opera */
+	}
+</style>
