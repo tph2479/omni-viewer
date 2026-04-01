@@ -100,6 +100,25 @@
             }
             prevIdx--;
         }
+
+        if (currentPage > 0) {
+            const targetPage = currentPage - 1;
+            selectedImageIndex = -1;
+            loadFolder(false, targetPage, false).then(() => {
+                if (loadedImages.length > 0) {
+                    let lastIdx = -1;
+                    for (let i = loadedImages.length - 1; i >= 0; i--) {
+                        if (isAudioOrVideo(loadedImages[i])) {
+                            lastIdx = i;
+                            break;
+                        }
+                    }
+                    if (lastIdx !== -1) {
+                        selectedImageIndex = lastIdx;
+                    }
+                }
+            });
+        }
     }
 
     async function next() {
@@ -122,8 +141,16 @@
         }
 
         if (hasMore && !isGrouped) {
-            await loadFolder(false, currentPage + 1, true);
-            next();
+            selectedImageIndex = -1;
+            await loadFolder(false, currentPage + 1, false);
+            let startIdx = 0;
+            while (startIdx < loadedImages.length) {
+                if (isAudioOrVideo(loadedImages[startIdx])) {
+                    selectedImageIndex = startIdx;
+                    return;
+                }
+                startIdx++;
+            }
         }
     }
 

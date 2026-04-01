@@ -82,7 +82,7 @@ export function createImageModalState(props: {
 		}
 	});
 
-	$effect(() => {
+	$effect.pre(() => {
 		const path = currentItem?.path || '';
 		if (path && path !== lastPathForReset) {
 			lastPathForReset = path;
@@ -96,7 +96,7 @@ export function createImageModalState(props: {
 		}
 	});
 
-	$effect(() => {
+	$effect.pre(() => {
 		if (currentItem?.path) {
 			currentImageSrc = `/api/media?path=${encodeURIComponent(currentItem.path)}&v=${cacheVersion.value}`;
 			isFullImageLoaded = false;
@@ -105,7 +105,7 @@ export function createImageModalState(props: {
 		}
 	});
 
-	$effect(() => {
+	$effect.pre(() => {
 		if (!props.isModalOpen) {
 			currentImageSrc = '';
 			currentMetadata = null;
@@ -403,15 +403,22 @@ export function createImageModalState(props: {
 		while (nextIdx < props.loadedImages.length) {
 			if (isImage(props.loadedImages[nextIdx])) {
 				props.selectedImageIndex = nextIdx;
-				resetZoomAndPan();
 				return;
 			}
 			nextIdx++;
 		}
 		
 		if (props.hasMore && !props.isGrouped) {
-			props.loadFolder(false, props.currentPage + 1, true).then(() => {
-				nextImage();
+			props.selectedImageIndex = -1;
+			props.loadFolder(false, props.currentPage + 1, false).then(() => {
+				let startIdx = 0;
+				while (startIdx < props.loadedImages.length) {
+					if (isImage(props.loadedImages[startIdx])) {
+						props.selectedImageIndex = startIdx;
+						return;
+					}
+					startIdx++;
+				}
 			});
 		}
 	}
@@ -421,14 +428,15 @@ export function createImageModalState(props: {
 		while (prevIdx >= 0) {
 			if (isImage(props.loadedImages[prevIdx])) {
 				props.selectedImageIndex = prevIdx;
-				resetZoomAndPan();
 				return;
 			}
 			prevIdx--;
 		}
 		
 		if (props.currentPage > 0) {
-			props.loadFolder(false, props.currentPage - 1, false).then(() => {
+			const targetPage = props.currentPage - 1;
+			props.selectedImageIndex = -1;
+			props.loadFolder(false, targetPage, false).then(() => {
 				if (props.loadedImages.length > 0) {
 					let lastImageIdx = -1;
 					for (let i = props.loadedImages.length - 1; i >= 0; i--) {
@@ -439,7 +447,6 @@ export function createImageModalState(props: {
 					}
 					if (lastImageIdx !== -1) {
 						props.selectedImageIndex = lastImageIdx;
-						resetZoomAndPan();
 					}
 				}
 			});

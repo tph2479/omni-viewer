@@ -343,38 +343,42 @@
 							onload={async (e) => {
 								const img = e.currentTarget as HTMLImageElement;
 								if (!img) return;
-
-								imgState.naturalWidth = img.naturalWidth;
-								imgState.naturalHeight = img.naturalHeight;
-								imgState.isPortraitImage =
-									imgState.naturalHeight >
-									imgState.naturalWidth;
+								const currentKey = imgState.imageKey;
 
 								// Ensure transitions are OFF and image HIDDEN while we find the fit
 								imgState.isFullImageLoaded = false;
-
 								await tick();
-								imgState.renderedWidth = img.naturalWidth;
 
-								if (imgState.renderedWidth > 0) {
-									imgState.fitImageToViewport();
-								} else {
-									await new Promise((r) => setTimeout(r, 60));
-									imgState.renderedWidth =
-										img?.naturalWidth || 0;
-									imgState.fitImageToViewport();
-								}
+								const checkAndFit = async (retries = 3) => {
+									if (currentKey !== imgState.imageKey) return;
 
-								// CRITICAL: We need TWO frames to ensure the browser paints the "scale(fit)"
-								// with "transition: none" BEFORE we turn "transition: transform" back on.
-								await tick();
-								await new Promise((r) =>
-									requestAnimationFrame(() =>
-										requestAnimationFrame(r),
-									),
-								);
+									imgState.naturalWidth = img.naturalWidth;
+									imgState.naturalHeight = img.naturalHeight;
+									imgState.renderedWidth = img.naturalWidth;
 
-								imgState.isFullImageLoaded = true;
+									if (imgState.naturalWidth > 0) {
+										imgState.isPortraitImage = imgState.naturalHeight > imgState.naturalWidth;
+										imgState.fitImageToViewport();
+
+										// CRITICAL: We need TWO frames to ensure the browser paints the "scale(fit)"
+										// with "transition: none" BEFORE we turn "transition: transform" back on.
+										await tick();
+										await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+										if (currentKey === imgState.imageKey) {
+											imgState.isFullImageLoaded = true;
+										}
+									} else if (retries > 0) {
+										setTimeout(() => checkAndFit(retries - 1), 60);
+									} else {
+										// Fallback if it refuses to yield dimensions
+										if (currentKey === imgState.imageKey) {
+											imgState.isFullImageLoaded = true;
+										}
+									}
+								};
+
+								checkAndFit();
 							}}
 							class="pointer-events-auto select-none"
 							style="opacity: {imgState.isFullImageLoaded

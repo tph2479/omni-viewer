@@ -68,8 +68,16 @@
 		}
 
 		if (hasMore && !isGrouped) {
-			loadFolder(false, currentPage + 1, true).then(() => {
-				nextVideo();
+			selectedImageIndex = -1;
+			loadFolder(false, currentPage + 1, false).then(() => {
+				let startIdx = 0;
+				while (startIdx < loadedImages.length) {
+					if (isVideoItem(loadedImages[startIdx])) {
+						selectedImageIndex = startIdx;
+						return;
+					}
+					startIdx++;
+				}
 			});
 		}
 	}
@@ -85,7 +93,9 @@
 		}
 
 		if (currentPage > 0) {
-			loadFolder(false, currentPage - 1).then(() => {
+			const targetPage = currentPage - 1;
+			selectedImageIndex = -1;
+			loadFolder(false, targetPage, false).then(() => {
 				if (loadedImages.length > 0) {
 					let lastVideoIdx = -1;
 					for (let i = loadedImages.length - 1; i >= 0; i--) {
