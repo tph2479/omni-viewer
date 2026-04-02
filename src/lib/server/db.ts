@@ -19,7 +19,9 @@ const db = new JsonDB(new Config(path.join(dbDir, 'settings'), true, true, '/'))
  */
 export async function getDefaultAppPath(): Promise<string | null> {
     try {
-        return await db.getData("/settings/defaultAppPath");
+        const raw = await db.getData("/settings/defaultAppPath");
+        if (typeof raw !== 'string' || !raw) return null;
+        return raw.replace(/^([A-Za-z]:\\)\1+/i, '$1');
     } catch (error) {
         // Thư viện sẽ throw error thay vì trả về undefined khi không tìm thấy node
         return null;

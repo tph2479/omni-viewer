@@ -65,7 +65,8 @@ export async function handleNavigation(folderParam: string | null) {
         }
     }
 
-    const currentPath = path.resolve(folderParam);
+    const sanitizedParam = folderParam.replace(/^([A-Za-z]:\\)\1+/i, '$1');
+    const currentPath = path.resolve(sanitizedParam);
     const stat = await fs.stat(currentPath);
     if (!stat.isDirectory()) throw error(400, 'Path is not a directory');
 

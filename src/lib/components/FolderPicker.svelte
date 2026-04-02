@@ -45,6 +45,10 @@
         if (availableDrives.length > 0) {
             return /^[A-Za-z]:[\\\/]/.test(availableDrives[0].path);
         }
+        // Also check folderPath for Windows-style paths (e.g. from DB or localStorage)
+        if (folderPath && /^[A-Za-z]:[\\\/]/.test(folderPath)) {
+            return true;
+        }
         return navigator.userAgent.toLowerCase().includes("win");
     });
 
@@ -54,7 +58,9 @@
     /** Normalize separators so we always compare with the native sep. */
     function normalizePath(p: string): string {
         if (!p) return p;
-        if (isWindows) return p.replace(/\//g, "\\");
+        // Detect Windows from path itself (important for mobile browsers)
+        const pathIsWindows = /^[A-Za-z]:[\\\/]/.test(p);
+        if (pathIsWindows || isWindows) return p.replace(/\//g, "\\");
         return p.replace(/\\/g, "/");
     }
 
@@ -62,17 +68,17 @@
     function stripTrailingSep(p: string): string {
         const norm = normalizePath(p);
         // Windows root: "C:\"  → keep
-        if (isWindows && /^[A-Za-z]:\\$/.test(norm)) return norm;
+        if (/^[A-Za-z]:\\$/.test(norm)) return norm;
         // Linux root: "/"     → keep
-        if (!isWindows && norm === "/") return norm;
+        if (norm === "/") return norm;
         return norm.replace(/[\\\/]+$/, "");
     }
 
     /** Root label shown when no drive / path is selected. */
-    const ROOT_LABEL = $derived(isWindows ? "This PC" : "File System");
+    const ROOT_LABEL = "";
 
     // ── State ─────────────────────────────────────────────────────
-    let pickerCurrentPath = $state("This PC");
+    let pickerCurrentPath = $state("");
     let pickerParentPath = $state<string | null>(null);
     let subdirectoryEntries: DirectoryEntry[] = $state([]);
     const isAtRoot = $derived(
@@ -93,14 +99,22 @@
             pathQuery === "File System";
 
         if (isRoot) {
-            pickerCurrentPath = ROOT_LABEL;
-            pickerParentPath = null;
-
-            if (force && onRefreshDrives) {
-                await onRefreshDrives();
-            } else if (availableDrives.length === 0 && !isDrivesLoading) {
-                onRefreshDrives?.();
+            // Never show "This PC" — always go to first available drive
+            if (availableDrives.length > 0) {
+                await loadPickerData(availableDrives[0].path, force);
+                return;
             }
+            // No drives yet — load them first
+            if (onRefreshDrives) {
+                await onRefreshDrives();
+                if (availableDrives.length > 0) {
+                    await loadPickerData(availableDrives[0].path, force);
+                    return;
+                }
+            }
+            // Still no drives — show empty state, not "This PC"
+            pickerCurrentPath = "";
+            pickerParentPath = null;
             return;
         }
 
@@ -116,7 +130,7 @@
             if (!res.ok)
                 throw new Error(data.message || "Error fetching directories");
 
-            pickerCurrentPath = data.currentPath || ROOT_LABEL;
+            pickerCurrentPath = data.currentPath || "";
             pickerParentPath = data.parentPath ?? null;
             subdirectoryEntries = (data.directories as DirectoryEntry[]).map(
                 (d) => ({
@@ -138,25 +152,49 @@
             untrack(() => {
                 let target = folderPath.trim();
 
-                // Windows: "C:" → "C:\"
-                if (isWindows && target.length === 2 && target.endsWith(":")) {
-                    target += "\\";
-                }
-                // Linux: ensure leading slash when non-empty
-                if (!isWindows && target && !target.startsWith("/")) {
-                    target = "/" + target;
+                // If empty path, default to first available drive
+                if (!target) {
+                    if (availableDrives.length > 0) {
+                        target = availableDrives[0].path;
+                        folderPath = target;
+                        normalizeAndLoad(target);
+                    } else {
+                        // Drives not loaded yet — load them first, then navigate to first drive
+                        onRefreshDrives?.().then(() => {
+                            if (availableDrives.length > 0) {
+                                const firstDrive = availableDrives[0].path;
+                                folderPath = firstDrive;
+                                normalizeAndLoad(firstDrive);
+                            }
+                        }).catch(() => {});
+                    }
+                    setTimeout(() => dialogEl?.focus(), 50);
+                    return;
                 }
 
-                if (availableDrives.length === 0 && !isDrivesLoading) {
-                    onRefreshDrives?.();
-                }
-
-                loadPickerData(target).catch(() => loadPickerData(""));
+                normalizeAndLoad(target);
                 setTimeout(() => dialogEl?.focus(), 50);
             });
         }
         wasOpen = isFolderPickerOpen;
     });
+
+    function normalizeAndLoad(raw: string) {
+        let target = raw.trim();
+        // Strip double drive prefix: C:\C:\Users → C:\Users
+        target = target.replace(/^([A-Za-z]:\\)\1+/i, '$1');
+        // Detect Windows from path itself (important for mobile browsers)
+        const pathIsWindows = /^[A-Za-z]:[\\\/]/.test(target);
+        // Windows: "C:" → "C:\"
+        if ((pathIsWindows || isWindows) && target.length === 2 && target.endsWith(":")) {
+            target += "\\";
+        }
+        // Linux: ensure leading slash when non-empty
+        if (!pathIsWindows && !isWindows && target && !target.startsWith("/")) {
+            target = "/" + target;
+        }
+        loadPickerData(target).catch(() => {});
+    }
 
     // ── Actions ───────────────────────────────────────────────────
     function handleKeydown(e: KeyboardEvent) {
@@ -168,8 +206,7 @@
     }
 
     function confirm() {
-        if (pickerCurrentPath === ROOT_LABEL || pickerCurrentPath === "")
-            return;
+        if (!pickerCurrentPath) return;
         const finalPath = stripTrailingSep(pickerCurrentPath);
         folderPath = finalPath;
         isFolderPickerOpen = false;
@@ -201,7 +238,7 @@
 
     // ── UI helpers ────────────────────────────────────────────────
     function getEntryMeta(dir: DirectoryEntry, isRoot: boolean) {
-        const isDrive = isWindows && /^[A-Za-z]:[\\\/]?$/.test(dir.path);
+        const isDrive = /^[A-Za-z]:[\\\/]?$/.test(dir.path);
         if (isRoot || isDrive)
             return { colorClass: "text-tertiary-500", icon: "drive" };
         if (dir.isDir)
@@ -219,7 +256,8 @@
     /** Drive/root label shown in the quick-nav chips.
      *  Windows → "C", "D" …   Linux → "/", "~", "/media/…" last segment */
     function driveLabel(drive: DirectoryEntry): string {
-        if (isWindows) {
+        const isDrive = /^[A-Za-z]:[\\\/]?$/.test(drive.path);
+        if (isDrive) {
             // "C:\ (Volume)" or "C:\"
             const letterMatch = drive.path.match(/^([A-Za-z]:)/);
             const letter = letterMatch ? letterMatch[1] : drive.name.slice(0, 2);
@@ -315,10 +353,10 @@
 				bg-white dark:bg-surface-900
 				border border-gray-200 dark:border-surface-600
 				text-gray-600 dark:text-gray-300"
-                title={pickerCurrentPath}
+                title={pickerCurrentPath || ""}
             >
                 {#if isAtRoot}
-                    <span class="opacity-50">{ROOT_LABEL}</span>
+                    <span class="opacity-50">Selecting drive…</span>
                 {:else}
                     {pickerCurrentPath}
                 {/if}

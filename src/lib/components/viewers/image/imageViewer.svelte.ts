@@ -206,6 +206,21 @@ export function createImageModalState(props: {
 		rightControlsVisible = false;
 	}
 
+	function toggleControlsVisibility() {
+		infoVisible = true;
+		rightControlsVisible = true;
+		if (infoHideTimerId) clearTimeout(infoHideTimerId);
+		if (rightHideTimerId) clearTimeout(rightHideTimerId);
+		infoHideTimerId = setTimeout(() => {
+			infoVisible = false;
+			infoHideTimerId = null;
+		}, 3000);
+		rightHideTimerId = setTimeout(() => {
+			rightControlsVisible = false;
+			rightHideTimerId = null;
+		}, 3000);
+	}
+
 	function fitImageToViewport(forcedRotation?: number) {
 		if (renderedWidth > 0 && naturalWidth > 0 && naturalHeight > 0) {
 			const rot = forcedRotation !== undefined ? forcedRotation : rotation;
@@ -610,6 +625,7 @@ export function createImageModalState(props: {
         handleKeyDown,
         cleanup,
 		resetAll,
-		hideControlsImmediately
+		hideControlsImmediately,
+		toggleControlsVisibility
     };
 }

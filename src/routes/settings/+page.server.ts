@@ -19,7 +19,8 @@ export const actions: Actions = {
         }
         
         try {
-            const trimmedPath = path.trim();
+            let trimmedPath = path.trim();
+            trimmedPath = trimmedPath.replace(/^([A-Za-z]:\\)\1+/i, '$1');
             await setDefaultAppPath(trimmedPath);
             return { success: true, path: trimmedPath };
         } catch (error) {

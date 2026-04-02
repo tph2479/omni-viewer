@@ -257,6 +257,14 @@
 		class="fixed inset-0 z-[300] bg-black/80 flex flex-col h-full w-full overflow-hidden outline-none animate-in fade-in duration-300"
 		onmousemove={ctrl.handleMouseMoveVisibility}
 		onmouseleave={() => ctrl.hideControlsImmediately()}
+		ontouchend={() => {
+			s.controlsVisible = true;
+			if (s.hideTimerId) clearTimeout(s.hideTimerId);
+			s.hideTimerId = setTimeout(() => {
+				s.controlsVisible = false;
+				s.hideTimerId = null;
+			}, 3000);
+		}}
 	>
 		<!-- Main View Area -->
 		<div
@@ -320,7 +328,7 @@
 							onmouseenter={() => (s.isHoveringControls = true)}
 							onmouseleave={() => (s.isHoveringControls = false)}
 						>
-							<!-- Row 1: Seekbar + Close -->
+							<!-- Row 1: Seekbar + Time + Close -->
 							<div class="flex items-center gap-4 pointer-events-auto">
 								<div class="flex-1 min-w-0">
 									<div
@@ -343,6 +351,9 @@
 										</div>
 										<div class="absolute w-4 h-4 bg-white rounded-full opacity-0 group-hover/progress:opacity-100 transition-opacity duration-150 z-30" style="left: calc({progressPercent}% - 8px)"></div>
 									</div>
+								</div>
+								<div class="text-white text-xs sm:text-sm font-mono shrink-0">
+									{formatVideoTime(s.videoTime)} / {formatVideoTime(s.videoDuration)}
 								</div>
 								<button
 									aria-label="Close"
@@ -367,7 +378,7 @@
 								{/if}
 							</div>
 
-							<!-- Row 3: Buttons + Time -->
+							<!-- Row 3: Buttons -->
 							<div class="flex items-center justify-end gap-2 pointer-events-auto">
 								<div class="flex items-center gap-0.5">
 									<button aria-label="Previous" class="w-10 h-10 flex items-center justify-center text-white hover:bg-white/10 rounded transition-colors cursor-pointer disabled:opacity-30" tabindex="-1" onclick={(e) => { e.stopPropagation(); prevVideo(); }} disabled={selectedImageIndex === 0 && currentPage === 0} onpointerdown={(e) => e.preventDefault()}>
@@ -424,9 +435,6 @@
 											<Maximize class="h-5 w-5" />
 										{/if}
 									</button>
-								</div>
-								<div class="text-white text-sm font-mono">
-									{formatVideoTime(s.videoTime)} / {formatVideoTime(s.videoDuration)}
 								</div>
 							</div>
 						</div>

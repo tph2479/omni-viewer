@@ -31,15 +31,7 @@
 </script>
 
 <div class="flex-1 flex flex-col">
-    {#if s.ui.error}
-        <aside
-            class="flex items-center gap-3 preset-filled-error-500 text-xs py-2 px-4 mb-6 rounded-xl w-full"
-        >
-            <span class="font-bold tracking-tight uppercase">{s.ui.error}</span>
-        </aside>
-    {/if}
-
-    {#if !s.folder.isSelected && !s.ui.isLoading && !s.ui.error}
+    {#if !s.folder.isSelected && !s.ui.isLoading}
         <EmptyState onOpenPicker={() => (s.modal.folderPicker.open = true)} />
     {:else if s.folder.isSelected}
         <BrowserView highlightedPath={s.ui.highlightedPath} />

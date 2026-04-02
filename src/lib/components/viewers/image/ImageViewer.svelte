@@ -120,6 +120,7 @@
 		class="fixed inset-0 z-[300] bg-black/40 backdrop-blur-md flex flex-col h-full w-full overflow-hidden outline-none animate-in fade-in duration-300"
 		onmousemove={imgState.handleMouseMoveVisibility}
 		onmouseleave={() => imgState.hideControlsImmediately()}
+		ontouchend={() => imgState.toggleControlsVisibility()}
 	>
 		<!-- TOP BACKGROUND SHADOW (Full Width) -->
 		<div
@@ -197,7 +198,7 @@
 				<!-- Close Button -->
 				<button
 					aria-label="Close"
-					class="w-12 h-12 flex items-center justify-center rounded-xl bg-zinc-900/95 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl transition-all hover:scale-110 mb-2 cursor-pointer"
+					class="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-xl bg-zinc-900/95 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl transition-all hover:scale-110 mb-2 cursor-pointer"
 					tabindex="-1"
 					style="touch-action: manipulation;"
 					onclick={(e) => {
@@ -206,16 +207,16 @@
 					}}
 					onpointerdown={(e) => e.preventDefault()}
 				>
-					<X class="h-6 w-6" />
+					<X class="h-5 w-5 sm:h-6 sm:w-6" />
 				</button>
 
 				<!-- Navigation Group -->
 				<div
-					class="flex flex-col bg-zinc-900/95 rounded-xl backdrop-blur-xl border border-white/10 overflow-hidden shadow-2xl w-12 mb-3"
+					class="flex flex-col bg-zinc-900/95 rounded-xl backdrop-blur-xl border border-white/10 overflow-hidden shadow-2xl w-10 sm:w-12 mb-3"
 				>
 					<button
 						aria-label="Previous"
-						class="w-12 h-12 flex items-center justify-center bg-transparent text-white border-b border-white/10 transition-colors hover:bg-white/5 cursor-pointer"
+						class="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-transparent text-white border-b border-white/10 transition-colors hover:bg-white/5 cursor-pointer"
 						tabindex="-1"
 						style="touch-action: manipulation;"
 						onclick={(e) => {
@@ -224,11 +225,11 @@
 						}}
 						onpointerdown={(e) => e.preventDefault()}
 					>
-						<ChevronLeft class="h-6 w-6" />
+						<ChevronLeft class="h-5 w-5 sm:h-6 sm:w-6" />
 					</button>
 					<button
 						aria-label="Next"
-						class="w-12 h-12 flex items-center justify-center bg-transparent text-white border-none transition-colors hover:bg-white/5 cursor-pointer"
+						class="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-transparent text-white border-none transition-colors hover:bg-white/5 cursor-pointer"
 						tabindex="-1"
 						style="touch-action: manipulation;"
 						onclick={(e) => {
@@ -237,17 +238,17 @@
 						}}
 						onpointerdown={(e) => e.preventDefault()}
 					>
-						<ChevronRight class="h-6 w-6" />
+						<ChevronRight class="h-5 w-5 sm:h-6 sm:w-6" />
 					</button>
 				</div>
 
 				<!-- Zoom Modes -->
 				<div
-					class="flex flex-col bg-zinc-900/95 rounded-xl backdrop-blur-xl border border-white/10 overflow-hidden shadow-2xl w-12 mb-3"
+					class="flex flex-col bg-zinc-900/95 rounded-xl backdrop-blur-xl border border-white/10 overflow-hidden shadow-2xl w-10 sm:w-12 mb-3"
 				>
 					<button
 						aria-label="Fit Width"
-						class="w-12 h-12 flex items-center justify-center bg-transparent text-white border-b border-white/10 transition-colors hover:bg-white/5 cursor-pointer"
+						class="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-transparent text-white border-b border-white/10 transition-colors hover:bg-white/5 cursor-pointer"
 						tabindex="-1"
 						style="touch-action: manipulation;"
 						onclick={(e) => {
@@ -256,11 +257,11 @@
 						}}
 						onpointerdown={(e) => e.preventDefault()}
 					>
-						<Maximize2 class="h-6 w-6" />
+						<Maximize2 class="h-5 w-5 sm:h-6 sm:w-6" />
 					</button>
 					<button
 						aria-label="Toggle 1:1"
-						class="w-12 h-12 flex items-center justify-center bg-transparent text-white border-none font-black font-mono text-[10px] transition-colors hover:bg-white/5 cursor-pointer"
+						class="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-transparent text-white border-none font-black font-mono text-[10px] transition-colors hover:bg-white/5 cursor-pointer"
 						tabindex="-1"
 						style="touch-action: manipulation;"
 						onclick={(e) => {
@@ -273,7 +274,7 @@
 					</button>
 					<button
 						aria-label="Rotate"
-						class="w-12 h-12 flex items-center justify-center bg-transparent text-white border-t border-white/10 transition-colors hover:bg-white/5 cursor-pointer"
+						class="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-transparent text-white border-t border-white/10 transition-colors hover:bg-white/5 cursor-pointer"
 						tabindex="-1"
 						style="touch-action: manipulation;"
 						onclick={(e) => {
@@ -282,17 +283,17 @@
 						}}
 						onpointerdown={(e) => e.preventDefault()}
 					>
-						<RotateCw class="h-6 w-6" />
+						<RotateCw class="h-5 w-5 sm:h-6 sm:w-6" />
 					</button>
 				</div>
 
 				<!-- Zoom Controls -->
 				<div
-					class="flex flex-col bg-zinc-900/95 rounded-xl backdrop-blur-xl border border-white/10 overflow-hidden shadow-2xl w-12"
+					class="flex flex-col bg-zinc-900/95 rounded-xl backdrop-blur-xl border border-white/10 overflow-hidden shadow-2xl w-10 sm:w-12"
 				>
 					<button
 						aria-label="Zoom In"
-						class="w-12 h-12 flex items-center justify-center bg-transparent text-white border-b border-white/10 transition-colors hover:bg-white/5 cursor-pointer"
+						class="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-transparent text-white border-b border-white/10 transition-colors hover:bg-white/5 cursor-pointer"
 						tabindex="-1"
 						style="touch-action: manipulation;"
 						onclick={(e) => {
@@ -303,11 +304,11 @@
 						}}
 						onpointerdown={(e) => e.preventDefault()}
 					>
-						<Plus class="h-6 w-6" />
+						<Plus class="h-5 w-5 sm:h-6 sm:w-6" />
 					</button>
 					<button
 						aria-label="Current Zoom"
-						class="w-full py-2 text-[10px] font-mono font-black text-white hover:bg-white/10 transition-colors bg-white/5 flex items-center justify-center tracking-tighter cursor-pointer"
+						class="w-full py-1.5 sm:py-2 text-[10px] font-mono font-black text-white hover:bg-white/10 transition-colors bg-white/5 flex items-center justify-center tracking-tighter cursor-pointer"
 						tabindex="-1"
 						style="touch-action: manipulation;"
 						onclick={(e) => {
@@ -320,7 +321,7 @@
 					</button>
 					<button
 						aria-label="Zoom Out"
-						class="w-12 h-12 flex items-center justify-center bg-transparent text-white border-t border-white/10 transition-colors hover:bg-white/5 cursor-pointer"
+						class="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-transparent text-white border-t border-white/10 transition-colors hover:bg-white/5 cursor-pointer"
 						tabindex="-1"
 						style="touch-action: manipulation;"
 						onclick={(e) => {
@@ -331,7 +332,7 @@
 						}}
 						onpointerdown={(e) => e.preventDefault()}
 					>
-						<Minus class="h-6 w-6" />
+						<Minus class="h-5 w-5 sm:h-6 sm:w-6" />
 					</button>
 				</div>
 			</div>

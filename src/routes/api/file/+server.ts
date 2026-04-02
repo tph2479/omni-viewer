@@ -6,8 +6,13 @@ import { handleNavigation } from './handlers/navigation';
 import { handleListing } from './handlers/listing';
 import { handleCovers } from './handlers/covers';
 
+function sanitizePath(p: string | null): string | null {
+    if (!p) return p;
+    return p.replace(/^([A-Za-z]:\\)\1+/i, '$1');
+}
+
 export async function DELETE({ url }: RequestEvent) {
-	const pathParam = url.searchParams.get('path');
+	const pathParam = sanitizePath(url.searchParams.get('path'));
 	if (!pathParam) throw error(400, 'Missing path');
 
 	return await handleDelete(pathParam);
@@ -18,7 +23,7 @@ export async function GET({ url }: RequestEvent) {
 
     // directories navigation
     if (action === 'directories') {
-	    const folderParam = url.searchParams.get('path');
+	    const folderParam = sanitizePath(url.searchParams.get('path'));
 	    try {
 	    	return await handleNavigation(folderParam);
 	    } catch (e: any) {
@@ -30,7 +35,7 @@ export async function GET({ url }: RequestEvent) {
     
     // gallery listing
     if (action === 'gallery') {
-        const folderParam = url.searchParams.get('folder');
+        const folderParam = sanitizePath(url.searchParams.get('folder'));
         const pageParam = url.searchParams.get('page') || '0';
         const limitParam = url.searchParams.get('limit') || '50';
         const sortBy = url.searchParams.get('sort') || 'date_desc';
@@ -62,7 +67,7 @@ export async function GET({ url }: RequestEvent) {
 
     // cover folder browsing
     if (action === 'covers') {
-        const folderParam = url.searchParams.get('folder');
+        const folderParam = sanitizePath(url.searchParams.get('folder'));
         const pageParam = url.searchParams.get('page') || '0';
         const limitParam = url.searchParams.get('limit') || '30';
 

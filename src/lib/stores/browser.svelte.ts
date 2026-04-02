@@ -149,6 +149,8 @@ export function createBrowserStore() {
   function normalizePath(p: string) {
     if (!p) return p;
     let res = p.trim();
+    // Strip double drive prefix: C:\C:\Users → C:\Users
+    res = res.replace(/^([A-Za-z]:\\)\1+/i, '$1');
     if (res.length === 2 && res[1] === ":") {
       res += "\\";
     } else if (res.length > 3 && (res.endsWith("\\") || res.endsWith("/"))) {
@@ -176,12 +178,23 @@ export function createBrowserStore() {
   async function loadFolder(reset = true, pageToLoad = 0, append = false) {
     if (!folder.path.trim()) {
       if (ui.availableDrives.length === 0) await refreshDrives();
+      // Auto-load first drive instead of opening picker
+      if (ui.availableDrives.length > 0) {
+        folder.path = ui.availableDrives[0].path;
+        await loadFolder(reset, pageToLoad, append);
+        return;
+      }
       modal.folderPicker.open = true;
       return;
     }
 
     ui.isLoading = true;
     ui.error = "";
+
+    // Start loading drives in parallel (for fallback)
+    const drivesPromise = ui.availableDrives.length === 0
+      ? refreshDrives()
+      : Promise.resolve();
 
     const targetPath = normalizePath(folder.path);
     const targetId = ui.lastOpenedFolder
@@ -282,8 +295,23 @@ export function createBrowserStore() {
         ui.pendingFile = null;
       }
     } catch (e: any) {
-      ui.error = e.message;
-      if (reset) folder.isSelected = false;
+      // Don't show error — try to fall back to first available drive
+      await drivesPromise;
+      if (ui.availableDrives.length > 0) {
+        const firstDrive = ui.availableDrives[0].path;
+        if (firstDrive !== targetPath) {
+          folder.path = firstDrive;
+          folder.isSelected = false;
+          localStorage.setItem("last-path", firstDrive);
+          // Retry with the first drive
+          await loadFolder(reset, pageToLoad, append);
+          return;
+        }
+      }
+      // No drives available or already on first drive — open picker
+      ui.error = "";
+      folder.isSelected = false;
+      modal.folderPicker.open = true;
     } finally {
       ui.isLoading = false;
     }
@@ -520,7 +548,7 @@ export function createBrowserStore() {
     actions: {
       openDir,
       loadFolder,
-      refreshDrives: (force = false) => refreshDrives(force),
+      refreshDrives: (force = true) => refreshDrives(force),
       setSort,
       setMediaType,
       loadNextPage,
