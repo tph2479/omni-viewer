@@ -32,6 +32,10 @@
 	const ctrl = createVideoController();
 	let s = $derived(ctrl.state);
 
+	$effect(() => {
+		ctrl.setupFullscreenListeners();
+	});
+
 	const currentItem = $derived(loadedImages[selectedImageIndex] || null);
 	const progressPercent = $derived(s.videoDuration > 0 ? (s.videoTime / s.videoDuration) * 100 : 0);
 
@@ -302,21 +306,10 @@
 					<div
 						class="absolute inset-0 z-[120] pointer-events-none transition-all duration-300 {s.controlsVisible ? 'opacity-100' : 'opacity-0'}"
 						role="presentation"
-						onmouseenter={() => (s.isHoveringControls = true)}
-						onmouseleave={() => {
-							s.isHoveringControls = false;
-							if (s.hideTimerId) clearTimeout(s.hideTimerId);
-							s.hideTimerId = setTimeout(() => {
-								if (!s.isHoveringControls) {
-									s.controlsVisible = false;
-									s.hideTimerId = null;
-								}
-							}, 2000);
-						}}
 					>
 						<!-- TOP BACKGROUND -->
 						<div
-							class="absolute top-0 left-0 w-full h-48 bg-gradient-to-b from-black/80 to-transparent pointer-events-none transition-opacity duration-300 {s.controlsVisible ? 'opacity-100' : 'opacity-0'} z-[110]"
+							class="absolute top-0 left-0 w-full h-72 bg-gradient-to-b from-black via-black/85 to-transparent pointer-events-none transition-opacity duration-300 {s.controlsVisible ? 'opacity-100' : 'opacity-0'} z-[110]"
 						></div>
 
 						<!-- LAYOUT -->
@@ -367,15 +360,18 @@
 							</div>
 
 							<!-- Row 2: Title -->
-							<div class="text-right w-full overflow-x-auto video-title-scroll pointer-events-auto">
-								<p class="select-text text-white font-bold text-xl sm:text-2xl tracking-tight whitespace-nowrap leading-tight inline-block">
-									{currentVideoIndexDisplay} / {totalImages} — {currentItem?.name}
-								</p>
-								{#if s.currentMetadata}
-									<p class="select-text text-white/60 text-xs font-mono mt-0.5 whitespace-nowrap inline-block">
-										{formatBytes(s.currentMetadata.size)} • {formatDateTime(s.currentMetadata.lastModified)}
+							<div class="flex items-center pointer-events-auto">
+								<div class="flex-1 min-w-0 overflow-x-auto video-title-scroll text-right">
+									<p class="select-text text-white font-bold text-xl sm:text-2xl tracking-tight whitespace-nowrap leading-tight inline-block">
+										{currentVideoIndexDisplay} / {totalImages} — {currentItem?.name}
 									</p>
-								{/if}
+									{#if s.currentMetadata}
+										<p class="select-text text-white/60 text-xs font-mono mt-0.5 whitespace-nowrap inline-block">
+											{formatBytes(s.currentMetadata.size)} • {formatDateTime(s.currentMetadata.lastModified)}
+										</p>
+									{/if}
+								</div>
+								<div class="w-[1rem] shrink-0" aria-hidden="true"></div>
 							</div>
 
 							<!-- Row 3: Buttons -->
@@ -428,12 +424,13 @@
 									<button aria-label="Rotate" class="w-10 h-10 flex items-center justify-center text-white hover:bg-white/10 rounded transition-colors cursor-pointer" tabindex="-1" onclick={(e) => { e.stopPropagation(); ctrl.rotateVideo(); }} onpointerdown={(e) => e.preventDefault()}>
 										<RotateCw class="h-5 w-5" />
 									</button>
-									<button aria-label="Toggle Fullscreen" class="w-10 h-10 flex items-center justify-center text-white hover:bg-white/10 rounded transition-colors cursor-pointer" tabindex="-1" onclick={(e) => { e.stopPropagation(); ctrl.toggleFullscreen(); }} onpointerdown={(e) => e.preventDefault()}>
+									<button aria-label="Toggle Fullscreen" class="mr-1.5 w-10 h-10 flex items-center justify-center text-white hover:bg-white/10 rounded transition-colors cursor-pointer" tabindex="-1" onclick={(e) => { e.stopPropagation(); ctrl.toggleFullscreen(); }} onpointerdown={(e) => e.preventDefault()}>
 										{#if s.isFullscreen}
 											<Minimize class="h-5 w-5" />
 										{:else}
 											<Maximize class="h-5 w-5" />
 										{/if}
+										
 									</button>
 								</div>
 							</div>

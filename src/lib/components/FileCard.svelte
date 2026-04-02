@@ -17,6 +17,7 @@
         FileVideo,
         FileAudio,
         Play,
+        BookOpen,
     } from "lucide-svelte";
 
     type FileActions = {
@@ -111,14 +112,16 @@
                     : undefined}
             >
                 <FileArchive
-                    class="w-1/2 h-1/2 text-amber-600 transition-transform duration-300"
+                    class="w-1/2 h-1/2 text-amber-600 opacity-20 transition-all duration-500"
                     strokeWidth={1.5}
                 />
             </div>
-            <div
-                class="absolute top-2 left-2 z-10 bg-amber-600 text-white text-[9px] font-black tracking-widest px-2 py-0.5 rounded shadow-lg uppercase"
-            >
-                ZIP
+            <div class="absolute top-2 left-2 z-10">
+                <div
+                    class="bg-black/60 p-1.5 rounded-lg border border-white/20 shadow-lg"
+                >
+                    <FileArchive class="w-4 h-4 text-white" strokeWidth={1.5} />
+                </div>
             </div>
         {:else if isCbzFile(img.name)}
             <!-- CBZ cover -->
@@ -129,10 +132,12 @@
                 alt={img.name}
                 class="absolute inset-0 w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-700 ease-out"
             />
-            <div
-                class="absolute top-2 left-2 z-10 bg-amber-500 text-white text-[9px] font-black tracking-widest px-2 py-0.5 rounded shadow-lg uppercase"
-            >
-                CBZ
+            <div class="absolute top-2 left-2 z-10">
+                <div
+                    class="bg-black/60 p-1.5 rounded-lg border border-white/20 shadow-lg"
+                >
+                    <FileArchive class="w-4 h-4 text-white" strokeWidth={1.5} />
+                </div>
             </div>
             <!-- Fallback Icon for CBZ (Hidden by default, shown on error) -->
             <div
@@ -167,31 +172,22 @@
             </div>
         {:else if img.isAudio}
             <div
-                class="absolute inset-0 flex flex-col items-center justify-center transition-colors"
-                style="background-color: color-mix(in srgb, var(--color-primary-500) 5%, transparent);"
-                onmouseenter={(e) => { e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--color-primary-500) 10%, transparent)'; }}
-                onmouseleave={(e) => { e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--color-primary-500) 5%, transparent)'; }}
+                class="absolute inset-0"
                 style:background-color={highlighted
                     ? "rgba(59, 130, 246, 0.5)"
                     : undefined}
             >
-                <FileAudio
-                    class="w-1/4 h-1/4 opacity-20 transition-all duration-500"
-                    style="color: var(--color-primary-500);"
-                    strokeWidth={1.5}
+                <img
+                    use:lazyThumbnail={`/api/media?path=${encodeURIComponent(img.path)}&thumbnail=true&v=${cacheVersion.value}`}
+                    decoding="async"
+                    fetchpriority="auto"
+                    alt={img.name}
+                    class="absolute inset-0 w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-700 ease-out"
                 />
             </div>
-            <img
-                use:lazyThumbnail={`/api/media?path=${encodeURIComponent(img.path)}&thumbnail=true&v=${cacheVersion.value}`}
-                decoding="async"
-                fetchpriority="auto"
-                alt={img.name}
-                class="absolute inset-0 w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-700 ease-out z-10"
-            />
             <div class="absolute top-2 left-2 z-10">
                 <div
-                    class="p-1.5 rounded-lg border border-white/20 shadow-lg transition-colors"
-                    style="background-color: color-mix(in srgb, var(--color-primary-500) 80%, transparent);"
+                    class="bg-black/60 p-1.5 rounded-lg border border-white/20 shadow-lg"
                 >
                     <FileAudio class="w-4 h-4 text-white" strokeWidth={1.5} />
                 </div>
@@ -217,12 +213,9 @@
             />
             <div class="absolute top-2 left-2 z-10">
                 <div
-                    class="bg-red-600/90 px-2 py-0.5 rounded shadow-lg group-hover:bg-red-600 transition-colors"
+                    class="bg-black/60 p-1.5 rounded-lg border border-white/20 shadow-lg"
                 >
-                    <span
-                        class="text-[9px] font-black text-white tracking-widest uppercase"
-                        >PDF</span
-                    >
+                    <FileText class="w-4 h-4 text-white" strokeWidth={1.5} />
                 </div>
             </div>
         {:else if isEpubFile(img.name) || img.isEpub}
@@ -232,7 +225,7 @@
                     ? "rgba(59, 130, 246, 0.5)"
                     : undefined}
             >
-                <FileText
+                <BookOpen
                     class="w-1/3 h-1/3 text-emerald-600 opacity-20 transition-all duration-500"
                     strokeWidth={1.5}
                 />
@@ -246,12 +239,9 @@
             />
             <div class="absolute top-2 left-2 z-10">
                 <div
-                    class="bg-emerald-600/90 px-2 py-0.5 rounded shadow-lg group-hover:bg-emerald-600 transition-colors"
+                    class="bg-black/60 p-1.5 rounded-lg border border-white/20 shadow-lg"
                 >
-                    <span
-                        class="text-[9px] font-black text-white tracking-widest uppercase"
-                        >EPUB</span
-                    >
+                    <BookOpen class="w-4 h-4 text-white" strokeWidth={1.5} />
                 </div>
             </div>
         {:else}

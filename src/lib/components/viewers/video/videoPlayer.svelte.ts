@@ -103,6 +103,23 @@ export function createVideoController() {
 		}
 	}
 
+	function setupFullscreenListeners() {
+		if (typeof globalThis.document === 'undefined') return;
+		const handler = () => {
+			const isNowFullscreen = !!globalThis.document.fullscreenElement;
+			s.isFullscreen = isNowFullscreen;
+			if (isNowFullscreen) {
+				s.controlsVisible = false;
+				s.isHoveringControls = false;
+				if (s.hideTimerId) {
+					clearTimeout(s.hideTimerId);
+					s.hideTimerId = null;
+				}
+			}
+		};
+		globalThis.document.addEventListener('fullscreenchange', handler);
+	}
+
 	function destroy() {
 		s.currentVideoSrc = '';
 		if (s.hideTimerId) clearTimeout(s.hideTimerId);
@@ -123,6 +140,7 @@ export function createVideoController() {
 		toggleFullscreen,
 		handleMouseMoveVisibility,
 		destroy,
-		hideControlsImmediately
+		hideControlsImmediately,
+		setupFullscreenListeners
 	};
 }
