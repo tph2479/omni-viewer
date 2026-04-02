@@ -235,7 +235,7 @@
         {#if exclusiveType}
             <div class="flex items-center gap-1.5 shrink-0 ml-1 mr-2 animate-in fade-in slide-in-from-right-2 duration-300">
                 <div class="w-px h-4 bg-surface-500/20 mx-0.5"></div>
-                <div class="flex items-center gap-1.5 py-1 px-2.5 rounded-full bg-primary-500/10 border border-primary-500/20 text-primary-500 shadow-sm">
+                <div class="flex items-center gap-1.5 py-1 px-2.5 rounded-full shadow-sm" style="background-color: color-mix(in srgb, var(--color-primary-500) 10%, transparent); border: 1px solid color-mix(in srgb, var(--color-primary-500) 20%, transparent); color: var(--color-primary-500);">
                     <LayoutGrid size={12} strokeWidth={2.5} class="opacity-70" />
                     <span class="text-[10px] font-black uppercase tracking-wider whitespace-nowrap">
                         {exclusiveType}

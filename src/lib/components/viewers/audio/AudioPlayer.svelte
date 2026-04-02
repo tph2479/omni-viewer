@@ -394,8 +394,9 @@
                         <!-- Loop -->
                         <button
                             class="btn btn-circle btn-ghost {s.isLooping
-                                ? 'text-primary-500'
+                                ? ''
                                 : 'text-surface-400 dark:text-surface-500'}"
+                            style={s.isLooping ? 'color: var(--color-primary-500);' : ''}
                             onclick={() => (s.isLooping = !s.isLooping)}
                             title="Loop"
                         >
@@ -405,8 +406,9 @@
                         <!-- Auto Next -->
                         <button
                             class="btn btn-circle btn-ghost {s.isAutoNext
-                                ? 'text-primary-500'
+                                ? ''
                                 : 'text-surface-400 dark:text-surface-500'}"
+                            style={s.isAutoNext ? 'color: var(--color-primary-500);' : ''}
                             onclick={() => (s.isAutoNext = !s.isAutoNext)}
                             title="Auto Next"
                         >
@@ -434,8 +436,8 @@
                     class="relative h-2 bg-surface-200 dark:bg-surface-700 rounded-full overflow-hidden"
                 >
                     <div
-                        class="absolute top-0 left-0 h-full bg-primary-500 transition-all rounded-full"
-                        style="width: {progress}%; box-shadow: 0 0 8px rgba(255,255,255,0.6);"
+                        class="absolute top-0 left-0 h-full transition-all rounded-full"
+                        style="width: {progress}%; background-color: var(--color-primary-500); box-shadow: 0 0 8px rgba(255,255,255,0.6);"
                     ></div>
                     <input
                         type="range"

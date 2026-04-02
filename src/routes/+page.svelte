@@ -6,7 +6,7 @@
     class="h-full flex flex-col items-center justify-center text-center max-w-3xl mx-auto py-12"
 >
     <div class="mb-8 flex flex-col items-center gap-6">
-        <div class="text-primary-400 animate-bounce">
+        <div class="animate-bounce" style="color: var(--color-primary-400);">
             <Cog size="128" />
         </div>
 

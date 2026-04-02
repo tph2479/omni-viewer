@@ -96,7 +96,7 @@
     <Tooltip openDelay={0} closeDelay={0} positioning={{ placement: "right" }}>
         <Tooltip.Trigger 
             onclick={toggleMode}
-            class="flex flex-col items-center justify-center transition-all duration-100 w-full py-2 text-surface-600 dark:text-surface-400 hover:text-primary-600 dark:hover:text-primary-400 active:scale-95"
+            class="flex flex-col items-center justify-center transition-all duration-100 w-full py-2 text-surface-600 dark:text-surface-400 hover:text-[var(--color-primary-600)] dark:hover:text-[var(--color-primary-400)] active:scale-95"
             aria-label="Toggle Theme"
         >
             <div class="relative size-7 flex items-center justify-center">
@@ -134,12 +134,13 @@
                 >
                     {#if active && !isMobileNav}
                         <div
-                            class="absolute left-0 top-1/4 bottom-1/4 w-1 bg-primary-500 rounded-r-full"
+                            class="absolute left-0 top-1/4 bottom-1/4 w-1 rounded-r-full"
+                            style="background-color: var(--color-primary-500);"
                             transition:fade
                         ></div>
                     {/if}
                     <Icon
-                        class="size-7 {active ? 'stroke-[1.8px] text-primary-600 dark:text-primary-400' : 'stroke-[1.5px] text-surface-600 dark:text-surface-400 hover:text-primary-600 dark:hover:text-primary-400'} transition-colors"
+                        class="size-7 {active ? 'stroke-[1.8px] text-[var(--color-primary-600)] dark:text-[var(--color-primary-400)]' : 'stroke-[1.5px] text-surface-600 dark:text-surface-400 hover:text-[var(--color-primary-600)] dark:hover:text-[var(--color-primary-400)]'} transition-colors"
                     />
                     {#if isMobileNav}
                         <span class="text-[10px] mt-1 font-medium">{label}</span>

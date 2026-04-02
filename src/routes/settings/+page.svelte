@@ -203,9 +203,8 @@
     <div class="card preset-outlined p-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
             <PowerIcon
-                class="size-5 {shutdownConfirm
-                    ? 'text-error-400'
-                    : 'text-surface-400'}"
+                class="size-5"
+                style="color: {shutdownConfirm ? 'var(--color-error-400)' : 'var(--color-surface-400)'};"
             />
             <div>
                 <p class="font-medium">Shutdown</p>

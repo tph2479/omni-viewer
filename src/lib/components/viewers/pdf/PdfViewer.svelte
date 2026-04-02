@@ -217,7 +217,7 @@
 				type="text"
 				bind:value={s.searchQuery}
 				placeholder="Find in document..."
-				class="input input-sm flex-1 bg-white/10 text-white border-none focus:outline-none focus:ring-1 focus:ring-primary"
+				class="input input-sm flex-1 bg-white/10 text-white border-none focus:outline-none focus:ring-[var(--color-primary-500)]"
 				onkeydown={(e) => {
 					if (e.key === 'Enter') {
 						e.preventDefault();
@@ -228,7 +228,7 @@
 			/>
 			<button class="btn btn-sm btn-primary min-h-0 h-8 px-3" onclick={() => { s.isSearching = false; setTimeout(() => pdf.handleSearch(), 50); }}>
 				{#if s.isSearching}
-					<span class="loading loading-spinner loading-xs text-white"></span>
+					<div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
 				{:else}
 					<Search class="h-4 w-4" />
 				{/if}
@@ -251,7 +251,8 @@
 	<div class="flex-1 overflow-y-auto p-2 flex flex-col gap-2">
 		{#each s.searchResults as result, i}
 			<button
-				class="text-left w-full p-3 rounded-lg hover:bg-white/5 transition-colors border border-transparent {s.currentSearchResultIndex === i ? 'bg-primary/20 border-primary/50' : ''}"
+				class="text-left w-full p-3 rounded-lg hover:bg-white/5 transition-colors border border-transparent {s.currentSearchResultIndex === i ? 'border-primary/50' : ''}"
+				style={s.currentSearchResultIndex === i ? 'background-color: color-mix(in srgb, var(--color-primary-500) 20%, transparent);' : ''}
 				onclick={() => {
 					s.currentSearchResultIndex = i;
 					pdf.scrollToIndex(result.pageIndex);
@@ -259,7 +260,7 @@
 				}}
 			>
 				<div class="flex items-center justify-between mb-1">
-					<span class="text-primary font-mono text-xs font-bold">Page {result.pageIndex + 1}</span>
+					<span class="font-mono text-xs font-bold" style="color: var(--color-primary-500);">Page {result.pageIndex + 1}</span>
 				</div>
 				<div class="text-white/80 text-sm leading-relaxed text-ellipsis overflow-hidden">
 					{@html result.snippet}
@@ -267,7 +268,9 @@
 			</button>
 		{/each}
 		{#if s.isSearching}
-			<div class="p-8 flex justify-center"><span class="loading loading-dots loading-md text-primary"></span></div>
+			<div class="p-8 flex justify-center">
+				<div class="w-6 h-6 border-3 rounded-full animate-spin" style="border-color: color-mix(in srgb, var(--color-primary-500) 30%, transparent); border-top-color: var(--color-primary-500);"></div>
+			</div>
 		{:else if s.searchResults.length === 0 && s.searchQuery}
 			<div class="p-8 text-center text-white/40 text-sm">No results found for "{s.searchQuery}"</div>
 		{/if}
@@ -366,8 +369,8 @@
 				>
 					<!-- Current Progress -->
 					<div
-						class="absolute top-0 left-0 w-full bg-primary rounded-full transition-all duration-75 ease-out origin-top z-10"
-						style="height: {s.smoothPercent}%"
+						class="absolute top-0 left-0 w-full rounded-full transition-all duration-75 ease-out origin-top z-10"
+						style="height: {s.smoothPercent}%; background-color: var(--color-primary-500);"
 					></div>
 
 					<!-- Drag Preview -->
@@ -447,10 +450,10 @@
 	<div class="flex flex-col items-center pb-20 pt-4 min-h-dvh w-full">
 		{#if s.isLoading}
 			<div class="h-dvh flex items-center justify-center">
-				<span class="loading loading-spinner loading-lg text-primary/50"></span>
+				<div class="w-10 h-10 border-4 border-white/10 border-t-primary rounded-full animate-spin" style="border-top-color: var(--color-primary-500);"></div>
 			</div>
 		{:else if s.errorMsg}
-			<div class="h-dvh flex items-center justify-center text-error font-bold">
+			<div class="h-dvh flex items-center justify-center font-bold" style="color: var(--color-error-500);">
 				{s.errorMsg}
 			</div>
 		{:else if s.numPages > 0}

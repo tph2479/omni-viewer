@@ -167,13 +167,17 @@
             </div>
         {:else if img.isAudio}
             <div
-                class="absolute inset-0 flex flex-col items-center justify-center bg-primary/5 transition-colors group-hover:bg-primary/10"
+                class="absolute inset-0 flex flex-col items-center justify-center transition-colors"
+                style="background-color: color-mix(in srgb, var(--color-primary-500) 5%, transparent);"
+                onmouseenter={(e) => { e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--color-primary-500) 10%, transparent)'; }}
+                onmouseleave={(e) => { e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--color-primary-500) 5%, transparent)'; }}
                 style:background-color={highlighted
                     ? "rgba(59, 130, 246, 0.5)"
                     : undefined}
             >
                 <FileAudio
-                    class="w-1/4 h-1/4 text-primary opacity-20 transition-all duration-500"
+                    class="w-1/4 h-1/4 opacity-20 transition-all duration-500"
+                    style="color: var(--color-primary-500);"
                     strokeWidth={1.5}
                 />
             </div>
@@ -186,7 +190,8 @@
             />
             <div class="absolute top-2 left-2 z-10">
                 <div
-                    class="bg-primary/80 p-1.5 rounded-lg border border-white/20 shadow-lg group-hover:bg-primary transition-colors"
+                    class="p-1.5 rounded-lg border border-white/20 shadow-lg transition-colors"
+                    style="background-color: color-mix(in srgb, var(--color-primary-500) 80%, transparent);"
                 >
                     <FileAudio class="w-4 h-4 text-white" strokeWidth={1.5} />
                 </div>
@@ -268,7 +273,7 @@
     </button>
     <div class="flex flex-col items-center mt-auto pt-1">
         <p
-            class="text-[10px] sm:text-[11px] font-bold truncate text-center px-1 text-surface-600 dark:text-surface-400 group-hover:text-primary transition-colors duration-300 w-full cursor-help"
+            class="text-[10px] sm:text-[11px] font-bold truncate text-center px-1 text-surface-600 dark:text-surface-400 group-hover:text-[var(--color-primary-500)] transition-colors duration-300 w-full cursor-help"
             title={img.name}
             onmouseenter={handleMouseEnter}
             onmouseleave={handleMouseLeave}
@@ -277,7 +282,8 @@
         </p>
         {#if img.width && img.height}
             <div
-                class="text-[9px] font-mono font-black text-primary/50 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-[-2px] group-hover:translate-y-0"
+                class="text-[9px] font-mono font-black opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-[-2px] group-hover:translate-y-0"
+                style="color: color-mix(in srgb, var(--color-primary-500) 50%, transparent);"
             >
                 {img.width}x{img.height}
             </div>

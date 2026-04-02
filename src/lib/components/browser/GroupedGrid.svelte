@@ -63,14 +63,14 @@
                                     >
                                         <ArrowRight
                                             size={28}
-                                            class="text-surface-400 dark:text-surface-500 group-hover:text-primary-500 transition-colors duration-200"
+                                            class="text-surface-400 dark:text-surface-500 hover:text-[var(--color-primary-500)] transition-colors duration-200"
                                             strokeWidth={1.5}
                                         />
                                     </div>
                                 </button>
                                 <div class="flex flex-col items-center mt-auto pt-1">
                                     <span
-                                        class="text-[10px] font-bold text-surface-400 dark:text-surface-500 group-hover:text-primary-500 transition-colors duration-200 text-center px-1"
+                                        class="text-[10px] font-bold text-surface-400 dark:text-surface-500 group-hover:text-[var(--color-primary-500)] transition-colors duration-200 text-center px-1"
                                     >
                                         +{groupInfo.total -
                                             groupInfo.items.length} items

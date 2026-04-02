@@ -240,14 +240,14 @@
     function getEntryMeta(dir: DirectoryEntry, isRoot: boolean) {
         const isDrive = /^[A-Za-z]:[\\\/]?$/.test(dir.path);
         if (isRoot || isDrive)
-            return { colorClass: "text-tertiary-500", icon: "drive" };
+            return { colorClass: "", icon: "drive", style: "color: var(--color-tertiary-500);" };
         if (dir.isDir)
-            return { colorClass: "text-primary-500", icon: "folder" };
+            return { colorClass: "", icon: "folder", style: "color: var(--color-primary-500);" };
         if (dir.isCbz)
-            return { colorClass: "text-warning-500", icon: "archive" };
+            return { colorClass: "", icon: "archive", style: "color: var(--color-warning-500);" };
         if (dir.isMedia)
-            return { colorClass: "text-success-500", icon: "media" };
-        return { colorClass: "opacity-30", icon: "file" };
+            return { colorClass: "", icon: "media", style: "color: var(--color-success-500);" };
+        return { colorClass: "opacity-30", icon: "file", style: "" };
     }
 
 
@@ -303,8 +303,8 @@
 			border-b border-gray-200 dark:border-surface-600"
         >
             <div class="flex items-center gap-2.5">
-                <span class="p-1.5 rounded-lg bg-primary-500/10">
-                    <FolderOpen class="h-5 w-5 text-primary-500" />
+                <span class="p-1.5 rounded-lg" style="background-color: color-mix(in srgb, var(--color-primary-500) 10%, transparent);">
+                    <FolderOpen class="h-5 w-5" style="color: var(--color-primary-500);" />
                 </span>
                 <span
                     class="text-sm font-semibold text-gray-800 dark:text-white tracking-wide"
@@ -391,7 +391,7 @@
                             <div
                                 class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl opacity-40 cursor-default"
                             >
-                                <span class="text-primary-500 shrink-0">
+                                <span class="shrink-0" style="color: var(--color-primary-500);">
                                     <Folder class="h-4 w-4" />
                                 </span>
                                 <span
@@ -439,7 +439,7 @@
 									{isPickerLoading ? 'pointer-events-none opacity-40' : ''}"
                                 onclick={() => handleEntryClick(dir)}
                             >
-                                <span class="{meta.colorClass} shrink-0">
+                                <span class="shrink-0" style={meta.style}>
                                     {#if meta.icon === "drive"}
                                         <HardDrive class="h-4 w-4" />
                                     {:else if meta.icon === "folder"}
@@ -497,7 +497,7 @@
             
             {#if isDrivesLoading}
                 <div
-                    class="flex-1 flex items-center justify-center gap-1.5 px-2 text-primary-500/50"
+                    class="flex-1 flex items-center justify-center gap-1.5 px-2" style="color: color-mix(in srgb, var(--color-primary-500) 50%, transparent);"
                 >
                     {#each [".", "..", "..."] as dot, i}
                         <span

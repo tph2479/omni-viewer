@@ -52,25 +52,29 @@
             <div class="flex flex-wrap justify-center gap-1.5 max-w-sm">
                 {#each ["JPG", "PNG", "WEBP", "AVIF", "GIF", "BMP", "HEIC"] as fmt}
                     <span
-                        class="badge badge-sm font-black opacity-60 bg-success/10 text-success border-success/20"
+                        class="badge badge-sm font-black opacity-60 border"
+                        style="background-color: color-mix(in srgb, var(--color-success-500) 10%, transparent); color: var(--color-success-500); border-color: color-mix(in srgb, var(--color-success-500) 20%, transparent);"
                         >{fmt}</span
                     >
                 {/each}
                 {#each ["MP4", "WEBM", "MKV", "AVI", "MOV", "FLV", "M4V"] as fmt}
                     <span
-                        class="badge badge-sm font-black opacity-60 bg-info/10 text-info border-info/20"
+                        class="badge badge-sm font-black opacity-60 border"
+                        style="background-color: color-mix(in srgb, var(--color-secondary-500) 10%, transparent); color: var(--color-secondary-500); border-color: color-mix(in srgb, var(--color-secondary-500) 20%, transparent);"
                         >{fmt}</span
                     >
                 {/each}
                 {#each ["MP3", "WAV", "FLAC", "OGG", "M4A", "AAC", "OPUS"] as fmt}
                     <span
-                        class="badge badge-sm font-black opacity-60 bg-warning/10 text-warning border-warning/20"
+                        class="badge badge-sm font-black opacity-60 border"
+                        style="background-color: color-mix(in srgb, var(--color-warning-500) 10%, transparent); color: var(--color-warning-500); border-color: color-mix(in srgb, var(--color-warning-500) 20%, transparent);"
                         >{fmt}</span
                     >
                 {/each}
                 {#each ["CBZ", "PDF", "EPUB"] as fmt}
                     <span
-                        class="badge badge-sm font-black opacity-60 bg-error/10 text-error border-error/20"
+                        class="badge badge-sm font-black opacity-60 border"
+                        style="background-color: color-mix(in srgb, var(--color-error-500) 10%, transparent); color: var(--color-error-500); border-color: color-mix(in srgb, var(--color-error-500) 20%, transparent);"
                         >{fmt}</span
                     >
                 {/each}

@@ -4,6 +4,7 @@
 	import { cacheVersion } from '$lib/stores/cache.svelte';
 	import { createWebtoonController } from './webtoonViewer.svelte.ts';
 	import { X, Maximize2, Minimize2, ZoomIn, ZoomOut, ChevronUp, ChevronDown, ArrowLeft, ArrowRight, RotateCw } from 'lucide-svelte';
+	import { Tooltip, Portal } from '@skeletonlabs/skeleton-svelte';
 
 	let {
 		isWebtoonMode = $bindable(),
@@ -182,26 +183,58 @@
 
 	<div class="fixed top-20 right-4 sm:right-6 bottom-2 flex flex-col items-end gap-2 z-[110] pointer-events-none transition-all duration-300 {s.controlsVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2'}">
 		<div class="flex flex-col items-end gap-2 pointer-events-auto h-full">
-			<button
-				aria-label="Toggle Fit Mode (Z Key)"
-				class="btn rounded-xl w-12 h-12 min-h-0 p-0 bg-zinc-900/90 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl tooltip tooltip-left"
-				data-tip="Toggle Fit Mode (Z Key)"
-				onclick={(e) => { e.stopPropagation(); ctrl.toggleWebtoonFit(); }}
-				onmousedown={(e) => e.preventDefault()}
-			>
-				<Maximize2 class="h-6 w-6" />
-			</button>
+			<Tooltip openDelay={0} closeDelay={0} positioning={{ placement: 'left' }}>
+				<Tooltip.Trigger>
+					<button
+						aria-label="Toggle Fit Mode (Z Key)"
+						class="btn rounded-xl w-12 h-12 min-h-0 p-0 bg-zinc-900/90 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl"
+						onclick={(e) => { e.stopPropagation(); ctrl.toggleWebtoonFit(); }}
+						onmousedown={(e) => e.preventDefault()}
+					>
+						<Maximize2 class="h-6 w-6" />
+					</button>
+				</Tooltip.Trigger>
+				<Portal>
+					<Tooltip.Positioner>
+						<Tooltip.Content class="preset-filled-surface-950-50 text-xs px-3 py-1.5 rounded-md shadow-xl">
+							Toggle Fit Mode (Z Key)
+						</Tooltip.Content>
+					</Tooltip.Positioner>
+				</Portal>
+			</Tooltip>
 
 			<div class="flex flex-col bg-zinc-900/90 rounded-xl backdrop-blur-xl overflow-hidden sm:flex border border-white/10 shadow-2xl mt-1 w-12">
-				<button aria-label="Zoom In" class="btn btn-ghost btn-sm h-12 w-12 p-0 text-white rounded-none border-b border-white/10 tooltip tooltip-left" data-tip="Zoom In (+)" onclick={(e) => { e.stopPropagation(); ctrl.setWebtoonZoom(Math.min(500, s.webtoonZoomLevel * 1.15)); }} onmousedown={(e) => e.preventDefault()}>
-					<ZoomIn class="h-6 w-6 m-auto" />
-				</button>
+				<Tooltip openDelay={0} closeDelay={0} positioning={{ placement: 'left' }}>
+					<Tooltip.Trigger>
+						<button aria-label="Zoom In" class="btn btn-ghost btn-sm h-12 w-12 p-0 text-white rounded-none border-b border-white/10" onclick={(e) => { e.stopPropagation(); ctrl.setWebtoonZoom(Math.min(500, s.webtoonZoomLevel * 1.15)); }} onmousedown={(e) => e.preventDefault()}>
+							<ZoomIn class="h-6 w-6 m-auto" />
+						</button>
+					</Tooltip.Trigger>
+					<Portal>
+						<Tooltip.Positioner>
+							<Tooltip.Content class="preset-filled-surface-950-50 text-xs px-3 py-1.5 rounded-md shadow-xl">
+								Zoom In (+)
+							</Tooltip.Content>
+						</Tooltip.Positioner>
+					</Portal>
+				</Tooltip>
 				<span class="py-2 text-xs sm:text-sm font-mono font-black text-white flex items-center justify-center bg-white/5 w-12 px-0 tracking-tighter" aria-label="Current Zoom">
 					{Math.round(s.webtoonZoomLevel * 100)}%
 				</span>
-				<button aria-label="Zoom Out" class="btn btn-ghost btn-sm h-12 w-12 p-0 text-white rounded-none border-t border-white/10 tooltip tooltip-left" data-tip="Zoom Out (-)" onclick={(e) => { e.stopPropagation(); ctrl.setWebtoonZoom(Math.max(0.001, s.webtoonZoomLevel / 1.15)); }} onmousedown={(e) => e.preventDefault()}>
-					<ZoomOut class="h-6 w-6 m-auto" />
-				</button>
+				<Tooltip openDelay={0} closeDelay={0} positioning={{ placement: 'left' }}>
+					<Tooltip.Trigger>
+						<button aria-label="Zoom Out" class="btn btn-ghost btn-sm h-12 w-12 p-0 text-white rounded-none border-t border-white/10" onclick={(e) => { e.stopPropagation(); ctrl.setWebtoonZoom(Math.max(0.001, s.webtoonZoomLevel / 1.15)); }} onmousedown={(e) => e.preventDefault()}>
+							<ZoomOut class="h-6 w-6 m-auto" />
+						</button>
+					</Tooltip.Trigger>
+					<Portal>
+						<Tooltip.Positioner>
+							<Tooltip.Content class="preset-filled-surface-950-50 text-xs px-3 py-1.5 rounded-md shadow-xl">
+								Zoom Out (-)
+							</Tooltip.Content>
+						</Tooltip.Positioner>
+					</Portal>
+				</Tooltip>
 			</div>
 
 			<div class="flex-1 flex flex-col items-center gap-2 mt-1 bg-zinc-900/90 py-4 rounded-xl border border-white/10 shadow-2xl pointer-events-auto w-12 backdrop-blur-xl overflow-hidden px-0">
@@ -214,8 +247,8 @@
 				>
 					<!-- Current Progress -->
 					<div
-						class="absolute top-0 left-0 w-full bg-primary rounded-full transition-all duration-75 ease-out origin-top z-10"
-						style="height: {s.smoothPercent}%"
+						class="absolute top-0 left-0 w-full rounded-full transition-all duration-75 ease-out origin-top z-10"
+						style="height: {s.smoothPercent}%; background-color: var(--color-primary-500);"
 					></div>
 
 					<!-- Drag Preview (Only shown when really dragging) -->
@@ -324,14 +357,14 @@
 		</div>
 
 		{#if s.errorMsg}
-			<div class="mt-8 mb-8 text-center text-error text-sm font-medium">
-				{s.errorMsg}
-			</div>
+		<div class="mt-8 mb-8 text-center text-sm font-medium" style="color: var(--color-error-500);">
+			{s.errorMsg}
+		</div>
 		{/if}
 
 		{#if s.hasMore}
 			<div class="h-40 flex items-center justify-center w-full" use:sentinelAction>
-				<span class="loading loading-spinner loading-lg text-primary/50"></span>
+				<div class="w-10 h-10 border-4 border-white/10 border-t-primary rounded-full animate-spin" style="border-top-color: var(--color-primary-500);"></div>
 			</div>
 		{:else}
 			<div class="mt-12 mb-20 text-center text-white/50 text-sm font-medium">

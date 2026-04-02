@@ -63,7 +63,8 @@
                 />
                 <div class="absolute top-2 left-2 z-10">
                     <div
-                        class="bg-primary-500 px-2 py-0.5 rounded shadow-lg group-hover:bg-primary-600 transition-colors flex items-center gap-1"
+                        class="px-2 py-0.5 rounded shadow-lg transition-colors flex items-center gap-1"
+                        style="background-color: var(--color-primary-500);"
                     >
                         <Folder
                             size={12}
@@ -83,7 +84,7 @@
             </button>
             <div class="flex flex-col items-center mt-auto pt-1">
                 <p
-                    class="text-[10px] sm:text-[11px] font-bold truncate text-center px-1 text-surface-600 dark:text-surface-400 group-hover:text-primary-500 transition-colors duration-300 w-full"
+                    class="text-[10px] sm:text-[11px] font-bold truncate text-center px-1 text-surface-600 dark:text-surface-400 group-hover:text-[var(--color-primary-500)] transition-colors duration-300 w-full"
                     title={folder.name}
                 >
                     {folder.name}

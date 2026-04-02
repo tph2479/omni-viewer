@@ -18,13 +18,14 @@
             >
                 <!-- Type indicator bar -->
                 <span
-                    class="w-1 self-stretch rounded-full shrink-0 {toast.type === 'success'
-                        ? 'bg-success-500'
+                    class="w-1 self-stretch rounded-full shrink-0"
+                    style="background-color: {toast.type === 'success'
+                        ? 'var(--color-success-500)'
                         : toast.type === 'error'
-                        ? 'bg-error-500'
+                        ? 'var(--color-error-500)'
                         : toast.type === 'warning'
-                        ? 'bg-warning-500'
-                        : 'bg-primary-500'}"
+                        ? 'var(--color-warning-500)'
+                        : 'var(--color-primary-500)'};"
                 ></span>
                 <div class="flex flex-col flex-1 min-w-0 gap-0.5">
                     {#if toast.title}
