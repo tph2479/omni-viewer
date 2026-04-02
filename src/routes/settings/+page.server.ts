@@ -1,6 +1,7 @@
 import { getDefaultAppPath, setDefaultAppPath } from '$lib/server/db';
 import type { Actions, PageServerLoad } from './$types';
 import { fail } from '@sveltejs/kit';
+import { statSync } from 'node:fs';
 
 export const load: PageServerLoad = async () => {
     const defaultPath = await getDefaultAppPath();
@@ -21,6 +22,16 @@ export const actions: Actions = {
         try {
             let trimmedPath = path.trim();
             trimmedPath = trimmedPath.replace(/^([A-Za-z]:\\)\1+/i, '$1');
+            
+            try {
+                const stats = statSync(trimmedPath);
+                if (!stats.isDirectory()) {
+                    return fail(400, { error: 'Path exists but is not a directory', path: trimmedPath });
+                }
+            } catch {
+                return fail(400, { error: 'Directory does not exist', path: trimmedPath });
+            }
+            
             await setDefaultAppPath(trimmedPath);
             return { success: true, path: trimmedPath };
         } catch (error) {

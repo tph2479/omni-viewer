@@ -9,6 +9,7 @@
         SettingsIcon,
         Sun,
         Moon,
+        Link,
     } from "lucide-svelte";
     import { Navigation, Portal, Tooltip } from "@skeletonlabs/skeleton-svelte";
     import GalleryModals from "$lib/components/GalleryModals.svelte";
@@ -63,6 +64,7 @@
         { label: "Home", href: "/", icon: HouseIcon },
         { label: "Gallery", href: "/gallery", icon: BookIcon },
         { label: "Browser", href: "/browser", icon: FolderTree },
+        { label: "Get", href: "/get", icon: Link },
         { label: "Import", href: "/import", icon: HardDriveDownload },
         { label: "Settings", href: "/settings", icon: SettingsIcon },
     ];

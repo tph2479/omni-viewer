@@ -16,6 +16,7 @@
     let { data, form } = $props();
 
     let isClearingCache = $state(false);
+    let isSaving = $state(false);
     let shutdownConfirm = $state(false);
     let formEl: HTMLFormElement;
     let lastSavedPath = $state(untrack(() => data?.defaultPath ?? ""));
@@ -40,7 +41,9 @@
 
     // --- Save Logic ---
     async function handleSave() {
+        if (isSaving) return;
         if (pickerPath !== lastSavedPath) {
+            isSaving = true;
             await tick();
             formEl.requestSubmit();
         }
@@ -87,33 +90,6 @@
         }
         shutdownConfirm = false;
     }
-
-    // --- React to form result (SvelteKit enhance callback) ---
-    $effect(() => {
-        if (form?.success) {
-            toaster.create({
-                type: "success",
-                title: "Path saved",
-                description: `Media library path updated: ${form.path}`,
-            });
-            if (form.path) {
-                pickerPath = form.path;
-                lastSavedPath = form.path;
-                
-                // Jump to browser with the new path immediately
-                setTimeout(() => {
-                    goto(`/browser?path=${encodeURIComponent(form.path)}`);
-                }, 1000); // 1s delay to show the success toast
-            }
-        }
-        if (form?.error) {
-            toaster.create({
-                type: "error",
-                title: "Save failed",
-                description: form.error,
-            });
-        }
-    });
 </script>
 
 <div class="p-4 md:p-8 max-w-2xl mx-auto space-y-3">
@@ -135,7 +111,30 @@
                         method="POST"
                         action="?/savePath"
                         use:enhance={() => {
-                            return ({ update }) => {
+                            return async ({ result, update }) => {
+                                const data = await result;
+                                if (data.type === 'success') {
+                                    isSaving = false;
+                                    toaster.create({
+                                        type: "success",
+                                        title: "Path saved",
+                                        description: `Media library path updated: ${data.data.path}`,
+                                    });
+                                    if (data.data.path) {
+                                        pickerPath = data.data.path;
+                                        lastSavedPath = data.data.path;
+                                        setTimeout(() => {
+                                            goto(`/browser?path=${encodeURIComponent(data.data.path)}`);
+                                        }, 1000);
+                                    }
+                                } else if (data.type === 'failure') {
+                                    isSaving = false;
+                                    toaster.create({
+                                        type: "error",
+                                        title: "Save failed",
+                                        description: data.data.error,
+                                    });
+                                }
                                 update({ reset: false });
                             };
                         }}
@@ -152,8 +151,12 @@
                                        text-sm font-medium tracking-tight truncate
                                        text-surface-700 dark:text-surface-200"
                                 bind:value={pickerPath}
-                                onkeydown={(e) => e.key === "Enter" && handleSave()}
-                                onblur={handleSave}
+                                onkeydown={(e) => {
+                                    if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        handleSave();
+                                    }
+                                }}
                                 placeholder="Type or browse to select folder…"
                                 onclick={() => !pickerPath && openPicker()}
                             />
