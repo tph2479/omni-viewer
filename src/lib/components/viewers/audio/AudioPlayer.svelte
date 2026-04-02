@@ -233,7 +233,7 @@
 </script>
 
 <div
-    class="fixed inset-0 z-[300] flex items-center justify-center bg-surface-900 subtitle-hidden overflow-hidden font-sans"
+    class="fixed inset-0 z-[300] flex items-center justify-center bg-surface-50 dark:bg-surface-900 subtitle-hidden overflow-hidden font-sans"
     role="dialog"
     aria-modal="true"
     transition:fade={{ duration: 200 }}
@@ -249,16 +249,16 @@
                 onerror={() => (s.imgFailed = true)}
             />
         {:else}
-            <div class="w-full h-full bg-surface-800"></div>
+            <div class="w-full h-full bg-surface-200 dark:bg-surface-800"></div>
         {/if}
         <div
-            class="absolute inset-0 bg-gradient-to-t from-surface-900 via-surface-900/60 to-transparent"
+            class="absolute inset-0 bg-gradient-to-t from-surface-50 dark:from-surface-900 via-surface-50/60 dark:via-surface-900/60 to-transparent"
         ></div>
     </div>
 
     <!-- Visualizer -->
     <div
-        class="absolute bottom-0 left-0 right-0 h-56 pointer-events-none z-0 flex justify-center opacity-40"
+        class="absolute bottom-0 left-0 right-0 h-56 pointer-events-none z-0 flex justify-center opacity-40 dark:opacity-40"
     >
         <div class="w-full max-w-3xl h-full">
             <canvas bind:this={s.canvas} class="w-full h-full"></canvas>
@@ -269,7 +269,7 @@
     <div class="relative z-10 w-full h-full flex flex-col max-w-4xl mx-auto">
         <!-- Header -->
         <div
-            class="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-surface-700/50"
+            class="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-surface-200 dark:border-surface-700/50"
         >
             <div class="w-10"></div>
             <div class="flex items-center gap-2">
@@ -281,7 +281,7 @@
             </div>
 
             <button
-                class="btn btn-sm btn-ghost text-surface-400 hover:text-surface-100"
+                class="btn btn-sm btn-ghost text-surface-500 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100"
                 onclick={close}
             >
                 <X class="w-5 h-5" />
@@ -302,7 +302,7 @@
                 >
                     <!-- Cover -->
                     <div
-                        class="absolute inset-0 rounded-2xl overflow-hidden shadow-2xl border border-surface-600/30 bg-surface-800"
+                        class="absolute inset-0 rounded-2xl overflow-hidden shadow-2xl border border-surface-200 dark:border-surface-700/30 bg-surface-100 dark:bg-surface-800"
                     >
                         {#if !s.imgFailed}
                             <img
@@ -315,18 +315,18 @@
                             <div
                                 class="w-full h-full flex items-center justify-center"
                             >
-                                <Disc class="w-16 h-16 text-surface-600" />
+                                <Disc class="w-16 h-16 text-surface-400 dark:text-surface-600" />
                             </div>
                         {/if}
                     </div>
 
                     <!-- Vinyl Edge (static) -->
                     <div
-                        class="absolute -right-6 top-1/2 -translate-y-1/2 w-[85%] h-[85%] rounded-full border border-surface-600/20 shadow-2xl -z-10 opacity-60"
+                        class="absolute -right-6 top-1/2 -translate-y-1/2 w-[85%] h-[85%] rounded-full border border-surface-200 dark:border-surface-700/20 shadow-2xl -z-10 opacity-60"
                         style="background: radial-gradient(circle at center, #444444 0%, #262626 100%);"
                     >
                         <div
-                            class="absolute inset-[37.5%] rounded-full bg-surface-800/80 border border-surface-600/20 flex items-center justify-center overflow-hidden"
+                            class="absolute inset-[37.5%] rounded-full bg-surface-100 dark:bg-surface-800/80 border border-surface-200 dark:border-surface-700/20 flex items-center justify-center overflow-hidden"
                         >
                             {#if !s.imgFailed}
                                 <img
@@ -346,12 +346,12 @@
                         class="flex-1 flex flex-col justify-end text-center md:text-left"
                     >
                         <h1
-                            class="text-lg sm:text-xl md:text-2xl font-bold text-surface-100 leading-tight audio-title-scroll"
+                            class="text-lg sm:text-xl md:text-2xl font-bold text-surface-900 dark:text-surface-100 leading-tight audio-title-scroll"
                             title={currentAudio?.name}
                         >
                             {currentAudio?.name.replace(/\.[^/.]+$/, "")}
                         </h1>
-                        <p class="text-surface-400 text-sm mt-1">
+                        <p class="text-surface-500 dark:text-surface-400 text-sm mt-1">
                             {formatBytes(currentAudio?.size || 0)} &bull; {selectedImageIndex +
                                 1} of {totalImages}
                         </p>
@@ -361,7 +361,7 @@
                         class="flex items-center justify-center md:justify-end gap-2 sm:gap-3 shrink-0"
                     >
                         <button
-                            class="btn btn-circle btn-ghost text-surface-400 hover:text-surface-100"
+                            class="btn btn-circle btn-ghost text-surface-500 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100"
                             onclick={prev}
                             disabled={selectedImageIndex === 0 &&
                                 currentPage === 0}
@@ -383,7 +383,7 @@
 
                         <!-- Next -->
                         <button
-                            class="btn btn-circle btn-ghost text-surface-400 hover:text-surface-100"
+                            class="btn btn-circle btn-ghost text-surface-500 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100"
                             onclick={next}
                             disabled={selectedImageIndex ===
                                 loadedImages.length - 1 && !hasMore}
@@ -394,8 +394,8 @@
                         <!-- Loop -->
                         <button
                             class="btn btn-circle btn-ghost {s.isLooping
-                                ? 'text-primary-400'
-                                : 'text-surface-500'}"
+                                ? 'text-primary-500'
+                                : 'text-surface-400 dark:text-surface-500'}"
                             onclick={() => (s.isLooping = !s.isLooping)}
                             title="Loop"
                         >
@@ -405,8 +405,8 @@
                         <!-- Auto Next -->
                         <button
                             class="btn btn-circle btn-ghost {s.isAutoNext
-                                ? 'text-primary-400'
-                                : 'text-surface-500'}"
+                                ? 'text-primary-500'
+                                : 'text-surface-400 dark:text-surface-500'}"
                             onclick={() => (s.isAutoNext = !s.isAutoNext)}
                             title="Auto Next"
                         >
@@ -415,7 +415,7 @@
 
                         <!-- Volume -->
                         <button
-                            class="btn btn-circle btn-ghost text-surface-400 hover:text-surface-100"
+                            class="btn btn-circle btn-ghost text-surface-500 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100"
                             onclick={ctrl.toggleMute}
                         >
                             {#if s.isMuted || s.volume === 0}
@@ -431,11 +431,11 @@
             <!-- Seek bar — full width of parent -->
             <div class="w-full max-w-3xl space-y-1">
                 <div
-                    class="relative h-2 bg-surface-700 rounded-full overflow-hidden"
+                    class="relative h-2 bg-surface-200 dark:bg-surface-700 rounded-full overflow-hidden"
                 >
                     <div
-                        class="absolute top-0 left-0 h-full bg-surface-100 transition-all"
-                        style="width: {progress}%"
+                        class="absolute top-0 left-0 h-full bg-primary-500 transition-all rounded-full"
+                        style="width: {progress}%; box-shadow: 0 0 8px rgba(255,255,255,0.6);"
                     ></div>
                     <input
                         type="range"
@@ -447,9 +447,9 @@
                     />
                 </div>
                 <div
-                    class="flex justify-between text-xs font-mono text-surface-500"
+                    class="flex justify-between text-xs font-mono text-surface-500 dark:text-surface-400"
                 >
-                    <span class="text-surface-300"
+                    <span class="text-surface-700 dark:text-surface-300"
                         >{formatTime(s.currentTime)}</span
                     >
                     <span>{formatTime(s.duration)}</span>
@@ -484,6 +484,8 @@
             if (s.audioPlayer) s.audioPlayer.volume = s.volume;
         }}
         onended={() => {
+            s.isPlaying = false;
+            ctrl.stopVisualizer();
             if (s.isAutoNext) next();
         }}
     ></audio>

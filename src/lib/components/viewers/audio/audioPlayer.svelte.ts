@@ -199,6 +199,20 @@ export function createAudioController() {
     const step = 1.0;
     const hue = (performance.now() / 20) % 360;
 
+    // Detect theme: use dark colors for light theme, white for dark theme
+    const isDark = document.documentElement.classList.contains("dark");
+    const graphColor = isDark
+      ? "rgba(255, 255, 255,"
+      : "rgba(0, 0, 0,";
+    const graphOpacity = isDark ? 0.25 : 0.8;
+    const dotCoreColor = isDark ? "#FFFFFF" : "#1a1a1a";
+    const dotOuterGlow = isDark
+      ? "rgba(255, 255, 255, 0.08)"
+      : "rgba(0, 0, 0, 0.08)";
+    const dotMidGlow = isDark
+      ? `hsla(${hue}, 80%, 80%,`
+      : `hsla(${hue}, 60%, 30%,`;
+
     ctx.clearRect(0, 0, w, h);
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
@@ -208,8 +222,7 @@ export function createAudioController() {
     const headX = w * 0.82;
 
     ctx.beginPath();
-    const opacity = 0.25;
-    ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
+    ctx.strokeStyle = `${graphColor}${graphOpacity})`;
     ctx.lineWidth = 1.0;
 
     // Safe drawing zone: leave padding at top (15%) and bottom (20%)
@@ -245,14 +258,14 @@ export function createAudioController() {
     const headY = toY(lastPt.y * 0.9);
 
     ctx.beginPath();
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+    ctx.strokeStyle = dotOuterGlow;
     ctx.lineWidth = 12;
     ctx.filter = "blur(10px)";
     ctx.arc(headX, headY, 2, 0, Math.PI * 2);
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.strokeStyle = `hsla(${hue}, 80%, 80%, ${0.1 + s.trebleIntensity * 0.2})`;
+    ctx.strokeStyle = `${dotMidGlow} ${0.1 + s.trebleIntensity * 0.2})`;
     ctx.lineWidth = 5 + s.trebleIntensity * 5;
     ctx.filter = `blur(${4 + s.trebleIntensity * 6}px)`;
     ctx.arc(headX, headY, 1, 0, Math.PI * 2);
@@ -261,13 +274,17 @@ export function createAudioController() {
 
     ctx.beginPath();
 
-    const r = 255;
-    const g = 255 - s.climaxIntensity * 150 - s.bassIntensity * 30;
-    const b = 255 - s.climaxIntensity * 50 + s.bassIntensity * 50;
+    const r = isDark ? 255 : 26;
+    const g = isDark
+      ? 255 - s.climaxIntensity * 150 - s.bassIntensity * 30
+      : 26 + s.climaxIntensity * 100 + s.bassIntensity * 30;
+    const b = isDark
+      ? 255 - s.climaxIntensity * 50 + s.bassIntensity * 50
+      : 26 + s.climaxIntensity * 50 - s.bassIntensity * 50;
 
     const outerColor =
       s.climaxIntensity > 0.2
-        ? `hsla(${hue}, 80%, 70%, ${0.9 + s.climaxIntensity * 0.1})`
+        ? `hsla(${hue}, 80%, ${isDark ? 70 : 35}%, ${0.9 + s.climaxIntensity * 0.1})`
         : `rgba(${r}, ${g}, ${b}, ${0.9 + s.climaxIntensity * 0.1})`;
 
     const baseSize = 2.0;
@@ -281,8 +298,8 @@ export function createAudioController() {
       headY,
       dynamicSize,
     );
-    grad.addColorStop(0, "#FFFFFF");
-    grad.addColorStop(0.4, "#FFFFFF");
+    grad.addColorStop(0, dotCoreColor);
+    grad.addColorStop(0.4, dotCoreColor);
     grad.addColorStop(1, outerColor);
 
     ctx.fillStyle = grad;
@@ -292,7 +309,7 @@ export function createAudioController() {
     if (s.climaxIntensity > 0.4 || s.bassIntensity > 0.8) {
       const impact = Math.max(s.climaxIntensity, (s.bassIntensity - 0.5) * 2);
       ctx.beginPath();
-      ctx.strokeStyle = `hsla(${hue}, 90%, 60%, ${impact * 0.15})`;
+      ctx.strokeStyle = `hsla(${hue}, 90%, ${isDark ? 60 : 40}%, ${impact * 0.15})`;
       ctx.lineWidth = 1 + impact * 2;
       ctx.filter = `blur(${8 + impact * 10}px)`;
       ctx.arc(headX, headY, dynamicSize * (2 + impact * 2), 0, Math.PI * 2);
@@ -325,6 +342,7 @@ export function createAudioController() {
     toggleMute,
     initAudioContext,
     handlePlay,
+    stopVisualizer,
     destroy,
   };
 }
