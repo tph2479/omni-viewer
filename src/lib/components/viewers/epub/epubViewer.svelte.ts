@@ -157,7 +157,11 @@ export function createEpubViewerState(filePath: string) {
 			const body = contents[0].doc.body;
 			if (isMobile) {
 				body.style.maxWidth = '100%';
+<<<<<<< HEAD
 				body.style.margin = '0';
+=======
+				body.style.margin = '0 16px';
+>>>>>>> 7949500 (epub viewer ui fix)
 			} else if (settings.contentWidth > 0) {
 				body.style.maxWidth = `${settings.contentWidth}px`;
 				body.style.margin = '0 auto';
@@ -300,11 +304,37 @@ export function createEpubViewerState(filePath: string) {
 	}
 
 	function nextChapter() {
+<<<<<<< HEAD
 		(viewEl as any)?.next();
 	}
 
 	function prevChapter() {
 		(viewEl as any)?.prev();
+=======
+		const view = viewEl as any;
+		const renderer = view?.renderer;
+		if (!renderer) return;
+		
+		const contents = renderer.getContents?.();
+		if (!contents?.length) return;
+		
+		const currentIndex = contents[0].index;
+		view.goTo(currentIndex + 1);
+	}
+
+	function prevChapter() {
+		const view = viewEl as any;
+		const renderer = view?.renderer;
+		if (!renderer) return;
+		
+		const contents = renderer.getContents?.();
+		if (!contents?.length) return;
+		
+		const currentIndex = contents[0].index;
+		if (currentIndex > 0) {
+			view.goTo(currentIndex - 1);
+		}
+>>>>>>> 7949500 (epub viewer ui fix)
 	}
 
 	// ─── Settings: font, size, spacing, dark mode ─────────────────────────────
