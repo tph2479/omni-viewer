@@ -242,7 +242,9 @@ export function createEpubViewerState(filePath: string) {
 					ke.key === 'ArrowRight' ||
 					ke.key === 'ArrowUp' ||
 					ke.key === 'ArrowDown' ||
-					(ke.key === ' ' && !ke.ctrlKey && !ke.metaKey);
+					(ke.key === ' ' && !ke.ctrlKey && !ke.metaKey) ||
+					ke.key === 'PageDown' ||
+					ke.key === 'PageUp';
 
 				if (isShortcut) {
 					e.stopPropagation();
@@ -360,11 +362,17 @@ export function createEpubViewerState(filePath: string) {
 		if (key === 'PageDown' || key === 'ArrowRight' || key === 'ArrowDown' || key === ' ') {
 			if (key === ' ' && shiftKey) {
 				renderer.prev();
+			} else if (key === 'ArrowRight' || key === 'ArrowDown') {
+				renderer.next(40);
 			} else {
 				renderer.next();
 			}
 		} else if (key === 'PageUp' || key === 'ArrowLeft' || key === 'ArrowUp') {
-			renderer.prev();
+			if (key === 'ArrowLeft' || key === 'ArrowUp') {
+				renderer.prev(40);
+			} else {
+				renderer.prev();
+			}
 		}
 	}
 
