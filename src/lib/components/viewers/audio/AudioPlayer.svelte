@@ -176,6 +176,15 @@
         s.duration ? (s.currentTime / s.duration) * 100 : 0,
     );
 
+    let isDarkTheme = $derived.by(() => {
+        if (typeof document === "undefined") return true;
+        return document.documentElement.classList.contains("dark");
+    });
+
+    let seekbarBgColor = $derived(isDarkTheme ? "bg-surface-700" : "bg-surface-300");
+    let seekbarFillColor = $derived(isDarkTheme ? "#fff" : "#000");
+    let seekbarGlow = $derived(isDarkTheme ? "0 0 8px rgba(255,255,255,0.5)" : "0 0 6px rgba(0,0,0,0.3)");
+
     $effect(() => {
         if (isModalOpen) {
             document.body.style.overflow = "hidden";
@@ -433,11 +442,11 @@
             <!-- Seek bar — full width of parent -->
             <div class="w-full max-w-3xl space-y-1">
                 <div
-                    class="relative h-2 bg-surface-200 dark:bg-surface-700 rounded-full overflow-hidden"
+                    class="relative h-2 rounded-full overflow-hidden {seekbarBgColor}"
                 >
                     <div
                         class="absolute top-0 left-0 h-full transition-all rounded-full"
-                        style="width: {progress}%; background-color: var(--color-primary-500); box-shadow: 0 0 8px rgba(255,255,255,0.6);"
+                        style="width: {progress}%; background-color: {seekbarFillColor}; box-shadow: {seekbarGlow};"
                     ></div>
                     <input
                         type="range"

@@ -393,13 +393,13 @@
 											<Pause class="h-5 w-5" />
 										{/if}
 									</button>
-									<button aria-label="Toggle Loop" class="w-10 h-10 flex items-center justify-center text-white hover:bg-white/10 rounded transition-colors cursor-pointer" tabindex="-1" onclick={(e) => { e.stopPropagation(); s.isVideoLoop = !s.isVideoLoop; }} onpointerdown={(e) => e.preventDefault()}>
+									<button aria-label="Toggle Loop" class="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded transition-colors cursor-pointer" tabindex="-1" onclick={(e) => { e.stopPropagation(); s.isVideoLoop = !s.isVideoLoop; }} onpointerdown={(e) => e.preventDefault()} style={s.isVideoLoop ? 'color: var(--color-primary-500);' : 'color: white;'}>
 										<Repeat class="h-5 w-5" />
 									</button>
 								</div>
 								<div class="w-px h-6 bg-white/20"></div>
 								<div class="flex items-center gap-0.5">
-									<button aria-label="Toggle Mute" class="w-10 h-10 flex items-center justify-center text-white hover:bg-white/10 rounded transition-colors cursor-pointer" tabindex="-1" onclick={(e) => { e.stopPropagation(); s.isVideoMuted = !s.isVideoMuted; }} onpointerdown={(e) => e.preventDefault()}>
+									<button aria-label="Toggle Mute" class="w-10 h-10 flex items-center justify-center rounded transition-colors cursor-pointer" tabindex="-1" onclick={(e) => { e.stopPropagation(); s.isVideoMuted = !s.isVideoMuted; }} onpointerdown={(e) => e.preventDefault()} style={s.isVideoMuted ? 'color: var(--color-primary-500);' : 'color: white;'}>
 										{#if s.isVideoMuted}
 											<VolumeX class="h-5 w-5" />
 										{:else}
@@ -414,7 +414,7 @@
 								</div>
 								<div class="w-px h-6 bg-white/20"></div>
 								<div class="flex items-center gap-0.5">
-									<button aria-label="Toggle Rotation Lock" class="w-10 h-10 flex items-center justify-center text-white hover:bg-white/10 rounded transition-colors cursor-pointer" tabindex="-1" onclick={(e) => { e.stopPropagation(); ctrl.toggleRotationLock(); }} onpointerdown={(e) => e.preventDefault()}>
+									<button aria-label="Toggle Rotation Lock" class="w-10 h-10 flex items-center justify-center rounded transition-colors cursor-pointer" tabindex="-1" onclick={(e) => { e.stopPropagation(); ctrl.toggleRotationLock(); }} onpointerdown={(e) => e.preventDefault()} style={s.isRotationLocked ? 'color: var(--color-primary-500);' : 'color: white;'}>
 										{#if s.isRotationLocked}
 											<Lock class="h-5 w-5" />
 										{:else}

@@ -2,7 +2,7 @@
 	import { onMount, onDestroy, untrack } from 'svelte';
 	import { createEpubViewerState, FONT_OPTIONS } from './epubViewer.svelte.ts';
 
-	let { filePath }: { filePath: string } = $props();
+	let { filePath, onClose }: { filePath: string; onClose?: () => void } = $props();
 	// Note: filePath is intentionally captured once at mount — re-opening needs destroy+reinit
 
 	// ── Controller ──────────────────────────────────────────────────────
@@ -24,9 +24,20 @@
 			ui.isSearchOpen = !ui.isSearchOpen;
 			if (ui.isSearchOpen) setTimeout(() => searchInputEl?.focus(), 50);
 		}
+		if (e.key === 'Tab') {
+			e.preventDefault();
+			ui.isTocOpen = !ui.isTocOpen;
+		}
 		if (e.key === 'Escape') {
-			ui.isSearchOpen = false;
-			ui.isTocOpen = false;
+			if (ui.isSearchOpen) {
+				ui.isSearchOpen = false;
+				e.preventDefault();
+			} else if (ui.isTocOpen) {
+				ui.isTocOpen = false;
+				e.preventDefault();
+			} else {
+				onClose?.();
+			}
 		}
 	}
 
@@ -105,8 +116,10 @@
 	<header class="toolbar" class:visible={ui.isControlsVisible || ui.isTocOpen || ui.isSearchOpen}>
 		<!-- Left group -->
 		<div class="toolbar-group">
+			<!-- TOC toggle -->
 			<button
 				class="icon-btn"
+				class:active={ui.isTocOpen}
 				onclick={() => (ui.isTocOpen = !ui.isTocOpen)}
 				title="Table of Contents"
 				aria-label="Toggle TOC"
@@ -152,7 +165,7 @@
 				title="Search (Ctrl+F)"
 				aria-label="Toggle search"
 			>
-				🔍
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
 			</button>
 
 			<!-- Dark / Light toggle -->
@@ -164,12 +177,31 @@
 			>
 				{settings.isDark ? '☀' : '🌙'}
 			</button>
+
+			<!-- Close button -->
+			<button
+				class="icon-btn"
+				onclick={() => onClose?.()}
+				title="Close"
+				aria-label="Close"
+			>
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+			</button>
 		</div>
 	</header>
 
 	<!-- ── Search panel ─────────────────────────────────────────────────── -->
 	{#if ui.isSearchOpen}
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="drawer-backdrop" onclick={() => (ui.isSearchOpen = false)}></div>
 		<div class="search-panel">
+			<div class="search-header">
+				<span class="search-title">Search</span>
+				<button class="icon-btn" onclick={() => ui.isSearchOpen = false} aria-label="Close search">
+					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+				</button>
+			</div>
 			<form onsubmit={handleSearchSubmit} class="search-form">
 				<input
 					bind:this={searchInputEl}
@@ -180,7 +212,6 @@
 				<button type="submit" disabled={search.isSearching}>
 					{search.isSearching ? '…' : 'Go'}
 				</button>
-				<button type="button" onclick={ctrl.clearSearch} title="Clear">✕</button>
 			</form>
 
 			{#if search.isSearching}
@@ -257,6 +288,11 @@
 		overflow: hidden;
 		position: relative;
 	}
+	@media (max-width: 640px) {
+		.reader-container {
+			overflow-x: auto;
+		}
+	}
 
 	/* ── Loading / Error ────────────────────────────── */
 	.loading-overlay,
@@ -293,9 +329,10 @@
 		background: rgba(248, 244, 239, 0.92);
 		backdrop-filter: blur(8px);
 		border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-		opacity: 0;
+		/* opacity: 0;
 		transform: translateY(-100%);
 		transition: opacity 0.2s, transform 0.2s;
+		z-index: 50; */
 		z-index: 50;
 	}
 	.dark .toolbar {
@@ -328,6 +365,11 @@
 		font-size: 1rem;
 		color: inherit;
 		transition: background 0.15s, border-color 0.15s;
+		width: 32px;
+		height: 32px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 	.icon-btn:hover,
 	.icon-btn.active {
@@ -343,14 +385,27 @@
 		color: inherit;
 		cursor: pointer;
 	}
+	.select-wrapper select option {
+		background: #f8f4ef;
+		color: #2c2825;
+	}
 	.dark .select-wrapper select {
 		border-color: rgba(255, 255, 255, 0.15);
+		color: #d4cfc8;
+	}
+	.dark .select-wrapper select option {
+		background: #1a1a2e;
+		color: #d4cfc8;
 	}
 	.font-size-group {
 		display: flex;
 		align-items: center;
 		gap: 0.25rem;
 		font-size: 0.8rem;
+	}
+	.font-size-group span {
+		min-width: 36px;
+		text-align: center;
 	}
 	.font-size-group button {
 		background: none;
@@ -478,14 +533,21 @@
 		display: flex;
 		flex-direction: column;
 		box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
-		animation: slide-in-right 0.2s ease;
 	}
 	.dark .search-panel {
 		background: #1e1e35;
 	}
-	@keyframes slide-in-right {
-		from { transform: translateX(100%); }
-		to { transform: translateX(0); }
+	.search-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 1rem;
+		border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+		flex-shrink: 0;
+	}
+	.search-title {
+		font-weight: 600;
+		font-size: 0.9rem;
 	}
 	.search-form {
 		display: flex;
@@ -580,5 +642,27 @@
 		clip: rect(0,0,0,0);
 		white-space: nowrap;
 		border: 0;
+	}
+
+	/* ── Responsive ───────────────────────────────── */
+	@media (max-width: 640px) {
+		.toolbar {
+			flex-wrap: wrap;
+			gap: 0.25rem;
+			padding: 0.4rem 0.5rem;
+		}
+		.toolbar-group {
+			gap: 0.25rem;
+		}
+		.book-title {
+			display: none;
+		}
+		.select-wrapper {
+			display: none;
+		}
+		.icon-btn {
+			width: 28px;
+			height: 28px;
+		}
 	}
 </style>

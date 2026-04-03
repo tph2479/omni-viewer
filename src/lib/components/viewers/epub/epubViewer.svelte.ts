@@ -31,11 +31,11 @@ export type FontOption = {
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 export const FONT_OPTIONS: FontOption[] = [
+	{ label: 'System Default', value: 'inherit' },
 	{ label: 'Georgia', value: 'Georgia, serif' },
 	{ label: 'Merriweather', value: '"Merriweather", Georgia, serif' },
 	{ label: 'Inter', value: '"Inter", system-ui, sans-serif' },
 	{ label: 'Source Serif', value: '"Source Serif 4", Georgia, serif' },
-	{ label: 'System Default', value: 'inherit' },
 ];
 
 // ─── Controller ──────────────────────────────────────────────────────────────
@@ -67,12 +67,30 @@ export function createEpubViewerState(filePath: string) {
 
 	// ── User settings ─────────────────────────────────────────────────────────
 	const settings = $state({
-		isDark:
-			typeof document !== 'undefined' &&
-			document.documentElement.getAttribute('data-theme') === 'business',
-		fontFamily: FONT_OPTIONS[0].value,
+		isDark: false,
+		fontFamily: 'inherit',
 		fontSize: 18,
 		lineSpacing: 1.6,
+	});
+
+	function initThemeSync() {
+		if (typeof document === 'undefined') return;
+		const mode = document.documentElement.getAttribute('data-mode');
+		settings.isDark = mode === 'dark';
+	}
+
+	$effect(() => {
+		initThemeSync();
+		const observer = new MutationObserver((mutations) => {
+			for (const mut of mutations) {
+				if (mut.attributeName === 'data-mode') {
+					settings.isDark = document.documentElement.getAttribute('data-mode') === 'dark';
+					applyStyles();
+				}
+			}
+		});
+		observer.observe(document.documentElement, { attributes: true });
+		return () => observer.disconnect();
 	});
 
 	// ── Search ────────────────────────────────────────────────────────────────
@@ -138,6 +156,7 @@ export function createEpubViewerState(filePath: string) {
 		ui.errorMsg = '';
 
 		try {
+			initThemeSync();
 			await import('$lib/foliate-js/view.js');
 
 			viewEl = document.createElement('foliate-view');

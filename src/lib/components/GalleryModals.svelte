@@ -42,15 +42,10 @@
 {#if s.modal.epub.open}
     <!-- Container styled similarly to how PDF is fullscreen -->
     <div class="fixed inset-0 z-[1000] bg-surface-100 dark:bg-surface-900 overflow-hidden flex flex-col">
-        <EpubViewer filePath={s.modal.epub.path} />
-        <button 
-            type="button" 
-            class="absolute top-2 left-2 z-[60] bg-surface-200/50 hover:bg-surface-300 dark:bg-surface-800/50 dark:hover:bg-surface-700 p-2 rounded-full cursor-pointer backdrop-blur-sm"
-            onclick={() => { s.modal.epub.open = false; s.modal.epub.path = ''; }}
-            aria-label="Close EPUB Viewer"
-        >
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
-        </button>
+        <EpubViewer 
+            filePath={s.modal.epub.path} 
+            onClose={() => { s.modal.epub.open = false; s.modal.epub.path = ''; }}
+        />
     </div>
 {/if}
 
