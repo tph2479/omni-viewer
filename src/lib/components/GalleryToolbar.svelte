@@ -187,8 +187,8 @@
     <!-- Left buttons -->
     <div
         class="flex items-center px-1
-               bg-surface-100 dark:bg-surface-800
-               border border-surface-200 dark:border-surface-800 shadow-lg rounded-full shrink-0"
+               bg-surface-100/70 dark:bg-surface-800/70 backdrop-blur-md
+               border border-surface-200/50 dark:border-surface-800/50 shadow-lg rounded-full shrink-0"
     >
         <button
             class="hidden sm:flex items-center justify-center w-10 h-10 shrink-0
@@ -217,24 +217,41 @@
     <!-- Input -->
     <div
         class="flex items-center flex-1 min-w-0 h-10 px-1
-               bg-surface-100 dark:bg-surface-800
-               border border-surface-200 dark:border-surface-800 shadow-lg rounded-full"
+               bg-surface-100/70 dark:bg-surface-800/70 backdrop-blur-md
+               border border-surface-200/50 dark:border-surface-800/50 shadow-lg rounded-full"
     >
-        <input
-            type="text"
-            class="flex-1 h-full px-3 bg-transparent
-                   border-none outline-none ring-0
-                   text-sm font-medium tracking-tight truncate
-                   placeholder:opacity-40 placeholder:font-normal
-                   text-surface-700 dark:text-surface-200"
-            value={folderPathRaw}
-            oninput={(e) =>
-                folder.onPathChange?.((e.target as HTMLInputElement).value)}
-            onkeydown={handleKeydown}
-            placeholder={isMobile ? "Tap to browse…" : "Enter folder path or search…"}
-            onclick={() => isMobile && actions.onOpenPicker()}
-            readonly={isMobile}
-        />
+        {#if isMobile}
+            <div
+                class="flex-1 h-full px-3 bg-transparent
+                       flex items-center
+                       text-sm font-medium tracking-tight
+                       overflow-x-auto whitespace-nowrap hide-scrollbar
+                       text-surface-700 dark:text-surface-200
+                       cursor-pointer"
+                style="mask-image: linear-gradient(to right, transparent, black 15px, black calc(100% - 15px), transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 15px, black calc(100% - 15px), transparent);"
+                onclick={actions.onOpenPicker}
+                aria-label="Folder path"
+                role="button"
+                tabindex="0"
+                onkeydown={(e) => e.key === 'Enter' && actions.onOpenPicker()}
+            >
+                {folderPathRaw || (isMobile ? "Tap to browse…" : "Enter folder path or search…")}
+            </div>
+        {:else}
+            <input
+                type="text"
+                class="flex-1 h-full px-3 bg-transparent
+                       border-none outline-none ring-0
+                       text-sm font-medium tracking-tight
+                       placeholder:opacity-40 placeholder:font-normal
+                       text-surface-700 dark:text-surface-200"
+                value={folderPathRaw}
+                oninput={(e) =>
+                    folder.onPathChange?.((e.target as HTMLInputElement).value)}
+                onkeydown={handleKeydown}
+                placeholder="Enter folder path or search…"
+            />
+        {/if}
         
         {#if exclusiveType}
             <div class="flex items-center gap-1.5 shrink-0 ml-1 mr-2 animate-in fade-in slide-in-from-right-2 duration-300">
@@ -393,3 +410,13 @@
         {/if}
     </div>
 </div>
+
+<style>
+    .hide-scrollbar {
+        -ms-overflow-style: none; /* IE and Edge */
+        scrollbar-width: none; /* Firefox */
+    }
+    .hide-scrollbar::-webkit-scrollbar {
+        display: none; /* Chrome, Safari and Opera */
+    }
+</style>

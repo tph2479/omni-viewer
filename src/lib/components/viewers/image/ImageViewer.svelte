@@ -146,6 +146,7 @@
 				{#if imgState.currentItem}
 					<p
 						class="select-text text-white font-black text-lg sm:text-2xl tracking-tight leading-tight image-title-scroll"
+						style="mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent);"
 					>
 						<span class="px-2 py-0.5 -mx-2 rounded-lg">
 							{imgState.currentImageIndexDisplay} / {totalImages} —

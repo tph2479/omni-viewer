@@ -142,9 +142,6 @@
                     <Icon
                         class="size-7 {active ? 'stroke-[1.8px] text-[var(--color-primary-600)] dark:text-[var(--color-primary-400)]' : 'stroke-[1.5px] text-surface-600 dark:text-surface-400 hover:text-[var(--color-primary-600)] dark:hover:text-[var(--color-primary-400)]'} transition-colors"
                     />
-                    {#if isMobileNav}
-                        <span class="text-[10px] mt-1 font-medium">{label}</span>
-                    {/if}
                 </Navigation.TriggerAnchor>
             {/snippet}
         </Tooltip.Trigger>

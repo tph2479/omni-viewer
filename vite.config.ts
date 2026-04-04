@@ -10,9 +10,35 @@ export default defineConfig({
 		}
 	},
 	optimizeDeps: {
+		entries: ['./src/routes/+layout.svelte', './src/routes/**/+page.svelte'],
+		include: [
+			'@skeletonlabs/skeleton-svelte',
+			'lucide-svelte',
+			'@skeletonlabs/skeleton-common',
+			'@zag-js/svelte',
+			'@zag-js/accordion',
+			'@zag-js/avatar',
+			'@zag-js/carousel',
+			'@zag-js/collapsible',
+			'@zag-js/combobox',
+			'@zag-js/date-picker',
+			'@zag-js/dialog',
+			'@zag-js/file-upload',
+			'@zag-js/floating-panel',
+			'@zag-js/menu',
+			'@zag-js/popover',
+			'@zag-js/progress',
+			'@zag-js/radio-group',
+			'@zag-js/rating-group',
+			'@zag-js/slider',
+			'@zag-js/switch',
+			'@zag-js/tabs',
+			'@zag-js/tags-input',
+			'@zag-js/toast',
+			'@zag-js/toggle-group',
+			'@zag-js/tooltip'
+		],
 		exclude: ['pdfjs-dist'],
 	},
-	// foliate-js ships native ES modules with relative dynamic imports.
-	// Excluding them prevents Vite from rewriting the paths during pre-bundling.
 	assetsInclude: ['**/*.epub'],
 });

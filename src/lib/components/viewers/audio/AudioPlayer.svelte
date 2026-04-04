@@ -242,7 +242,7 @@
 </script>
 
 <div
-    class="fixed inset-0 z-[300] flex items-center justify-center bg-surface-50 dark:bg-surface-900 subtitle-hidden overflow-hidden font-sans"
+    class="fixed inset-0 z-[300] flex items-center justify-center bg-surface-50/70 dark:bg-surface-900/70 backdrop-blur-md subtitle-hidden overflow-hidden font-sans"
     role="dialog"
     aria-modal="true"
     transition:fade={{ duration: 200 }}
@@ -356,6 +356,7 @@
                     >
                         <h1
                             class="text-lg sm:text-xl md:text-2xl font-bold text-surface-900 dark:text-surface-100 leading-tight audio-title-scroll"
+                            style="mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent);"
                             title={currentAudio?.name}
                         >
                             {currentAudio?.name.replace(/\.[^/.]+$/, "")}

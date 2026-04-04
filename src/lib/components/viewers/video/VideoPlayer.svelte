@@ -258,7 +258,7 @@
 		role="dialog"
 		aria-modal="true"
 		tabindex="-1"
-		class="fixed inset-0 z-[300] bg-black/80 flex flex-col h-full w-full overflow-hidden outline-none animate-in fade-in duration-300"
+		class="fixed inset-0 z-[300] bg-black/40 backdrop-blur-md flex flex-col h-full w-full overflow-hidden outline-none animate-in fade-in duration-300"
 		onmousemove={ctrl.handleMouseMoveVisibility}
 		onmouseleave={() => ctrl.hideControlsImmediately()}
 		ontouchend={() => {
@@ -286,7 +286,7 @@
 						id="modal-video-player"
 						src={s.currentVideoSrc}
 						autoplay
-						preload="auto"
+						preload="metadata"
 						playsinline
 						muted={s.isVideoMuted}
 						bind:paused={s.isVideoPaused}
@@ -345,8 +345,10 @@
 										<div class="absolute w-4 h-4 bg-white rounded-full opacity-0 group-hover/progress:opacity-100 transition-opacity duration-150 z-30" style="left: calc({progressPercent}% - 8px)"></div>
 									</div>
 								</div>
-								<div class="text-white text-xs sm:text-sm font-mono shrink-0">
-									{formatVideoTime(s.videoTime)} / {formatVideoTime(s.videoDuration)}
+								<div class="text-white text-[10px] sm:text-sm font-mono shrink-0 flex flex-col sm:flex-row items-center sm:gap-1 leading-tight sm:leading-normal text-right">
+									<span>{formatVideoTime(s.videoTime)}</span>
+									<span class="opacity-40 sm:opacity-100 hidden sm:inline">/</span>
+									<span class="opacity-40 sm:opacity-100">{formatVideoTime(s.videoDuration)}</span>
 								</div>
 				<button
 					aria-label="Close"
@@ -361,7 +363,10 @@
 
 							<!-- Row 2: Title -->
 							<div class="flex items-center pointer-events-auto">
-								<div class="flex-1 min-w-0 overflow-x-auto video-title-scroll text-right">
+							<div 
+								class="flex-1 min-w-0 overflow-x-auto video-title-scroll text-right"
+								style="mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent);"
+							>
 									<p class="select-text text-white font-bold text-xl sm:text-2xl tracking-tight whitespace-nowrap leading-tight inline-block">
 										{currentVideoIndexDisplay} / {totalImages} — {currentItem?.name}
 									</p>

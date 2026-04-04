@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { untrack } from "svelte";
+    import { untrack, onMount } from "svelte";
     import {
         FolderOpen,
         ChevronLeft,
@@ -90,6 +90,16 @@
     let isPickerLoading = $state(false);
     let pickerError = $state("");
     let dialogEl: HTMLDivElement;
+
+    let innerWidth = $state(1024);
+    const isMobile = $derived(innerWidth < 640);
+
+    onMount(() => {
+        innerWidth = window.innerWidth;
+        const handleResize = () => (innerWidth = window.innerWidth);
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    });
 
     // ── Data loading ──────────────────────────────────────────────
     async function loadPickerData(pathQuery = "", force = false) {
@@ -280,7 +290,7 @@
     aria-modal="true"
     aria-label="Select Directory"
     tabindex="-1"
-    class="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm grid place-items-center p-4 outline-none"
+    class="fixed inset-0 z-[200] bg-black/60 backdrop-blur-md grid place-items-center sm:p-4 p-0 outline-none"
     onclick={close}
     onkeydown={handleKeydown}
     bind:this={dialogEl}
@@ -289,8 +299,8 @@
     <div
         role="presentation"
         class="
-			w-[580px] h-[620px] max-w-[95vw] max-h-[90vh]
-			flex flex-col overflow-hidden rounded-2xl shadow-2xl
+			sm:w-[580px] sm:h-[620px] w-full h-full sm:max-w-[95vw] sm:max-h-[90vh]
+			flex flex-col overflow-hidden sm:rounded-2xl rounded-none shadow-2xl
 			bg-white dark:bg-surface-800
 			border border-gray-200 dark:border-surface-600
 		"
@@ -299,7 +309,7 @@
         <!-- Header -->
         <div
             class="flex items-center justify-between px-5 py-3.5
-			bg-gray-50 dark:bg-surface-700
+			bg-gray-50/70 dark:bg-surface-700/70 backdrop-blur-md
 			border-b border-gray-200 dark:border-surface-600"
         >
             <div class="flex items-center gap-2.5">
@@ -310,14 +320,6 @@
                     class="text-sm font-semibold text-gray-800 dark:text-white tracking-wide"
                 >
                     File Explorer
-                </span>
-                <!-- OS indicator badge -->
-                <span
-                    class="text-[10px] font-bold px-2 py-0.5 rounded-md
-					bg-gray-200 dark:bg-surface-600
-					text-gray-500 dark:text-gray-400 tracking-widest uppercase"
-                >
-                    {isWindows ? "Windows" : "Linux"}
                 </span>
             </div>
             <button
@@ -332,7 +334,7 @@
         <!-- Address Bar -->
         <div
             class="flex items-center gap-2 px-4 py-2.5
-			bg-gray-50 dark:bg-surface-700
+			bg-gray-50/70 dark:bg-surface-700/70 backdrop-blur-md
 			border-b border-gray-200 dark:border-surface-600"
         >
             <button
@@ -348,19 +350,21 @@
             </button>
 
             <!-- Path segments breadcrumb -->
-            <div
-                class="flex-1 min-w-0 px-3 py-1.5 rounded-lg text-xs font-mono truncate
+            <input
+                type="text"
+                class="flex-1 min-w-0 px-3 py-1.5 rounded-lg text-xs font-mono
 				bg-white dark:bg-surface-900
 				border border-gray-200 dark:border-surface-600
-				text-gray-600 dark:text-gray-300"
-                title={pickerCurrentPath || ""}
-            >
-                {#if isAtRoot}
-                    <span class="opacity-50">Selecting drive…</span>
-                {:else}
-                    {pickerCurrentPath}
-                {/if}
-            </div>
+				text-gray-600 dark:text-gray-300 outline-none overflow-x-auto hide-scrollbar"
+                style="mask-image: linear-gradient(to right, transparent, black 15px, black calc(100% - 15px), transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 15px, black calc(100% - 15px), transparent);"
+                value={pickerCurrentPath}
+                placeholder={isAtRoot ? "Selecting drive…" : "Enter path…"}
+                onkeydown={(e) => {
+                    if (e.key === "Enter") {
+                        normalizeAndLoad((e.target as HTMLInputElement).value);
+                    }
+                }}
+            />
 
             <button
                 class="btn-icon btn-icon-sm variant-ghost-surface rounded-lg
@@ -471,7 +475,7 @@
         <!-- Footer -->
         <div
             class="flex items-center justify-between px-4 py-3
-			bg-gray-50 dark:bg-surface-700
+			bg-gray-50/70 dark:bg-surface-700/70 backdrop-blur-md
 			border-t border-gray-200 dark:border-surface-600"
         >
             <!-- Drive / root quick-nav chips -->
@@ -549,6 +553,13 @@
     }
     .no-scrollbar::-webkit-scrollbar {
         display: none;
+    }
+    .hide-scrollbar {
+        -ms-overflow-style: none; /* IE and Edge */
+        scrollbar-width: none; /* Firefox */
+    }
+    .hide-scrollbar::-webkit-scrollbar {
+        display: none; /* Chrome, Safari and Opera */
     }
     @keyframes skeleton-pulse {
         0%, 100% { opacity: 0.3; transform: scale(0.99); }

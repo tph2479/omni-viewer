@@ -43,7 +43,7 @@
                 {@const groupInfo = groupedData[groupKey]}
                 <div class="flex flex-col gap-2">
                     <div
-                        class="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3 sm:gap-4"
+                        class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4"
                     >
                         <FileGridBase
                             bind:items={groupedData[groupKey].items}
@@ -52,30 +52,29 @@
                             {actions}
                         />
 
-                        {#if groupInfo && groupInfo.total > 11}
+                        {#if groupInfo && groupInfo.total > groupInfo.items.length}
                             <div class="flex flex-col">
                                 <button
-                                    class="relative rounded-2xl overflow-hidden transition-colors duration-200 cursor-pointer group w-full aspect-square flex items-center justify-center bg-surface-100/50 dark:bg-surface-800/50 hover:bg-surface-200/60 dark:hover:bg-surface-700/50"
+                                    class="relative rounded-2xl overflow-hidden transition-all duration-200 cursor-pointer group w-full aspect-square flex flex-col items-center justify-center
+									bg-surface-100/50 dark:bg-surface-800/50
+									border border-surface-200 dark:border-surface-700
+									hover:bg-surface-200/50 dark:hover:bg-surface-700/50
+									hover:border-primary-500/50 dark:hover:border-primary-500/50"
                                     onclick={() => actions.openGroup?.(groupKey)}
                                 >
-                                    <div
-                                        class="flex flex-col items-center justify-center gap-2"
-                                    >
-                                        <ArrowRight
-                                            size={28}
-                                            class="text-surface-400 dark:text-surface-500 hover:text-[var(--color-primary-500)] transition-colors duration-200"
-                                            strokeWidth={1.5}
-                                        />
+                                    <div class="relative z-10 flex flex-col items-center justify-center gap-2 transition-transform duration-200 group-hover:scale-105">
+                                        <div class="size-11 rounded-full flex items-center justify-center
+											bg-surface-200 dark:bg-surface-700
+											group-hover:bg-primary-500 group-hover:text-white
+											transition-all duration-200">
+                                            <ArrowRight size={24} />
+                                        </div>
+                                        <div class="flex flex-col items-center">
+                                             <span class="text-[10px] font-black uppercase tracking-widest text-surface-500 dark:text-surface-400 group-hover:text-primary-500 transition-colors">View All</span>
+                                             <span class="text-[11px] font-bold text-surface-400 dark:text-surface-500">+{groupInfo.total - groupInfo.items.length} items</span>
+                                        </div>
                                     </div>
                                 </button>
-                                <div class="flex flex-col items-center mt-auto pt-1">
-                                    <span
-                                        class="text-[10px] font-bold text-surface-400 dark:text-surface-500 group-hover:text-[var(--color-primary-500)] transition-colors duration-200 text-center px-1"
-                                    >
-                                        +{groupInfo.total -
-                                            groupInfo.items.length} items
-                                    </span>
-                                </div>
                             </div>
                         {/if}
                     </div>
