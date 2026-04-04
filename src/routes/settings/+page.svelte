@@ -13,11 +13,11 @@
     import { untrack, tick } from "svelte";
     import { goto } from "$app/navigation";
 
-    let { data, form } = $props();
+    let { data } = $props();
 
     let isClearingCache = $state(false);
     let isSaving = $state(false);
-    let shutdownConfirm = $state(false);
+    let shutdownConfirm = $state<boolean>(false);
     let formEl: HTMLFormElement;
     let lastSavedPath = $state(untrack(() => data?.defaultPath ?? ""));
 
@@ -89,6 +89,7 @@
             return;
         }
         shutdownConfirm = false;
+        fetch("/api/system/shutdown", { method: "POST" }).catch(() => {});
     }
 </script>
 
@@ -112,30 +113,31 @@
                         action="?/savePath"
                         use:enhance={() => {
                             return async ({ result, update }) => {
-                                const data = await result;
-                                if (data.type === 'success') {
+                                if (result.type === 'success' && result.data) {
+                                    const actionData = result.data as { path?: string };
                                     isSaving = false;
                                     toaster.create({
                                         type: "success",
                                         title: "Path saved",
-                                        description: `Media library path updated: ${data.data.path}`,
+                                        description: `Media library path updated: ${actionData.path ?? ""}`,
                                     });
-                                    if (data.data.path) {
-                                        pickerPath = data.data.path;
-                                        lastSavedPath = data.data.path;
+                                    if (actionData.path) {
+                                        pickerPath = actionData.path;
+                                        lastSavedPath = actionData.path;
                                         setTimeout(() => {
-                                            goto(`/browser?path=${encodeURIComponent(data.data.path)}`);
+                                            goto(`/browser?path=${encodeURIComponent(String(actionData.path))}`);
                                         }, 1000);
                                     }
-                                } else if (data.type === 'failure') {
+                                } else if (result.type === 'failure' && result.data) {
+                                    const actionData = result.data as { error?: string };
                                     isSaving = false;
                                     toaster.create({
                                         type: "error",
                                         title: "Save failed",
-                                        description: data.data.error,
+                                        description: String(actionData.error ?? "Unknown error"),
                                     });
                                 }
-                                update({ reset: false });
+                                await update({ reset: false });
                             };
                         }}
                         class="w-full mt-4"

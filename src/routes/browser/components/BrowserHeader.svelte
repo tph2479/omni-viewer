@@ -20,15 +20,24 @@
     }
 
     const toolbarActions = $derived({
-        onLoad: () => {
+        onLoad: async () => {
+            await s.actions.refreshDrives(true);
             const savedPage = s.folder.pageHistory[s.folder.path] || 0;
             s.actions.loadFolder(true, savedPage);
         },
-        onOpenPicker: () => (s.modal.folderPicker.open = true),
+        onOpenPicker: () => {
+            s.actions.refreshDrives();
+            s.modal.folderPicker.open = true;
+        },
         onOpenWebtoon: s.actions.handleOpenWebtoon,
+        onToggleCoverMode: s.actions.handleToggleCoverMode,
         onGoUp: async (path: string) => {
             if (path === "EXIT_EXCLUSIVE") {
                 s.actions.handleExitGroupView();
+                return;
+            }
+            if (path === "EXIT_COVER") {
+                s.actions.exitCoverMode();
                 return;
             }
             if (s.cover.savedState && s.cover.savedState.path === path) {
@@ -66,6 +75,7 @@
                 path: s.folder.path,
                 isFolderSelected: s.folder.isSelected,
                 isGrouped: s.content.isGrouped,
+                isCoverMode: s.cover.enabled,
                 exclusiveType: s.ui.exclusiveType,
                 items: s.content.items,
                 onPathChange: (v) => (s.folder.path = v),

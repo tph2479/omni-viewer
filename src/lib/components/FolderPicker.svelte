@@ -368,9 +368,8 @@
                     ? 'animate-spin opacity-50 pointer-events-none'
                     : ''}"
                 onclick={() => {
-                    if (isAtRoot) {
-                        onRefreshDrives?.();
-                    } else {
+                    onRefreshDrives?.();
+                    if (!isAtRoot) {
                         loadPickerData(pickerCurrentPath, true);
                     }
                 }}

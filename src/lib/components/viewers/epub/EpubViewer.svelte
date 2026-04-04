@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy, untrack } from 'svelte';
-	import { createEpubViewerState, FONT_OPTIONS, FONT_SIZE_OPTIONS, CONTENT_WIDTH_OPTIONS, LINE_SPACING_OPTIONS } from './epubViewer.svelte.ts';
+	import { createEpubViewerState, FONT_OPTIONS, FONT_SIZE_OPTIONS, CONTENT_WIDTH_OPTIONS, LINE_SPACING_OPTIONS, type SearchResult } from './epubViewer.svelte.ts';
 	import {
 		Menu,
 		X,
@@ -26,8 +26,8 @@
 	// ── DOM refs ────────────────────────────────────────────────────────
 	let containerEl: HTMLElement;
 	let searchInputEl: HTMLInputElement = $state(undefined as unknown as HTMLInputElement);
-	let tocListEl: HTMLElement;
-	let searchResultsEl: HTMLElement;
+	let tocListEl = $state<HTMLElement>();
+	let searchResultsEl = $state<HTMLElement>();
 
 	$effect(() => {
 		if (ui.isTocOpen) {
@@ -42,7 +42,7 @@
 	$effect(() => {
 		if (ui.isSearchOpen && search.currentIndex >= 0 && searchResultsEl) {
 			requestAnimationFrame(() => {
-				const selected = searchResultsEl.querySelector('li.selected');
+				const selected = searchResultsEl?.querySelector('li.selected');
 				selected?.scrollIntoView({ block: 'center', behavior: 'smooth' });
 			});
 		}
@@ -652,7 +652,6 @@
 		position: relative;
 		flex-shrink: 0;
 		outline: none;
-		tabindex: -1;
 	}
 	.dark .progress-bar-track {
 		background: oklch(38.67% 0 none);
@@ -675,7 +674,6 @@
 		opacity: 0.8;
 		flex-shrink: 0;
 		outline: none;
-		tabindex: -1;
 	}
 	.status-bar-left {
 		flex-shrink: 0;
@@ -971,15 +969,6 @@
 	}
 
 	/* ── Utility ──────────────────────────────────── */
-	.sr-only {
-		position: absolute;
-		width: 1px; height: 1px;
-		padding: 0; margin: -1px;
-		overflow: hidden;
-		clip: rect(0,0,0,0);
-		white-space: nowrap;
-		border: 0;
-	}
 
 	/* ── Responsive ───────────────────────────────── */
 	@media (max-width: 640px) {

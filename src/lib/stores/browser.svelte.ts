@@ -393,7 +393,6 @@ export function createBrowserStore() {
     if (coverMode.enabled) {
       coverMode.enabled = false;
       coverMode.folders = [];
-      return;
     }
 
     if (modal.webtoon.cbzPath) {
@@ -412,6 +411,23 @@ export function createBrowserStore() {
         return;
       }
 
+      showNoImagesPopup();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      ui.isLoading = false;
+    }
+  }
+
+  async function handleToggleCoverMode() {
+    if (coverMode.enabled) {
+      coverMode.enabled = false;
+      coverMode.folders = [];
+      return;
+    }
+
+    ui.isLoading = true;
+    try {
       const coverRes = await fetch(
         `/api/file?action=covers&folder=${encodeURIComponent(folder.path)}&page=0&limit=${COVER_PAGE_SIZE}`,
       );
@@ -558,6 +574,7 @@ export function createBrowserStore() {
       openPdfReader,
       openCbzInWebtoon,
       handleOpenWebtoon,
+      handleToggleCoverMode,
       handleSwitchToPaginationToContinue,
       handleExitGroupView,
       handleOpenGroup,

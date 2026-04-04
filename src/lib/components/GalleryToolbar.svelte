@@ -12,12 +12,15 @@
         LayoutGrid,
         ChevronsRight,
         Maximize,
+        ScrollText,
+        Library,
     } from "lucide-svelte";
 
     type FolderState = {
         path: string;
         isFolderSelected: boolean;
         isGrouped: boolean;
+        isCoverMode?: boolean;
         exclusiveType?: string | null;
         items: ImageFile[];
         onPathChange?: (v: string) => void;
@@ -60,6 +63,7 @@
         onLoad: () => void;
         onOpenPicker: () => void;
         onOpenWebtoon: () => void;
+        onToggleCoverMode: () => void;
         onGoUp: (dir: string) => void;
     };
 
@@ -100,6 +104,7 @@
     const mediaType = $derived(filter?.type ?? "all");
 
     const parentPath = $derived.by(() => {
+        if (folder?.isCoverMode) return "EXIT_COVER";
         if (exclusiveType) return "EXIT_EXCLUSIVE"; // Special value to signal exit
         if (!folderPathRaw) return null;
         const normalized = folderPathRaw.replace(/\\/g, "/").replace(/\/+$/, "");
@@ -274,9 +279,20 @@
                    rounded-full hover:preset-tonal-surface transition-colors
                    disabled:opacity-30"
             onclick={actions.onOpenWebtoon}
-            title="Webtoon / Cover view"
+            title="Webtoon view"
         >
-            <Layers size={20} strokeWidth={1.5} />
+            <ScrollText size={20} strokeWidth={1.5} />
+        </button>
+
+        <button
+            type="button"
+            class="flex items-center justify-center w-10 h-10 shrink-0
+                   rounded-full hover:preset-tonal-surface transition-colors
+                   disabled:opacity-30"
+            onclick={actions.onToggleCoverMode}
+            title="Book Cover view"
+        >
+            <Library size={20} strokeWidth={1.5} />
         </button>
 
         <button
