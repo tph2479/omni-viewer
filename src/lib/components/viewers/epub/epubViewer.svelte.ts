@@ -49,6 +49,15 @@ export const CONTENT_WIDTH_OPTIONS = [
 	{ label: '100%', value: '100' },
 ];
 
+export const LINE_SPACING_OPTIONS = [
+	{ label: '1.0', value: '1.0' },
+	{ label: '1.2', value: '1.2' },
+	{ label: '1.4', value: '1.4' },
+	{ label: '1.6', value: '1.6' },
+	{ label: '1.8', value: '1.8' },
+	{ label: '2.0', value: '2.0' },
+];
+
 // ─── Controller ──────────────────────────────────────────────────────────────
 
 export function createEpubViewerState(filePath: string) {
@@ -58,6 +67,7 @@ export function createEpubViewerState(filePath: string) {
 		errorMsg: '',
 		isTocOpen: false,
 		isSearchOpen: false,
+		isThemeMenuOpen: false,
 		isControlsVisible: false,
 		controlsHideTimer: null as ReturnType<typeof setTimeout> | null,
 		isMobile: typeof window !== 'undefined' && window.innerWidth <= 640,
@@ -80,11 +90,12 @@ export function createEpubViewerState(filePath: string) {
 	// ── User settings ─────────────────────────────────────────────────────────
 	const settings = $state({
 		isDark: false,
+		theme: 'system' as 'system' | 'sepia' | 'black',
 		fontFamily: 'inherit',
 		fontSize: 18,
-		lineSpacing: 1.6,
-		contentWidthDesktop: '80', // Default width to 80% on desktop
-		contentWidthMobile: '100', // Default width to 100% on mobile
+		lineSpacing: '1.6',
+		contentWidthDesktop: '60',
+		contentWidthMobile: '100',
 		get contentWidth() {
 			return ui.isMobile ? this.contentWidthMobile : this.contentWidthDesktop;
 		},
@@ -133,9 +144,27 @@ export function createEpubViewerState(filePath: string) {
 
 	/** CSS injected into the book renderer on every settings change */
 	function buildReaderCSS() {
-		const bg = settings.isDark ? 'oklch(32.5% 0 none)' : 'oklch(100% 0 none)';
-		const fg = settings.isDark ? 'oklch(100% 0 none)' : 'oklch(18.22% 0 none)';
-		const linkColor = settings.isDark ? 'oklch(62.99% 0.18 255.56deg)' : 'oklch(57.05% 0.21 258.14deg)';
+		let bg = 'oklch(100% 0 none)';
+		let fg = 'oklch(18.22% 0 none)';
+		let linkColor = 'oklch(57.05% 0.21 258.14deg)';
+
+		const effectiveTheme = settings.theme === 'system' 
+			? (settings.isDark ? 'dark' : 'light') 
+			: settings.theme;
+
+		if (effectiveTheme === 'dark') {
+			bg = 'oklch(32.5% 0 none)';
+			fg = 'oklch(100% 0 none)';
+			linkColor = 'oklch(62.99% 0.18 255.56deg)';
+		} else if (effectiveTheme === 'black') {
+			bg = 'oklch(0% 0 none)';
+			fg = 'oklch(100% 0 none)';
+			linkColor = 'oklch(62.99% 0.18 255.56deg)';
+		} else if (effectiveTheme === 'sepia') {
+			bg = 'oklch(91.56% 0.04 81.33deg)';
+			fg = 'oklch(25% 0.02 81.33deg)';
+			linkColor = 'oklch(35.5% 0.05 60deg)';
+		}
 
 		return `
 			html {
@@ -153,8 +182,8 @@ export function createEpubViewerState(filePath: string) {
 				padding-right: 1.5rem !important;
 				box-sizing: border-box !important;
 			}
-			p, li, blockquote, dd {
-				line-height: ${settings.lineSpacing};
+			p, li, blockquote, dd, div {
+				line-height: ${Number(settings.lineSpacing)} !important;
 				text-align: justify;
 			}
 			a { color: ${linkColor}; }
@@ -371,7 +400,7 @@ export function createEpubViewerState(filePath: string) {
 		applyStyles();
 	}
 
-	function setLineSpacing(val: number) {
+	function setLineSpacing(val: string) {
 		settings.lineSpacing = val;
 		applyStyles();
 	}
@@ -381,9 +410,25 @@ export function createEpubViewerState(filePath: string) {
 		applyStyles();
 	}
 
-	function toggleDark() {
-		settings.isDark = !settings.isDark;
+	function setTheme(t: 'system' | 'sepia' | 'black') {
+		settings.theme = t;
+		// Sync isDark flag based on chosen theme or system status
+		if (t === 'system') {
+			const mode = typeof document !== 'undefined' ? document.documentElement.getAttribute('data-mode') : 'light';
+			settings.isDark = (mode === 'dark');
+		} else {
+			settings.isDark = (t === 'black');
+		}
 		applyStyles();
+	}
+
+	function toggleDark() {
+		const next: Record<string, 'system' | 'sepia' | 'black'> = {
+			'system': 'sepia',
+			'sepia': 'black',
+			'black': 'system'
+		};
+		setTheme(next[settings.theme] || 'system');
 	}
 
 	// ─── Search ───────────────────────────────────────────────────────────────
@@ -549,6 +594,7 @@ export function createEpubViewerState(filePath: string) {
 		setFontSize,
 		setLineSpacing,
 		setContentWidth,
+		setTheme,
 		toggleDark,
 
 		// Search
