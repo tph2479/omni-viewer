@@ -10,7 +10,6 @@ export default defineConfig({
 		}
 	},
 	optimizeDeps: {
-		include: ['@skeletonlabs/skeleton-svelte', 'lucide-svelte'],
 		exclude: ['pdfjs-dist'],
 	},
 	// foliate-js ships native ES modules with relative dynamic imports.
