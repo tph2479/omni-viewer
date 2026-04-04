@@ -120,7 +120,13 @@
 	class:dark={settings.isDark}
 	onmousemove={ctrl.showControls}
 	onclick={() => containerEl?.focus()}
+	onkeydown={(e) => {
+		if (e.key === 'Enter' || e.key === ' ') {
+			containerEl?.focus();
+		}
+	}}
 	role="application"
+	tabindex="-1"
 	aria-label="EPUB Reader"
 >
 	<!-- ── Loading overlay ──────────────────────────────────────────────── -->
@@ -140,9 +146,19 @@
 
 	<!-- ── TOC Drawer ───────────────────────────────────────────────────── -->
 	{#if ui.isTocOpen}
-		<!-- svelte-ignore a11y_click_events_have_key_events -->
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="drawer-backdrop" onclick={() => (ui.isTocOpen = false)}></div>
+		<div
+			class="drawer-backdrop"
+			onclick={() => (ui.isTocOpen = false)}
+			onkeydown={(e) => {
+				if (e.key === 'Enter' || e.key === ' ') {
+					ui.isTocOpen = false;
+				}
+			}}
+			role="button"
+			tabindex="-1"
+			aria-label="Close Table of Contents"
+		></div>
 		<aside class="toc-drawer" aria-label="Table of Contents">
 			<div class="toc-header">
 				<h3>Contents</h3>
@@ -329,9 +345,19 @@
 
 	<!-- ── Search panel ─────────────────────────────────────────────────── -->
 	{#if ui.isSearchOpen}
-		<!-- svelte-ignore a11y_click_events_have_key_events -->
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="drawer-backdrop" onclick={() => (ui.isSearchOpen = false)}></div>
+		<div
+			class="drawer-backdrop"
+			onclick={() => (ui.isSearchOpen = false)}
+			onkeydown={(e) => {
+				if (e.key === 'Enter' || e.key === ' ') {
+					ui.isSearchOpen = false;
+				}
+			}}
+			role="button"
+			tabindex="-1"
+			aria-label="Close search"
+		></div>
 		<div class="search-panel">
 			<div class="search-header">
 				<span class="search-title">Search</span>
