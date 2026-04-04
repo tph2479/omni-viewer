@@ -11,7 +11,9 @@ import { isImageFile } from "$lib/fileUtils";
  */
 export async function findFolderCover(dirPath: string): Promise<string | null> {
   try {
-    const children = await fs.readdir(dirPath);
+    const children = (await fs.readdir(dirPath)).sort((a, b) =>
+      a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" }),
+    );
 
     // 1. Look for a cover.* file
     let coverFile = children.find((f) => {

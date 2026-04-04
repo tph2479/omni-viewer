@@ -94,4 +94,4 @@ export function formatDateTime(ms: number) {
 	return new Date(ms).toLocaleString();
 }
 
-export type ImageFile = { name: string; path: string; size: number; lastModified: number; isCbz?: boolean; isDir?: boolean; isVideo?: boolean; isAudio?: boolean; isPdf?: boolean; isEpub?: boolean; width?: number; height?: number };
+export type ImageFile = { name: string; path: string; size: number; lastModified: number; isCbz?: boolean; isDir?: boolean; isVideo?: boolean; isAudio?: boolean; isPdf?: boolean; isEpub?: boolean; width?: number; height?: number; firstCbz?: string };

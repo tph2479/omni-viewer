@@ -412,6 +412,10 @@ export function createBrowserStore() {
 
   function handleToggleCoverMode() {
     coverMode.enabled = !coverMode.enabled;
+    if (coverMode.enabled) {
+      pagination.sort = "name_asc";
+    }
+    loadFolder(true, 0);
   }
 
   async function handleSwitchToPaginationToContinue() {

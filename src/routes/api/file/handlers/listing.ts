@@ -106,6 +106,19 @@ export async function handleListing(
 
             try {
               const entryStat = await fs.stat(fullPath);
+              let firstCbz: string | undefined;
+              
+              if (isDir) {
+                const subEntries = await fs.readdir(fullPath);
+                const cbzFiles = subEntries
+                  .filter(f => isCbzFile(f))
+                  .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+                
+                if (cbzFiles.length > 0) {
+                  firstCbz = path.join(fullPath, cbzFiles[0]);
+                }
+              }
+
               return {
                 name: entry.name,
                 path: fullPath,
@@ -117,6 +130,7 @@ export async function handleListing(
                 isAudio,
                 isPdf,
                 isEpub,
+                firstCbz,
               };
             } catch (e) {
               return null;
@@ -218,6 +232,7 @@ export async function handleListing(
               isAudio: item.isAudio,
               isPdf: item.isPdf,
               isEpub: item.isEpub,
+              firstCbz: item.firstCbz,
               size: item.size,
               lastModified: item.mtime,
             })),
@@ -236,6 +251,7 @@ export async function handleListing(
     isAudio: item.isAudio,
     isPdf: item.isPdf,
     isEpub: item.isEpub,
+    firstCbz: item.firstCbz,
     size: item.size,
     lastModified: item.mtime,
   }));

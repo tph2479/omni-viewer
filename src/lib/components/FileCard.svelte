@@ -119,6 +119,35 @@
                     </div>
                 </div>
             {/if}
+
+            {#if img.firstCbz}
+                <div 
+                    class="absolute bottom-2 right-2 z-20"
+                    onclick={(e) => {
+                        e.stopPropagation();
+                        actions.openCbz(img.firstCbz!);
+                    }}
+                    onkeydown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.stopPropagation();
+                            actions.openCbz(img.firstCbz!);
+                        }
+                    }}
+                    role="button"
+                    tabindex="0"
+                >
+                    <div
+                        class="flex items-center gap-1.5 py-1 px-2.5 
+                            bg-black/60 hover:bg-primary-500/80 backdrop-blur-md
+                            text-white rounded-lg border border-white/20 shadow-lg
+                            transition-all duration-200 scale-90 hover:scale-100 shadow-xl"
+                        title="Open first CBZ"
+                    >
+                        <BookOpen size={14} strokeWidth={2} />
+                        <span class="text-[10px] font-black uppercase tracking-wider">Open</span>
+                    </div>
+                </div>
+            {/if}
         {:else if isZipFile(img.name)}
             <!-- Zip Icon (No thumbnail per user request) -->
             <div
