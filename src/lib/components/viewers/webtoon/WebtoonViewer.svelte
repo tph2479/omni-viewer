@@ -102,7 +102,21 @@
 	function handleKeyDown(event: KeyboardEvent) {
 		if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || s.isEditingPage || s.isEditingChapter) return;
 		if (event.key === 'Escape') {
+			if (s.isTocOpen) {
+				s.isTocOpen = false;
+				s.webtoonScrollContainer?.focus();
+				return;
+			}
+			if (s.isJumpPopupOpen) {
+				s.isJumpPopupOpen = false;
+				s.webtoonScrollContainer?.focus();
+				return;
+			}
 			closeWebtoon();
+		}
+		if (event.key === 'Tab') {
+			event.preventDefault();
+			s.isTocOpen = !s.isTocOpen;
 		}
 		if (event.code === 'KeyZ') {
 			event.preventDefault();
@@ -147,6 +161,30 @@
 			}
 			isResizing = false;
 		});
+	}
+
+	let tocWidth = $state(320);
+	let isResizingToc = $state(false);
+
+	function startResizingToc(e: MouseEvent) {
+		e.preventDefault();
+		isResizingToc = true;
+		
+		const moveHandler = (moveEvent: MouseEvent) => {
+			if (!isResizingToc) return;
+			// Constrain between 200px and 80% screen width
+			const newWidth = Math.max(200, Math.min(window.innerWidth * 0.8, moveEvent.clientX));
+			tocWidth = newWidth;
+		};
+
+		const stopHandler = () => {
+			isResizingToc = false;
+			window.removeEventListener('mousemove', moveHandler);
+			window.removeEventListener('mouseup', stopHandler);
+		};
+
+		window.addEventListener('mousemove', moveHandler);
+		window.addEventListener('mouseup', stopHandler);
 	}
 
 	let tocScrollContainer: HTMLElement | undefined = $state();
@@ -209,6 +247,100 @@
 		background: rgba(255, 255, 255, 0.1);
 		border-radius: 10px;
 	}
+
+	/* Premium Tooltips */
+	.tooltip-bottom {
+		position: relative;
+	}
+	.tooltip-bottom::after {
+		content: attr(data-tooltip);
+		position: absolute;
+		top: calc(100% + 12px);
+		left: 50%;
+		transform: translateX(-50%) translateY(-4px);
+		padding: 6px 10px;
+		background: rgba(15, 15, 15, 0.95);
+		color: white;
+		font-size: 10px;
+		font-weight: 800;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		border-radius: 8px;
+		white-space: nowrap;
+		pointer-events: none;
+		opacity: 0;
+		transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		backdrop-filter: blur(10px);
+		box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+		z-index: 500;
+	}
+	.tooltip-bottom:hover::after {
+		opacity: 1;
+		transform: translateX(-50%) translateY(0);
+	}
+
+	.tooltip-left {
+		position: relative;
+	}
+	.tooltip-left::after {
+		content: attr(data-tooltip);
+		position: absolute;
+		top: 50%;
+		right: calc(100% + 12px);
+		transform: translateY(-50%) translateX(4px);
+		padding: 6px 10px;
+		background: rgba(15, 15, 15, 0.95);
+		color: white;
+		font-size: 10px;
+		font-weight: 800;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		border-radius: 8px;
+		white-space: nowrap;
+		pointer-events: none;
+		opacity: 0;
+		transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		backdrop-filter: blur(10px);
+		box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+		z-index: 500;
+	}
+	.tooltip-left:hover::after {
+		opacity: 1;
+		transform: translateY(-50%) translateX(0);
+	}
+
+	.tooltip-right {
+		position: relative;
+	}
+	.tooltip-right::after {
+		content: attr(data-tooltip);
+		position: absolute;
+		top: 50%;
+		left: calc(100% + 12px);
+		transform: translateY(-50%) translateX(-4px);
+		padding: 6px 10px;
+		background: rgba(15, 15, 15, 0.95);
+		color: white;
+		font-size: 10px;
+		font-weight: 800;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		border-radius: 8px;
+		white-space: nowrap;
+		pointer-events: none;
+		opacity: 0;
+		transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		backdrop-filter: blur(10px);
+		box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+		z-index: 500;
+	}
+	.tooltip-right:hover::after {
+		opacity: 1;
+		transform: translateY(-50%) translateX(0);
+	}
 </style>
 
 <svelte:window onkeydown={handleKeyDown} onmousemove={ctrl.handleWindowMouseMove} onmouseup={ctrl.handleWindowMouseUp} onresize={handleResize} />
@@ -251,7 +383,8 @@
 	<div class="fixed top-4 right-4 sm:right-6 pointer-events-none z-[310] transition-all duration-300 {s.controlsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}">
 		<div class="flex items-center justify-end gap-2">
 			<button 
-				class="btn rounded-xl w-10 h-10 min-h-0 p-0 bg-zinc-900/90 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl pointer-events-auto transition-all" 
+				class="btn rounded-xl w-10 h-10 min-h-0 p-0 bg-zinc-900/90 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl pointer-events-auto transition-all tooltip-bottom" 
+				data-tooltip="Fit Width"
 				aria-label="Toggle fit" 
 				onclick={(e) => { e.stopPropagation(); (e.currentTarget as HTMLElement).blur(); ctrl.toggleWebtoonFit(); }}
 			>
@@ -263,7 +396,8 @@
 			</button>
 
 			<button 
-				class="btn rounded-xl w-10 h-10 min-h-0 p-0 bg-zinc-900/90 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl pointer-events-auto transition-all" 
+				class="btn rounded-xl w-10 h-10 min-h-0 p-0 bg-zinc-900/90 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl pointer-events-auto transition-all tooltip-bottom" 
+				data-tooltip="Fullscreen"
 				aria-label="Toggle Fullscreen" 
 				onclick={(e) => { e.stopPropagation(); (e.currentTarget as HTMLElement).blur(); toggleFullscreen(); }}
 			>
@@ -275,7 +409,8 @@
 			</button>
 
 			<button 
-				class="btn rounded-xl w-10 h-10 min-h-0 p-0 {s.isTocOpen ? 'bg-primary-500/80 text-white' : 'bg-zinc-900/90 hover:bg-zinc-800 text-white'} border border-white/10 backdrop-blur-xl shadow-2xl pointer-events-auto transition-all" 
+				class="btn rounded-xl w-10 h-10 min-h-0 p-0 {s.isTocOpen ? 'bg-primary-500/80 text-white' : 'bg-zinc-900/90 hover:bg-zinc-800 text-white'} border border-white/10 backdrop-blur-xl shadow-2xl pointer-events-auto transition-all tooltip-bottom" 
+				data-tooltip="Chapters"
 				aria-label="Table of Contents" 
 				onclick={(e) => { e.stopPropagation(); (e.currentTarget as HTMLElement).blur(); s.isTocOpen = !s.isTocOpen; }}
 			>
@@ -372,13 +507,25 @@
 	<div class="fixed top-24 right-4 sm:right-6 bottom-4 flex flex-col items-end gap-2 z-[310] pointer-events-none transition-all duration-300 {s.controlsVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2'}">
 		<div class="flex flex-col items-end gap-2 pointer-events-auto h-full">
 			<div class="flex flex-col bg-zinc-900/90 rounded-xl backdrop-blur-xl border border-white/10 shadow-2xl mt-1 w-12 overflow-hidden">
-				<button aria-label="Zoom In" class="btn btn-ghost btn-sm h-12 w-12 p-0 text-white rounded-none border-b border-white/10" onclick={(e) => { e.stopPropagation(); (e.currentTarget as HTMLElement).blur(); ctrl.setWebtoonZoom(Math.min(500, s.webtoonZoomLevel * 1.15)); }} onmousedown={(e) => e.preventDefault()}>
+				<button 
+					aria-label="Zoom In" 
+					class="btn btn-ghost btn-sm h-12 w-12 p-0 text-white rounded-none border-b border-white/10 tooltip-left" 
+					data-tooltip="Zoom In"
+					onclick={(e) => { e.stopPropagation(); (e.currentTarget as HTMLElement).blur(); ctrl.setWebtoonZoom(Math.min(500, s.webtoonZoomLevel * 1.15)); }} 
+					onmousedown={(e) => e.preventDefault()}
+				>
 					<ZoomIn class="h-5 w-5 m-auto" />
 				</button>
 				<span class="py-2 text-[10px] font-mono font-black text-white text-center bg-white/5 w-12" aria-label="Current Zoom">
 					{Math.round(s.webtoonZoomLevel * 100)}%
 				</span>
-				<button aria-label="Zoom Out" class="btn btn-ghost btn-sm h-12 w-12 p-0 text-white rounded-none border-t border-white/10" onclick={(e) => { e.stopPropagation(); (e.currentTarget as HTMLElement).blur(); ctrl.setWebtoonZoom(Math.max(0.001, s.webtoonZoomLevel / 1.15)); }} onmousedown={(e) => e.preventDefault()}>
+				<button 
+					aria-label="Zoom Out" 
+					class="btn btn-ghost btn-sm h-12 w-12 p-0 text-white rounded-none border-t border-white/10 tooltip-left" 
+					data-tooltip="Zoom Out"
+					onclick={(e) => { e.stopPropagation(); (e.currentTarget as HTMLElement).blur(); ctrl.setWebtoonZoom(Math.max(0.001, s.webtoonZoomLevel / 1.15)); }} 
+					onmousedown={(e) => e.preventDefault()}
+				>
 					<ZoomOut class="h-5 w-5 m-auto" />
 				</button>
 			</div>
@@ -403,7 +550,8 @@
 					<div class="relative">
 						<button
 							aria-label="Edit Page Number"
-							class="btn btn-ghost btn-circle w-10 h-10 min-h-0 p-0 text-white hover:bg-white/10 transition-all flex items-center justify-center"
+							class="btn btn-ghost btn-circle w-10 h-10 min-h-0 p-0 text-white hover:bg-white/10 transition-all flex items-center justify-center tooltip-left"
+							data-tooltip="Jump to Page"
 							onclick={(e) => { e.stopPropagation(); s.isJumpPopupOpen = !s.isJumpPopupOpen; }}
 							onmousedown={(e) => e.preventDefault()}
 						>
@@ -469,9 +617,16 @@
 
 	<!-- TOC Menu -->
 	<div 
-		class="fixed inset-y-0 left-0 w-80 bg-zinc-900/95 backdrop-blur-2xl border-r border-white/10 z-[320] shadow-[20px_0_50px_rgba(0,0,0,0.5)] transition-all duration-300 flex flex-col {s.isTocOpen ? 'translate-x-0 pointer-events-auto' : '-translate-x-full shadow-none pointer-events-none'}"
+		class="fixed inset-y-0 left-0 bg-zinc-900/95 backdrop-blur-2xl border-r border-white/10 z-[320] shadow-[20px_0_50px_rgba(0,0,0,0.5)] transition-transform duration-300 flex flex-col {s.isTocOpen ? 'translate-x-0 pointer-events-auto' : '-translate-x-full shadow-none pointer-events-none'}"
+		style="width: {tocWidth}px;"
 		onclick={(e) => e.stopPropagation()}
 	>
+		<!-- Resize Handle -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div 
+			class="absolute top-0 right-0 w-1.5 h-full cursor-col-resize hover:bg-primary-500/30 transition-colors z-[321]"
+			onmousedown={startResizingToc}
+		></div>
 		<div class="p-6 border-b border-white/10 space-y-4 relative">
 			<div class="flex items-center justify-between">
 				<h3 class="text-white font-black uppercase tracking-widest text-sm">Chapters</h3>
@@ -489,26 +644,6 @@
 					</button>
 				</div>
 			</div>
-			
-			{#if s.currentIndex !== -1 && s.siblings[s.currentIndex]}
-				<div class="bg-white/5 rounded-xl p-3 border border-white/5">
-					<div class="text-[10px] font-black uppercase tracking-tighter opacity-30 mb-1">Now Reading</div>
-					<div class="text-xs font-bold text-white leading-tight line-clamp-2">
-						{s.siblings[s.currentIndex].name}
-					</div>
-				</div>
-			{:else}
-				<div class="bg-white/5 rounded-xl p-3 border border-white/5">
-					<div class="text-[10px] font-black uppercase tracking-tighter opacity-30 mb-1">Now Reading</div>
-					<div class="text-xs font-bold text-white leading-tight line-clamp-2">
-						{#if s.folderPath}
-							{s.folderPath.split(/[/\\]/).filter(Boolean).pop() || s.folderPath}
-						{:else}
-							Unknown
-						{/if}
-					</div>
-				</div>
-			{/if}
 		</div>
 		
 		<div 
@@ -520,12 +655,13 @@
 			<div style="height: {s.siblings.length * ITEM_HEIGHT}px; width: 100%; position: relative;">
 				{#each visibleSiblings as {item, index}}
 					<button 
-						class="absolute left-0 right-0 text-left p-3 rounded-xl transition-all duration-200 flex items-center gap-3 group
+						style="top: {index * ITEM_HEIGHT}px; height: {ITEM_HEIGHT}px;"
+						title={item.name}
+						onclick={(e) => { (e.currentTarget as HTMLElement).blur(); ctrl.goToIndex(index); }}
+						class="absolute left-0 right-0 text-left px-3 rounded-xl transition-all duration-200 flex items-center gap-3 group
 							{index === s.currentIndex 
 								? 'bg-primary-500/20 border border-primary-500/30 text-primary-400' 
 								: 'hover:bg-white/5 text-zinc-400 hover:text-white border border-transparent'}"
-						style="top: {index * ITEM_HEIGHT}px; height: {ITEM_HEIGHT}px;"
-						onclick={(e) => { (e.currentTarget as HTMLElement).blur(); ctrl.goToIndex(index); }}
 					>
 						<span class="text-[10px] font-black opacity-30 w-6">{index + 1}</span>
 						<span class="text-xs font-bold truncate flex-1">{item.name}</span>

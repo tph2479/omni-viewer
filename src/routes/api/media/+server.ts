@@ -107,7 +107,7 @@ export async function GET({ url, request }: RequestEvent) {
           stat.mtimeMs,
           request.signal,
         );
-        if (!success) throw error(404, "Thumbnail could not be generated");
+        if (!success) return new Response(null, { status: 204 });
       }
       const headers = {
         "Content-Type": "image/webp",
