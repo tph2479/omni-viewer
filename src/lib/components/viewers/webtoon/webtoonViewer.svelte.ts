@@ -175,10 +175,21 @@ export function createWebtoonController(folderPath: string, contextPath: string 
 		}
 	}
 
-	function handlePageInput(val: string) {
-		const page = parseInt(val);
-		if (!isNaN(page) && page >= 1 && page <= s.totalImages) {
-			scrollToIndex(page - 1);
+	async function handlePageInput(val: string) {
+		const pageNum = parseInt(val);
+		if (!isNaN(pageNum) && pageNum > 0 && pageNum <= s.loadedImages.length) {
+			const targetIdx = pageNum - 1;
+			const el = document.getElementById(`webtoon-image-${targetIdx}`);
+			if (el && s.webtoonScrollContainer) {
+				// Manually set index to prevent observer race conditions
+				s.currentImageIndex = targetIdx;
+				el.scrollIntoView({ behavior: 'auto', block: 'start' });
+				// Fallback offset for extra safety
+				await tick();
+				if (s.webtoonScrollContainer) {
+					s.webtoonScrollContainer.scrollTop = el.offsetTop + 16;
+				}
+			}
 		}
 	}
 
