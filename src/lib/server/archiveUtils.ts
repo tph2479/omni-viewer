@@ -8,9 +8,11 @@ import sharp from "sharp";
 import { ALLOWED_EXTENSIONS, isImageFile } from "$lib/fileUtils";
 import { globalTaskSemaphore } from "./semaphore";
 
-const THUMB_CACHE_DIR = path.resolve(".thumbnails");
-if (!fs.existsSync(THUMB_CACHE_DIR)) {
-  fs.mkdirSync(THUMB_CACHE_DIR, { recursive: true });
+export const THUMB_CACHE_DIR = path.resolve(".thumbnails");
+function ensureThumbDir() {
+  if (!fs.existsSync(THUMB_CACHE_DIR)) {
+    fs.mkdirSync(THUMB_CACHE_DIR, { recursive: true });
+  }
 }
 
 const HEIC_BRANDS = new Set([
@@ -30,6 +32,7 @@ const ongoingGenerations = new Map<string, Promise<any>>();
 
 export function isHeicBuffer(buf: Buffer): boolean {
   if (buf.length < 12) return false;
+  if (isAvifBuffer(buf)) return false;
   // Some HEIC/AVIF start with 00 00 00
   if (buf[0] !== 0x00 || buf[1] !== 0x00 || buf[2] !== 0x00) {
     // Also support some variations
@@ -38,6 +41,7 @@ export function isHeicBuffer(buf: Buffer): boolean {
   const ftyp = buf.slice(4, 8).toString("ascii");
   if (ftyp !== "ftyp") return false;
   const brand = buf.slice(8, 12).toString("ascii").trim().toLowerCase();
+  console.log("[Detection] Brand:", brand);
   return HEIC_BRANDS.has(brand);
 }
 
@@ -52,12 +56,16 @@ const HEIF_BRANDS = new Set([
   "msf2",
   "heis",
   "hevm",
+]);
+
+const AVIF_BRANDS = new Set([
   "avif",
   "avis",
 ]);
 
 export function isHeifBuffer(buf: Buffer): boolean {
   if (buf.length < 12) return false;
+  if (isAvifBuffer(buf)) return false;
   if (buf[0] !== 0x00 || buf[1] !== 0x00 || buf[2] !== 0x00) {
     if (!(buf[0] === 0x00 && buf[1] === 0x01 && buf[2] === 0x00)) return false;
   }
@@ -65,6 +73,31 @@ export function isHeifBuffer(buf: Buffer): boolean {
   if (ftyp !== "ftyp") return false;
   const brand = buf.slice(8, 12).toString("ascii").trim().toLowerCase();
   return HEIF_BRANDS.has(brand);
+}
+
+export function isAvifBuffer(buf: Buffer): boolean {
+  if (buf.length < 12) return false;
+  if (buf[0] !== 0x00 || buf[1] !== 0x00 || buf[2] !== 0x00) {
+    if (!(buf[0] === 0x00 && buf[1] === 0x01 && buf[2] === 0x00)) return false;
+  }
+  const ftyp = buf.slice(4, 8).toString("ascii");
+  if (ftyp !== "ftyp") return false;
+  
+  // The ftyp box structure: size(4), 'ftyp'(4), major_brand(4), minor_version(4), compatible_brands[]
+  // We should check major_brand and then compatible_brands
+  const majorBrand = buf.slice(8, 12).toString("ascii").trim().toLowerCase();
+  if (AVIF_BRANDS.has(majorBrand)) return true;
+
+  // Scan compatible brands (from offset 16 onwards)
+  // Box size is at offset 0-3
+  const boxSize = buf.readUInt32BE(0);
+  const maxScan = Math.min(boxSize, buf.length);
+  for (let i = 16; i + 4 <= maxScan; i += 4) {
+    const brand = buf.slice(i, i + 4).toString("ascii").trim().toLowerCase();
+    if (AVIF_BRANDS.has(brand)) return true;
+  }
+
+  return false;
 }
 
 export function getThumbnailPath(
@@ -162,6 +195,7 @@ export async function getArchiveCover(
         }
       }
 
+      ensureThumbDir();
       await sharp(sharpInput)
         .rotate()
         .resize(200, 200, { fit: "cover", fastShrinkOnLoad: true })
@@ -241,6 +275,7 @@ export async function ensureHeicConverted(
         }
 
         try {
+          ensureThumbDir();
           await sharp(fullBuffer)
             .rotate()
             .webp({ quality: 85, effort: 4 })
@@ -259,6 +294,7 @@ export async function ensureHeicConverted(
           });
           (fullBuffer as any) = null;
           if (Array.isArray(converted)) converted = converted[0].data;
+          ensureThumbDir();
           await sharp(Buffer.from(converted))
             .rotate()
             .webp({ quality: 85, effort: 4 })

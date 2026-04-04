@@ -55,12 +55,6 @@ interface PaginationState {
 
 interface CoverModeState {
   enabled: boolean;
-  folders: CoverFolder[];
-  total: number;
-  page: number;
-  hasMore: boolean;
-  savedState: SavedCoverState;
-  scrollPosition: number;
 }
 
 interface ModalState {
@@ -369,8 +363,6 @@ export function createBrowserStore() {
     localStorage.setItem("last-path", normalized);
     ui.exclusiveType = null;
     pagination.mediaType = "all";
-    coverMode.enabled = false;
-    coverMode.folders = [];
 
     const savedPage = folder.pageHistory[normalized] || 0;
     loadFolder(true, savedPage);
@@ -392,7 +384,6 @@ export function createBrowserStore() {
   async function handleOpenWebtoon() {
     if (coverMode.enabled) {
       coverMode.enabled = false;
-      coverMode.folders = [];
     }
 
     if (modal.webtoon.cbzPath) {
@@ -419,34 +410,8 @@ export function createBrowserStore() {
     }
   }
 
-  async function handleToggleCoverMode() {
-    if (coverMode.enabled) {
-      coverMode.enabled = false;
-      coverMode.folders = [];
-      return;
-    }
-
-    ui.isLoading = true;
-    try {
-      const coverRes = await fetch(
-        `/api/file?action=covers&folder=${encodeURIComponent(folder.path)}&page=0&limit=${COVER_PAGE_SIZE}`,
-      );
-      const coverData = await coverRes.json();
-      if (coverData.total > 0) {
-        coverMode.folders = coverData.folders;
-        coverMode.total = coverData.total;
-        coverMode.page = 0;
-        coverMode.hasMore = coverData.hasMore;
-        coverMode.enabled = true;
-        return;
-      }
-
-      showNoImagesPopup();
-    } catch (e) {
-      console.error(e);
-    } finally {
-      ui.isLoading = false;
-    }
+  function handleToggleCoverMode() {
+    coverMode.enabled = !coverMode.enabled;
   }
 
   async function handleSwitchToPaginationToContinue() {
@@ -497,57 +462,6 @@ export function createBrowserStore() {
     loadFolder(true, 0);
   }
 
-  function saveCoverState() {
-    const scrollContainer = document.querySelector(".drawer-content");
-    if (scrollContainer) coverMode.scrollPosition = scrollContainer.scrollTop;
-    coverMode.savedState = {
-      path: normalizePath(folder.path),
-      folders: [...coverMode.folders],
-      total: coverMode.total,
-      page: coverMode.page,
-      hasMore: coverMode.hasMore,
-      scrollPos: coverMode.scrollPosition,
-    };
-  }
-
-  function handleCoverFolderClick(path: string) {
-    const scrollContainer = document.querySelector(".drawer-content");
-    if (scrollContainer) coverMode.scrollPosition = scrollContainer.scrollTop;
-    coverMode.savedState = {
-      path: normalizePath(folder.path),
-      folders: [...coverMode.folders],
-      total: coverMode.total,
-      page: coverMode.page,
-      hasMore: coverMode.hasMore,
-      scrollPos: coverMode.scrollPosition,
-    };
-    coverMode.enabled = false;
-    coverMode.folders = [];
-    openDir(path);
-  }
-
-  function exitCoverMode() {
-    coverMode.enabled = false;
-    coverMode.folders = [];
-  }
-
-  async function loadCoverPage(page: number) {
-    ui.isLoading = true;
-    try {
-      const res = await fetch(
-        `/api/file?action=covers&folder=${encodeURIComponent(folder.path)}&page=${page}&limit=${COVER_PAGE_SIZE}`,
-      );
-      const data = await res.json();
-      coverMode.folders = data.folders;
-      coverMode.page = page;
-      coverMode.hasMore = data.hasMore;
-    } catch (e) {
-      console.error(e);
-    } finally {
-      ui.isLoading = false;
-    }
-  }
-
   function loadNextPage(page: number) {
     loadFolder(false, page);
   }
@@ -578,10 +492,6 @@ export function createBrowserStore() {
       handleSwitchToPaginationToContinue,
       handleExitGroupView,
       handleOpenGroup,
-      saveCoverState,
-      handleCoverFolderClick,
-      exitCoverMode,
-      loadCoverPage,
     },
 
     reset() {

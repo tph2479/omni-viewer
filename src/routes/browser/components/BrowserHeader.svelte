@@ -36,31 +36,6 @@
                 s.actions.handleExitGroupView();
                 return;
             }
-            if (path === "EXIT_COVER") {
-                s.actions.exitCoverMode();
-                return;
-            }
-            if (s.cover.savedState && s.cover.savedState.path === path) {
-                s.cover.enabled = true;
-                s.cover.folders = s.cover.savedState.folders;
-                s.cover.total = s.cover.savedState.total;
-                s.cover.page = s.cover.savedState.page;
-                s.cover.hasMore = s.cover.savedState.hasMore;
-                const restoredScrollPos = s.cover.savedState.scrollPos;
-                s.cover.savedState = null;
-                s.folder.path = path;
-
-                setTimeout(() => {
-                    const scrollContainer =
-                        document.querySelector(".drawer-content");
-                    if (scrollContainer)
-                        scrollContainer.scrollTo({
-                            top: restoredScrollPos,
-                            behavior: "instant",
-                        });
-                }, 0);
-                return;
-            }
             s.actions.openDir(path, true);
         },
     });

@@ -4,14 +4,21 @@ import path from "node:path";
 import sharp from "sharp";
 import {
   isHeifBuffer,
+  isAvifBuffer,
   getThumbnailPath,
   ensureHeicConverted,
+  THUMB_CACHE_DIR,
 } from "$lib/server/archiveUtils";
 import { globalTaskSemaphore } from "$lib/server/semaphore";
 import { isVideoFile, isAudioFile, isImageFile, isPdfFile } from "$lib/fileUtils";
 import { renderPdfFirstPage } from "$lib/server/pdf/pdfRenderer";
 
 const ongoingGenerations = new Map<string, Promise<boolean>>();
+function ensureThumbDir() {
+  if (!fs.existsSync(THUMB_CACHE_DIR)) {
+    fs.mkdirSync(THUMB_CACHE_DIR, { recursive: true });
+  }
+}
 
 export async function generateThumbnail(
   inputPath: string,
@@ -91,6 +98,7 @@ export async function generateThumbnail(
                 return false;
               }
 
+              ensureThumbDir();
               await sharp(Buffer.from(stdout))
                 .rotate()
                 .resize(200, 200, { fit: "cover", fastShrinkOnLoad: true })
@@ -123,6 +131,7 @@ export async function generateThumbnail(
 
               if (!success || signal?.aborted) return false;
 
+              ensureThumbDir();
               await sharp(Buffer.concat(chunks))
                 .rotate()
                 .resize(200, 200, { fit: "cover", fastShrinkOnLoad: true })
@@ -140,6 +149,7 @@ export async function generateThumbnail(
           const res = await globalTaskSemaphore.run(async () => {
             if (signal?.aborted) throw new Error("Aborted");
             const buf = await renderPdfFirstPage(inputPath, 400);
+            ensureThumbDir();
             await sharp(buf)
                 .rotate()
                 .resize(200, 200, { fit: "cover", fastShrinkOnLoad: true })
@@ -162,11 +172,12 @@ export async function generateThumbnail(
         } else {
           if (!isHeif && isImageFile(inputPath)) {
             try {
-              const header = Buffer.alloc(12);
+              const header = Buffer.alloc(256);
               const fd = fs.openSync(inputPath, "r");
-              fs.readSync(fd, header, 0, 12, 0);
+              fs.readSync(fd, header, 0, 256, 0);
               fs.closeSync(fd);
               isHeif = isHeifBuffer(header);
+              if (isAvifBuffer(header)) isHeif = false;
             } catch (e) {}
           }
           if (isHeif) {
@@ -177,6 +188,7 @@ export async function generateThumbnail(
         if (signal?.aborted) return false;
 
         try {
+          ensureThumbDir();
           await sharp(sharpInput)
             .rotate()
             .resize(200, 200, { fit: "cover", fastShrinkOnLoad: true })

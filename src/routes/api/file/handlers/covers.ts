@@ -1,17 +1,7 @@
-import { isImageFile } from "$lib/fileUtils";
+import { findFolderCover } from "$lib/server/fileUtils.server";
 import { json } from "@sveltejs/kit";
 import fs from "node:fs/promises";
 import path from "node:path";
-
-const COVER_EXTENSIONS = new Set([
-  ".jpg",
-  ".jpeg",
-  ".png",
-  ".webp",
-  ".gif",
-  ".avif",
-  ".bmp",
-]);
 
 export async function handleCovers(
   folderPath: string,
@@ -38,33 +28,8 @@ export async function handleCovers(
   const folders = await Promise.all(
     paginatedDirs.map(async (dir) => {
       const dirPath = path.join(folderPath, dir.name);
-      let coverPath = "";
-      try {
-        const children = await fs.readdir(dirPath);
-
-        // 1. Look for a cover.* file
-        let coverFile = children.find((f) => {
-          const lower = f.toLowerCase();
-          const ext = path.extname(lower);
-          const base = path.basename(lower, ext);
-          return base === "cover" && isImageFile(ext);
-        });
-
-        // 2. Fallback to the first available image
-        if (!coverFile) {
-          coverFile = children.find((f) => {
-            const lower = f.toLowerCase();
-            return isImageFile(path.extname(lower));
-          });
-        }
-
-        if (coverFile) {
-          coverPath = path.join(dirPath, coverFile);
-        }
-      } catch {
-        // Skip if we can't read the directory
-      }
-
+      const coverPath = await findFolderCover(dirPath) || "";
+      
       return {
         name: dir.name,
         path: dirPath,

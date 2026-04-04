@@ -19,6 +19,7 @@
         Play,
         BookOpen,
     } from "lucide-svelte";
+    import { browserStore } from "$lib/stores/browser.svelte";
 
     type FileActions = {
         openDir: (path: string) => void;
@@ -103,6 +104,21 @@
                     strokeWidth={1.5}
                 />
             </div>
+            {#if browserStore.cover.enabled}
+                <img
+                    use:lazyThumbnail={`/api/media?path=${encodeURIComponent(img.path)}&thumbnail=true&v=${cacheVersion.value}`}
+                    decoding="async"
+                    alt={img.name}
+                    class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                />
+                <div class="absolute top-2 left-2 z-10">
+                    <div
+                        class="bg-black/60 p-1.5 rounded-lg border border-white/20 shadow-lg"
+                    >
+                        <Folder class="w-4 h-4 text-white" strokeWidth={1.5} />
+                    </div>
+                </div>
+            {/if}
         {:else if isZipFile(img.name)}
             <!-- Zip Icon (No thumbnail per user request) -->
             <div

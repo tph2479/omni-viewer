@@ -1,6 +1,5 @@
 <script lang="ts">
     import { browserStore as s } from "$lib/stores/browser.svelte";
-    import FolderGrid from "./FolderGrid.svelte";
     import NormalGrid from "./NormalGrid.svelte";
     import GroupedGrid from "./GroupedGrid.svelte";
 
@@ -18,18 +17,7 @@
     };
 </script>
 
-{#if s.cover.enabled && s.cover.folders.length > 0}
-    <FolderGrid
-        folders={s.cover.folders}
-        total={s.cover.total}
-        page={s.cover.page}
-        pageSize={s.pagination.pageSize}
-        isLoading={s.ui.isLoading}
-        onFolderClick={s.actions.handleCoverFolderClick}
-        onExit={s.actions.exitCoverMode}
-        onPageChange={s.actions.loadCoverPage}
-    />
-{:else if s.content.isGrouped}
+{#if s.content.isGrouped}
     <GroupedGrid
         bind:groupedData={s.content.groupedData}
         isLoading={s.ui.isLoading}

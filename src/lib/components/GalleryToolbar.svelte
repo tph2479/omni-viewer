@@ -104,7 +104,6 @@
     const mediaType = $derived(filter?.type ?? "all");
 
     const parentPath = $derived.by(() => {
-        if (folder?.isCoverMode) return "EXIT_COVER";
         if (exclusiveType) return "EXIT_EXCLUSIVE"; // Special value to signal exit
         if (!folderPathRaw) return null;
         const normalized = folderPathRaw.replace(/\\/g, "/").replace(/\/+$/, "");
@@ -288,9 +287,9 @@
             type="button"
             class="flex items-center justify-center w-10 h-10 shrink-0
                    rounded-full hover:preset-tonal-surface transition-colors
-                   disabled:opacity-30"
+                   disabled:opacity-30 {folder.isCoverMode ? 'preset-filled-primary-500' : ''}"
             onclick={actions.onToggleCoverMode}
-            title="Book Cover view"
+            title="Toggle Folder Thumbnails"
         >
             <Library size={20} strokeWidth={1.5} />
         </button>

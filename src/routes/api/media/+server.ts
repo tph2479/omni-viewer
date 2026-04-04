@@ -4,17 +4,16 @@ import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
 import { getContentType, isImageFile } from "$lib/fileUtils";
-import { isHeifBuffer, getThumbnailPath } from "$lib/server/archiveUtils";
+import { isHeifBuffer, isAvifBuffer, getThumbnailPath, THUMB_CACHE_DIR } from "$lib/server/archiveUtils";
+
+import { findFolderCover } from "$lib/server/fileUtils.server";
 
 import { generateThumbnail } from "./handlers/thumbnail";
 import { handleMetadata } from "./handlers/metadata";
 import { handleImage } from "./handlers/image";
 import { handleStream } from "./handlers/stream";
 
-const THUMB_CACHE_DIR = path.resolve(".thumbnails");
-if (!fs.existsSync(THUMB_CACHE_DIR)) {
-  fs.mkdirSync(THUMB_CACHE_DIR, { recursive: true });
-}
+// THUMB_CACHE_DIR is imported from archiveUtils
 
 export async function GET({ url, request }: RequestEvent) {
   try {
@@ -34,20 +33,33 @@ export async function GET({ url, request }: RequestEvent) {
 
     const normalizedPath = decodedPath.replace(/\\/g, "/");
     const isZipPath = normalizedPath.includes("::");
-    const [actualFilePath, internalPath] = isZipPath
+    let [actualFilePath, internalPath] = isZipPath
       ? normalizedPath.split("::")
       : [normalizedPath, null];
 
-    const absolutePath =
+    let absolutePath =
       actualFilePath.startsWith("/") || /^[a-zA-Z]:/.test(actualFilePath)
         ? actualFilePath
         : path.resolve(actualFilePath);
 
     if (!fs.existsSync(absolutePath)) throw error(404, "File not found");
-    const stat = await fsp.stat(absolutePath);
+    let stat = await fsp.stat(absolutePath);
+
+    // If it's a directory and we want a thumbnail, find a cover image inside it
+    if (stat.isDirectory() && isThumbnail) {
+        const coverPath = await findFolderCover(absolutePath);
+        if (!coverPath) throw error(404, "No cover found for directory");
+        
+        absolutePath = coverPath;
+        stat = await fsp.stat(absolutePath);
+        // Reset internalPath as we've resolved to a real file
+        internalPath = null;
+    }
+
     const filename = internalPath || path.basename(absolutePath);
     const ext = filename.split(".").pop()?.toLowerCase() || "";
     let isHeic = ext === "heic" || ext === "heif";
+    let isAvif = ext === "avif";
 
     if (isZipPath) {
       // Redirect archive requests to api/ebook
@@ -58,16 +70,19 @@ export async function GET({ url, request }: RequestEvent) {
     }
 
     if (
-      !isHeic &&
       !isThumbnail &&
       isImageFile(filename)
     ) {
       try {
-        const header = Buffer.alloc(12);
+        const header = Buffer.alloc(256);
         const fd = fs.openSync(absolutePath, "r");
-        fs.readSync(fd, header, 0, 12, 0);
+        fs.readSync(fd, header, 0, 256, 0);
         fs.closeSync(fd);
         if (isHeifBuffer(header)) isHeic = true;
+        if (isAvifBuffer(header)) {
+            isAvif = true;
+            isHeic = false;
+        }
       } catch (e) {}
     }
 
@@ -104,7 +119,7 @@ export async function GET({ url, request }: RequestEvent) {
       return new Response(await fsp.readFile(thumbPath), { headers });
     }
 
-    const contentType = getContentType("." + ext);
+    const contentType = isAvif ? "image/avif" : getContentType("." + ext);
     const isVideo = contentType.startsWith("video/");
     const isAudio = contentType.startsWith("audio/");
 
