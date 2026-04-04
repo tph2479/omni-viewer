@@ -41,7 +41,9 @@ export async function GET({ url }: RequestEvent) {
         const sortBy = url.searchParams.get('sort') || 'date_desc';
         const typeFilter = url.searchParams.get('type') || 'all';
         const imagesOnly = url.searchParams.get('imagesOnly') === 'true';
+        const isCover = url.searchParams.get('isCover') === 'true';
         const exclusiveType = url.searchParams.get('exclusiveType');
+        const noGroup = url.searchParams.get('noGroup') === 'true';
 
         if (!folderParam || folderParam === 'This PC' || folderParam === 'This PC (Ổ đĩa hệ thống)') {
             return json({ images: [], total: 0, page: 0, hasMore: false });
@@ -57,7 +59,9 @@ export async function GET({ url }: RequestEvent) {
                 sortBy, 
                 typeFilter, 
                 imagesOnly,
-                exclusiveType
+                exclusiveType,
+                isCover,
+                noGroup
             );
         } catch (e: any) {
             console.error('API Gallery Error:', e);

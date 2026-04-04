@@ -2,8 +2,9 @@
 	import { tick, onMount, onDestroy } from 'svelte';
 	import { isVideoFile, type ImageFile } from '$lib/utils/utils';
 	import { cacheVersion } from '$lib/stores/cache.svelte';
+	import { browserStore } from '$lib/stores/browser.svelte';
 	import { createWebtoonController } from './webtoonViewer.svelte.ts';
-	import { X, Maximize2, ZoomIn, ZoomOut, Hash } from 'lucide-svelte';
+	import { X, Maximize2, ZoomIn, ZoomOut, Hash, ChevronLeft, ChevronRight, LayoutList, Expand, Shrink, Scaling, Minimize2 } from 'lucide-svelte';
 
 	let {
 		isWebtoonMode = $bindable(),
@@ -16,11 +17,19 @@
 	} = $props();
 
 	// svelte-ignore state_referenced_locally
-	const ctrl = createWebtoonController(folderPath);
+	const ctrl = createWebtoonController(folderPath, browserStore.modal.webtoon.contextPath, browserStore.actions);
 	let s = $derived(ctrl.state);
 
 	onMount(() => {
 		ctrl.loadWebtoonFolder();
+		ctrl.loadSiblings();
+	});
+
+	$effect(() => {
+		if (folderPath && folderPath !== s.folderPath) {
+			s.folderPath = folderPath;
+			ctrl.loadWebtoonFolder();
+		}
 	});
 
 	onDestroy(() => {
@@ -28,11 +37,34 @@
 	});
 
 	function closeWebtoon() {
+		if (document.fullscreenElement) {
+			document.exitFullscreen().catch(() => {});
+		}
 		isWebtoonMode = false;
 		s.webtoonZoomLevel = 0.6;
 		ctrl.destroy();
 		if (onCloseCallback) onCloseCallback();
 	}
+
+	let isFullscreen = $state(false);
+	function toggleFullscreen() {
+		if (!s.webtoonScrollContainer) return;
+		if (!document.fullscreenElement) {
+			s.webtoonScrollContainer.requestFullscreen().catch(err => {
+				console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+			});
+			isFullscreen = true;
+		} else {
+			document.exitFullscreen();
+			isFullscreen = false;
+		}
+	}
+
+	onMount(() => {
+		const fsChange = () => isFullscreen = !!document.fullscreenElement;
+		document.addEventListener('fullscreenchange', fsChange);
+		return () => document.removeEventListener('fullscreenchange', fsChange);
+	});
 
 	function trackImageIndex(node: HTMLElement, index: number) {
 		const visObserver = new IntersectionObserver((entries) => {
@@ -68,7 +100,7 @@
 	});
 
 	function handleKeyDown(event: KeyboardEvent) {
-		if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+		if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || s.isEditingPage || s.isEditingChapter) return;
 		if (event.key === 'Escape') {
 			closeWebtoon();
 		}
@@ -117,6 +149,40 @@
 		});
 	}
 
+	let tocScrollContainer: HTMLElement | undefined = $state();
+	let tocScrollTop = $state(0);
+	const ITEM_HEIGHT = 44;
+	let visibleSiblings = $derived.by(() => {
+		const start = Math.floor(tocScrollTop / ITEM_HEIGHT);
+		const buffer = 20;
+		const startIdx = Math.max(0, start - buffer);
+		const endIdx = Math.min(s.siblings.length, start + buffer + 20);
+		return s.siblings.slice(startIdx, endIdx).map((item, i) => ({
+			item,
+			index: startIdx + i
+		}));
+	});
+
+	// Auto-scroll TOC to current item
+	$effect(() => {
+		if (s.isTocOpen && tocScrollContainer && s.currentIndex !== -1) {
+			const containerHeight = tocScrollContainer.clientHeight || 500;
+			const targetScroll = Math.max(0, (s.currentIndex * ITEM_HEIGHT) - (containerHeight / 2) + (ITEM_HEIGHT / 2));
+			
+			// Focus the TOC for keyboard scrolling
+			tocScrollContainer.focus();
+			
+			// Update both virtual state and physical scroll
+			tocScrollTop = targetScroll;
+			tick().then(() => {
+				if (tocScrollContainer) {
+					// Use 'instant' behavior to avoid delayed animation
+					tocScrollContainer.scrollTo({ top: targetScroll, behavior: 'instant' });
+				}
+			});
+		}
+	});
+
 	// Initial check for mobile fit
 	onMount(() => {
 		if (window.innerWidth < 640) {
@@ -132,6 +198,16 @@
 	}
 	:global(.webtoon-scroll::-webkit-scrollbar) {
 		display: none;
+	}
+	.custom-scrollbar::-webkit-scrollbar {
+		width: 4px;
+	}
+	.custom-scrollbar::-webkit-scrollbar-track {
+		background: transparent;
+	}
+	.custom-scrollbar::-webkit-scrollbar-thumb {
+		background: rgba(255, 255, 255, 0.1);
+		border-radius: 10px;
 	}
 </style>
 
@@ -174,10 +250,119 @@
 	<!-- Top Controls -->
 	<div class="fixed top-4 right-4 sm:right-6 pointer-events-none z-[310] transition-all duration-300 {s.controlsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}">
 		<div class="flex items-center justify-end gap-2">
-			<button class="btn rounded-xl w-12 h-12 min-h-0 p-0 bg-zinc-900/90 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl pointer-events-auto transition-all" aria-label="Toggle fit" onclick={(e) => { e.stopPropagation(); ctrl.toggleWebtoonFit(); }}>
-				<Maximize2 class="h-5 w-5" />
+			<button 
+				class="btn rounded-xl w-10 h-10 min-h-0 p-0 bg-zinc-900/90 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl pointer-events-auto transition-all" 
+				aria-label="Toggle fit" 
+				onclick={(e) => { e.stopPropagation(); (e.currentTarget as HTMLElement).blur(); ctrl.toggleWebtoonFit(); }}
+			>
+				{#if s.webtoonZoomLevel >= 0.99}
+					<Minimize2 class="h-5 w-5 text-primary-400" />
+				{:else}
+					<Scaling class="h-5 w-5" />
+				{/if}
 			</button>
-			<button aria-label="Close (ESC)" class="btn rounded-xl w-12 h-12 min-h-0 p-0 bg-zinc-900/90 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl pointer-events-auto transition-all hover:scale-110" onclick={(e) => { e.stopPropagation(); closeWebtoon(); }}>
+
+			<button 
+				class="btn rounded-xl w-10 h-10 min-h-0 p-0 bg-zinc-900/90 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl pointer-events-auto transition-all" 
+				aria-label="Toggle Fullscreen" 
+				onclick={(e) => { e.stopPropagation(); (e.currentTarget as HTMLElement).blur(); toggleFullscreen(); }}
+			>
+				{#if isFullscreen}
+					<Shrink class="h-5 w-5 text-primary-400" />
+				{:else}
+					<Expand class="h-5 w-5" />
+				{/if}
+			</button>
+
+			<button 
+				class="btn rounded-xl w-10 h-10 min-h-0 p-0 {s.isTocOpen ? 'bg-primary-500/80 text-white' : 'bg-zinc-900/90 hover:bg-zinc-800 text-white'} border border-white/10 backdrop-blur-xl shadow-2xl pointer-events-auto transition-all" 
+				aria-label="Table of Contents" 
+				onclick={(e) => { e.stopPropagation(); (e.currentTarget as HTMLElement).blur(); s.isTocOpen = !s.isTocOpen; }}
+			>
+				<LayoutList class="h-5 w-5" />
+			</button>
+
+			<div class="h-8 w-[1px] bg-white/10 mx-1"></div>
+
+			<button
+				class="btn rounded-xl w-10 h-10 min-h-0 p-0 bg-zinc-900/60 hover:bg-zinc-800 hover:scale-105 text-white border border-white/20 backdrop-blur-xl shadow-2xl pointer-events-auto transition-all disabled:opacity-20 disabled:grayscale disabled:scale-100"
+				aria-label="Previous Book"
+				onclick={(e) => {
+					e.stopPropagation();
+					(e.currentTarget as HTMLElement).blur();
+					ctrl.goToSibling(-1);
+				}}
+				disabled={s.currentIndex <= 0}
+			>
+				<ChevronLeft class="h-5 w-5" />
+			</button>
+
+			{#if s.siblings.length > 0}
+				<div class="px-3 h-10 flex items-center bg-zinc-900/60 text-white/90 text-[11px] font-black border border-white/20 rounded-xl backdrop-blur-xl shadow-2xl pointer-events-auto tracking-tighter">
+					<span
+						role="textbox"
+						aria-label="Chapter number"
+						tabindex="0"
+						contenteditable="true"
+						inputmode="numeric"
+						class="text-primary-400 focus:outline-none hover:bg-white/5 rounded px-1 transition-colors min-w-[1ch]"
+						onfocus={(e) => {
+							s.isEditingChapter = true;
+							if (s.hideTimerId) {
+								clearTimeout(s.hideTimerId);
+								s.hideTimerId = null;
+							}
+							const range = document.createRange();
+							range.selectNodeContents(e.currentTarget);
+							const sel = window.getSelection();
+							sel?.removeAllRanges();
+							sel?.addRange(range);
+						}}
+						onkeydown={(e) => {
+							if (e.key === 'Enter') {
+								e.preventDefault();
+								ctrl.handleChapterJump(e.currentTarget.innerText);
+								e.currentTarget.blur();
+							}
+							if (e.key === 'Escape') {
+								e.preventDefault();
+								e.currentTarget.blur();
+							}
+							e.stopPropagation();
+						}}
+						onblur={(e) => {
+							s.isEditingChapter = false;
+							e.currentTarget.innerText = String(s.currentIndex + 1);
+							s.webtoonScrollContainer?.focus();
+						}}
+					>
+						{s.currentIndex + 1}
+					</span>
+					<span class="opacity-20 mx-1.5">/</span>
+					<span class="opacity-40">{s.siblings.length}</span>
+				</div>
+			{/if}
+
+			<button
+				class="btn rounded-xl w-10 h-10 min-h-0 p-0 bg-zinc-900/60 hover:bg-zinc-800 hover:scale-105 text-white border border-white/20 backdrop-blur-xl shadow-2xl pointer-events-auto transition-all disabled:opacity-20 disabled:grayscale disabled:scale-100"
+				aria-label="Next Book"
+				onclick={(e) => {
+					e.stopPropagation();
+					(e.currentTarget as HTMLElement).blur();
+					ctrl.goToSibling(1);
+				}}
+				disabled={s.currentIndex === -1 || s.currentIndex >= s.siblings.length - 1}
+			>
+				<ChevronRight class="h-5 w-5" />
+			</button>
+			<button
+				aria-label="Close (ESC)"
+				class="btn rounded-xl w-12 h-12 min-h-0 p-0 bg-zinc-900/90 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl pointer-events-auto transition-all hover:scale-110"
+				onclick={(e) => {
+					e.stopPropagation();
+					closeWebtoon();
+				}}
+			>
 				<X class="h-6 w-6" />
 			</button>
 		</div>
@@ -187,13 +372,13 @@
 	<div class="fixed top-24 right-4 sm:right-6 bottom-4 flex flex-col items-end gap-2 z-[310] pointer-events-none transition-all duration-300 {s.controlsVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2'}">
 		<div class="flex flex-col items-end gap-2 pointer-events-auto h-full">
 			<div class="flex flex-col bg-zinc-900/90 rounded-xl backdrop-blur-xl border border-white/10 shadow-2xl mt-1 w-12 overflow-hidden">
-				<button aria-label="Zoom In" class="btn btn-ghost btn-sm h-12 w-12 p-0 text-white rounded-none border-b border-white/10" onclick={(e) => { e.stopPropagation(); ctrl.setWebtoonZoom(Math.min(500, s.webtoonZoomLevel * 1.15)); }} onmousedown={(e) => e.preventDefault()}>
+				<button aria-label="Zoom In" class="btn btn-ghost btn-sm h-12 w-12 p-0 text-white rounded-none border-b border-white/10" onclick={(e) => { e.stopPropagation(); (e.currentTarget as HTMLElement).blur(); ctrl.setWebtoonZoom(Math.min(500, s.webtoonZoomLevel * 1.15)); }} onmousedown={(e) => e.preventDefault()}>
 					<ZoomIn class="h-5 w-5 m-auto" />
 				</button>
 				<span class="py-2 text-[10px] font-mono font-black text-white text-center bg-white/5 w-12" aria-label="Current Zoom">
 					{Math.round(s.webtoonZoomLevel * 100)}%
 				</span>
-				<button aria-label="Zoom Out" class="btn btn-ghost btn-sm h-12 w-12 p-0 text-white rounded-none border-t border-white/10" onclick={(e) => { e.stopPropagation(); ctrl.setWebtoonZoom(Math.max(0.001, s.webtoonZoomLevel / 1.15)); }} onmousedown={(e) => e.preventDefault()}>
+				<button aria-label="Zoom Out" class="btn btn-ghost btn-sm h-12 w-12 p-0 text-white rounded-none border-t border-white/10" onclick={(e) => { e.stopPropagation(); (e.currentTarget as HTMLElement).blur(); ctrl.setWebtoonZoom(Math.max(0.001, s.webtoonZoomLevel / 1.15)); }} onmousedown={(e) => e.preventDefault()}>
 					<ZoomOut class="h-5 w-5 m-auto" />
 				</button>
 			</div>
@@ -254,6 +439,10 @@
 											s.isJumpPopupOpen = false;
 											e.currentTarget.blur();
 										}
+										if (e.key === 'Escape') {
+											e.preventDefault();
+											e.currentTarget.blur();
+										}
 										e.stopPropagation();
 									}}
 									onblur={(e) => {
@@ -277,6 +466,88 @@
 			</div>
 		</div>
 	</div>
+
+	<!-- TOC Menu -->
+	<div 
+		class="fixed inset-y-0 left-0 w-80 bg-zinc-900/95 backdrop-blur-2xl border-r border-white/10 z-[320] shadow-[20px_0_50px_rgba(0,0,0,0.5)] transition-all duration-300 flex flex-col {s.isTocOpen ? 'translate-x-0 pointer-events-auto' : '-translate-x-full shadow-none pointer-events-none'}"
+		onclick={(e) => e.stopPropagation()}
+	>
+		<div class="p-6 border-b border-white/10 space-y-4 relative">
+			<div class="flex items-center justify-between">
+				<h3 class="text-white font-black uppercase tracking-widest text-sm">Chapters</h3>
+				<div class="flex items-center gap-2">
+					<span class="text-[10px] font-black text-primary-400 bg-primary-500/10 px-2 py-0.5 rounded-full border border-primary-500/20">{s.siblings.length} Items</span>
+					<button 
+						class="btn btn-ghost btn-circle btn-xs text-white/40 hover:text-white"
+						onclick={(e) => { 
+							(e.currentTarget as HTMLElement).blur();
+							s.isTocOpen = false;
+							s.webtoonScrollContainer?.focus();
+						}}
+					>
+						<X class="h-4 w-4" />
+					</button>
+				</div>
+			</div>
+			
+			{#if s.currentIndex !== -1 && s.siblings[s.currentIndex]}
+				<div class="bg-white/5 rounded-xl p-3 border border-white/5">
+					<div class="text-[10px] font-black uppercase tracking-tighter opacity-30 mb-1">Now Reading</div>
+					<div class="text-xs font-bold text-white leading-tight line-clamp-2">
+						{s.siblings[s.currentIndex].name}
+					</div>
+				</div>
+			{:else}
+				<div class="bg-white/5 rounded-xl p-3 border border-white/5">
+					<div class="text-[10px] font-black uppercase tracking-tighter opacity-30 mb-1">Now Reading</div>
+					<div class="text-xs font-bold text-white leading-tight line-clamp-2">
+						{#if s.folderPath}
+							{s.folderPath.split(/[/\\]/).filter(Boolean).pop() || s.folderPath}
+						{:else}
+							Unknown
+						{/if}
+					</div>
+				</div>
+			{/if}
+		</div>
+		
+		<div 
+			bind:this={tocScrollContainer}
+			tabindex="0"
+			class="flex-1 overflow-y-auto p-2 custom-scrollbar relative focus:outline-none"
+			onscroll={(e) => tocScrollTop = e.currentTarget.scrollTop}
+		>
+			<div style="height: {s.siblings.length * ITEM_HEIGHT}px; width: 100%; position: relative;">
+				{#each visibleSiblings as {item, index}}
+					<button 
+						class="absolute left-0 right-0 text-left p-3 rounded-xl transition-all duration-200 flex items-center gap-3 group
+							{index === s.currentIndex 
+								? 'bg-primary-500/20 border border-primary-500/30 text-primary-400' 
+								: 'hover:bg-white/5 text-zinc-400 hover:text-white border border-transparent'}"
+						style="top: {index * ITEM_HEIGHT}px; height: {ITEM_HEIGHT}px;"
+						onclick={(e) => { (e.currentTarget as HTMLElement).blur(); ctrl.goToIndex(index); }}
+					>
+						<span class="text-[10px] font-black opacity-30 w-6">{index + 1}</span>
+						<span class="text-xs font-bold truncate flex-1">{item.name}</span>
+						{#if index === s.currentIndex}
+							<div class="w-1.5 h-1.5 rounded-full bg-primary-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]"></div>
+						{/if}
+					</button>
+				{/each}
+			</div>
+		</div>
+	</div>
+
+	<!-- Click outside backdrop for TOC -->
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div 
+		class="fixed inset-0 z-[315] bg-black/40 transition-opacity duration-300 {s.isTocOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}" 
+		onclick={() => {
+			s.isTocOpen = false;
+			s.webtoonScrollContainer?.focus();
+		}}
+	></div>
 
 	<!-- Nội dung Webtoon -->
 	<div class="flex flex-col items-center pb-20 pt-4 min-h-dvh outline-none w-full">

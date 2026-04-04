@@ -20,6 +20,8 @@ export async function handleListing(
   typeFilter: string,
   imagesOnly: boolean,
   exclusiveType: string | null = null,
+  isCover: boolean = false,
+  noGroup: boolean = false,
 ) {
   const stat = await fs.stat(folderPath);
   let imageDetails: any[] = [];
@@ -107,15 +109,27 @@ export async function handleListing(
             try {
               const entryStat = await fs.stat(fullPath);
               let firstCbz: string | undefined;
+              let hasImages: boolean | undefined;
               
-              if (isDir) {
-                const subEntries = await fs.readdir(fullPath);
-                const cbzFiles = subEntries
-                  .filter(f => isCbzFile(f))
-                  .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+              if (isDir && isCover) {
+                const subEntries = await fs.readdir(fullPath, { withFileTypes: true });
+                const naturalSorted = subEntries.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
                 
-                if (cbzFiles.length > 0) {
-                  firstCbz = path.join(fullPath, cbzFiles[0]);
+                const foundCbz = naturalSorted.find(e => !e.isDirectory() && isCbzFile(path.extname(e.name).toLowerCase()));
+                if (foundCbz) {
+                  firstCbz = path.join(fullPath, foundCbz.name);
+                } else {
+                  const imageFiles = naturalSorted.filter(e => !e.isDirectory() && isImageFile(path.extname(e.name).toLowerCase()));
+                  if (imageFiles.length > 1) {
+                    hasImages = true;
+                  } else {
+                    // Try to find first subfolder as a fallback
+                    const firstSubDir = naturalSorted.find(e => e.isDirectory());
+                    if (firstSubDir) {
+                      // We'll treat the first subfolder as the "book" to open
+                      firstCbz = path.join(fullPath, firstSubDir.name);
+                    }
+                  }
                 }
               }
 
@@ -131,6 +145,7 @@ export async function handleListing(
                 isPdf,
                 isEpub,
                 firstCbz,
+                hasImages,
               };
             } catch (e) {
               return null;
@@ -146,8 +161,10 @@ export async function handleListing(
   }
 
   imageDetails.sort((a, b) => {
-    if (a.isDir && !b.isDir) return -1;
-    if (!a.isDir && b.isDir) return 1;
+    if (!noGroup) {
+      if (a.isDir && !b.isDir) return -1;
+      if (!a.isDir && b.isDir) return 1;
+    }
     if (sortBy === "date_desc") return b.mtime - a.mtime;
     if (sortBy === "date_asc") return a.mtime - b.mtime;
     if (sortBy === "name_asc")
@@ -185,7 +202,8 @@ export async function handleListing(
   let isGrouped = false;
   let groupedResponse: Record<string, any> | null = null;
 
-  if (!exclusiveType) {
+  // Only group if exclusiveType is null AND noGroup is false
+  if (!exclusiveType && !noGroup) {
     const folders = imageDetails.filter((i) => i.isDir);
     const images = imageDetails.filter(
       (i) =>

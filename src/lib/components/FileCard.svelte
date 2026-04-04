@@ -23,7 +23,7 @@
 
     type FileActions = {
         openDir: (path: string) => void;
-        openCbz: (path: string) => void;
+        openCbz: (path: string, context?: string) => void;
         openModal: (index: number) => void;
     };
 
@@ -45,8 +45,9 @@
             actions.openDir(img.path);
             return;
         }
-        if (img.isCbz) {
-            actions.openCbz(img.path);
+        if (isCbzFile(img.name) || img.isCbz) {
+            const parentPath = img.path.split(/[/\\]/).slice(0, -1).join('/');
+            actions.openCbz(img.path, parentPath);
             return;
         }
         if (img.isPdf) {
@@ -120,17 +121,21 @@
                 </div>
             {/if}
 
-            {#if img.firstCbz}
+            {#if browserStore.cover.enabled && (img.firstCbz || img.hasImages)}
                 <div 
                     class="absolute bottom-2 right-2 z-20"
                     onclick={(e) => {
                         e.stopPropagation();
-                        actions.openCbz(img.firstCbz!);
+                        // If we have a firstCbz, context is the current folder (img.path)
+                        // If we are opening the folder itself as a book, context is the parent folder
+                        const target = img.firstCbz || img.path;
+                        const context = img.firstCbz ? img.path : img.path.split(/[/\\]/).slice(0, -1).join('/');
+                        actions.openCbz(target, context);
                     }}
                     onkeydown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                             e.stopPropagation();
-                            actions.openCbz(img.firstCbz!);
+                            actions.openCbz(img.firstCbz || img.path, img.path);
                         }
                     }}
                     role="button"
@@ -141,7 +146,7 @@
                             bg-black/60 hover:bg-primary-500/80 backdrop-blur-md
                             text-white rounded-lg border border-white/20 shadow-lg
                             transition-all duration-200 scale-90 hover:scale-100 shadow-xl"
-                        title="Open first CBZ"
+                        title={img.firstCbz ? "Open first CBZ" : "Open images"}
                     >
                         <BookOpen size={14} strokeWidth={2} />
                         <span class="text-[10px] font-black uppercase tracking-wider">Open</span>

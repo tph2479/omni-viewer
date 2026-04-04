@@ -63,7 +63,7 @@ interface ModalState {
   audio: { open: boolean };
   pdf: { open: boolean; path: string };
   epub: { open: boolean; path: string };
-  webtoon: { open: boolean; cbzPath: string };
+  webtoon: { open: boolean; cbzPath: string; contextPath: string };
   folderPicker: { open: boolean };
 }
 
@@ -122,7 +122,11 @@ export function createBrowserStore() {
     audio: { open: false },
     pdf: { open: false, path: "" },
     epub: { open: false, path: "" },
-    webtoon: { open: false, cbzPath: "" },
+    webtoon: {
+      open: false,
+      cbzPath: "",
+      contextPath: "",
+    },
     folderPicker: { open: false },
   });
 
@@ -222,7 +226,7 @@ export function createBrowserStore() {
         ? `&exclusiveType=${ui.exclusiveType}`
         : "";
       const res = await fetch(
-        `/api/file?action=gallery&folder=${encodeURIComponent(targetPath)}&page=${pagination.currentPage}&limit=${pagination.pageSize}&sort=${pagination.sort}&type=${pagination.mediaType}${exclusiveParam}`,
+        `/api/file?action=gallery&folder=${encodeURIComponent(targetPath)}&page=${pagination.currentPage}&limit=${pagination.pageSize}&sort=${pagination.sort}&type=${pagination.mediaType}&isCover=${coverMode.enabled}${exclusiveParam}`,
       );
       const data = await res.json();
 
@@ -368,8 +372,9 @@ export function createBrowserStore() {
     loadFolder(true, savedPage);
   }
 
-  function openCbzInWebtoon(cbzPath: string) {
+  function openCbzInWebtoon(cbzPath: string, context?: string) {
     modal.webtoon.cbzPath = cbzPath;
+    modal.webtoon.contextPath = context || "";
     modal.webtoon.open = true;
   }
 
@@ -382,10 +387,6 @@ export function createBrowserStore() {
   }
 
   async function handleOpenWebtoon() {
-    if (coverMode.enabled) {
-      coverMode.enabled = false;
-    }
-
     if (modal.webtoon.cbzPath) {
       modal.webtoon.open = true;
       return;
@@ -407,6 +408,29 @@ export function createBrowserStore() {
       console.error(e);
     } finally {
       ui.isLoading = false;
+    }
+  }
+
+  function navigateWebtoon(direction: 1 | -1) {
+    const items = content.items;
+    if (items.length === 0) return;
+
+    const currentPath = modal.webtoon.cbzPath || folder.path;
+    let currentIndex = items.findIndex(
+      (item) => item.firstCbz === currentPath || item.path === currentPath,
+    );
+
+    if (currentIndex === -1) return;
+
+    let targetIndex = currentIndex + direction;
+    // Find next openable item
+    while (targetIndex >= 0 && targetIndex < items.length) {
+      const item = items[targetIndex];
+      if (item.firstCbz || item.hasImages || item.isCbz) {
+        openCbzInWebtoon(item.firstCbz || item.path);
+        return;
+      }
+      targetIndex += direction;
     }
   }
 

@@ -1,9 +1,13 @@
 import { tick } from 'svelte';
 import type { ImageFile } from '$lib/utils/utils';
 
-export function createWebtoonController(folderPath: string) {
+export function createWebtoonController(folderPath: string, contextPath: string = "", actions: any) {
 	const s = $state({
 		folderPath,
+		contextPath,
+		siblings: [] as ImageFile[],
+		currentIndex: -1,
+		isTocOpen: false,
 		loadedImages: [] as ImageFile[],
 		totalImages: 0,
 		isLoading: false,
@@ -11,6 +15,7 @@ export function createWebtoonController(folderPath: string) {
 		
 		controlsVisible: false,
 		isEditingPage: false,
+		isEditingChapter: false,
 		isJumpPopupOpen: false,
 		hideTimerId: null as any,
 
@@ -44,7 +49,83 @@ export function createWebtoonController(folderPath: string) {
 	const WEBTOON_PAGE_SIZE = 5000;
 	const BUFFER_SIZE = 5;
 
+	async function loadSiblings() {
+		// Ensure contextPath is a directory
+		if (s.contextPath && s.contextPath.toLowerCase().endsWith('.cbz')) {
+			const parts = s.contextPath.split(/[/\\]/);
+			parts.pop();
+			s.contextPath = parts.join("/");
+		}
+
+		if (!s.contextPath) {
+			const parts = s.folderPath.split(/[/\\]/);
+			if (parts.length > 1) {
+				parts.pop();
+				s.contextPath = parts.join("/");
+			} else {
+				s.siblings = [];
+				s.currentIndex = -1;
+				return;
+			}
+		}
+
+		try {
+			// Normalize path for API
+			const normalizedContext = s.contextPath.replace(/\\/g, '/');
+			// Use noGroup=true to get a flat list even if folders and CBZs are mixed
+			const res = await fetch(`/api/file?action=gallery&folder=${encodeURIComponent(normalizedContext)}&sort=name_asc&type=all&limit=10000&noGroup=true`);
+			const data = await res.json();
+			
+			if (data.images) {
+				// Filter for books/chapters (both CBZ files and folders)
+				s.siblings = (data.images as ImageFile[]).filter(item => 
+					item.isCbz || 
+					item.isDir ||
+					item.name.toLowerCase().endsWith('.cbz') || 
+					item.name.toLowerCase().endsWith('.zip')
+				);
+				refreshCurrentIndex();
+			}
+		} catch (e) {
+			console.error("[Webtoon] Failed to load siblings:", e);
+		}
+	}
+
+	function refreshCurrentIndex() {
+		// Use normalized comparison (no slashes, lowercase, strip trailing slash)
+		const norm = (p: string) => {
+			if (!p) return "";
+			let s = p.replace(/[/\\]/g, '/').toLowerCase();
+			if (s.endsWith('/')) s = s.slice(0, -1);
+			return s;
+		};
+		const current = norm(s.folderPath);
+		
+		s.currentIndex = s.siblings.findIndex(item => {
+			const itemPath = norm(item.path);
+			const firstCbz = norm(item.firstCbz || "");
+			return itemPath === current || (firstCbz && firstCbz === current);
+		});
+	}
+
+	async function goToIndex(index: number) {
+		if (index >= 0 && index < s.siblings.length) {
+			const item = s.siblings[index];
+			const path = item.firstCbz || item.path;
+			actions.openCbzInWebtoon(path, s.contextPath);
+			s.isTocOpen = false;
+			await tick();
+			s.webtoonScrollContainer?.focus();
+		}
+	}
+
+	function goToSibling(direction: 1 | -1) {
+		if (s.currentIndex === -1) return;
+		goToIndex(s.currentIndex + direction);
+	}
+
 	async function loadWebtoonFolder() {
+		refreshCurrentIndex();
 		if (!s.folderPath.trim() || s.isLoading) return;
 
 		s.isLoading = true;
@@ -98,6 +179,13 @@ export function createWebtoonController(folderPath: string) {
 		const page = parseInt(val);
 		if (!isNaN(page) && page >= 1 && page <= s.totalImages) {
 			scrollToIndex(page - 1);
+		}
+	}
+
+	function handleChapterJump(val: string) {
+		const idx = parseInt(val);
+		if (!isNaN(idx) && idx >= 1 && idx <= s.siblings.length) {
+			goToIndex(idx - 1);
 		}
 	}
 
@@ -197,12 +285,13 @@ export function createWebtoonController(folderPath: string) {
 
 	function handleMouseMove(e: MouseEvent) {
 		const width = window.innerWidth;
-		const rightThreshold = width * 0.8; 
+		const rightThreshold = width * 0.7; // 30% of the right side
+		const topThreshold = 100; // Top 100px
 
-		if (e.clientX > rightThreshold || s.isEditingPage || s.isJumpPopupOpen) {
+		if (e.clientX > rightThreshold || e.clientY < topThreshold || s.isEditingPage || s.isEditingChapter || s.isJumpPopupOpen) {
 			s.controlsVisible = true;
 			if (s.hideTimerId) clearTimeout(s.hideTimerId);
-			if (!s.isEditingPage && !s.isJumpPopupOpen) {
+			if (!s.isEditingPage && !s.isEditingChapter && !s.isJumpPopupOpen) {
 				s.hideTimerId = setTimeout(() => {
 					s.controlsVisible = false;
 					s.hideTimerId = null;
@@ -226,9 +315,13 @@ export function createWebtoonController(folderPath: string) {
 		state: s,
 		BUFFER_SIZE,
 		loadWebtoonFolder,
+		loadSiblings,
+		goToIndex,
+		goToSibling,
 		loadMore,
 		scrollToIndex,
 		handlePageInput,
+		handleChapterJump,
 		setWebtoonZoom: (newZoom: number, cursorY?: number, options?: { skipScroll?: boolean }) => setWebtoonZoom(newZoom, cursorY, options),
 		toggleWebtoonFit,
 		cleanupOldSizes,
@@ -237,6 +330,7 @@ export function createWebtoonController(folderPath: string) {
 		handleWindowMouseMove,
 		handleWindowMouseUp,
 		handleMouseMove,
+		refreshCurrentIndex,
 		destroy
 	};
 }

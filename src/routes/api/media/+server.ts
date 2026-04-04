@@ -48,7 +48,7 @@ export async function GET({ url, request }: RequestEvent) {
     // If it's a directory and we want a thumbnail, find a cover image inside it
     if (stat.isDirectory() && isThumbnail) {
         const coverPath = await findFolderCover(absolutePath);
-        if (!coverPath) throw error(404, "No cover found for directory");
+        if (!coverPath) return new Response(null, { status: 204 });
         
         absolutePath = coverPath;
         stat = await fsp.stat(absolutePath);

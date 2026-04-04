@@ -1,6 +1,8 @@
 const queue: (() => void)[] = [];
 let active = 0;
 const MAX_CONCURRENT = 4; // Guarantee at least 4 browser connections are ALWAYS free for video streaming/metadata
+const PLACEHOLDER =
+  "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
 export async function fetchThumbnailBlob(
   url: string,
@@ -34,6 +36,7 @@ export async function fetchThumbnailBlob(
   try {
     if (signal.aborted) throw new Error("Aborted BEFORE fetch");
     const res = await fetch(url, { signal });
+    if (res.status === 204) return PLACEHOLDER;
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const blob = await res.blob();
     return URL.createObjectURL(blob);
@@ -42,9 +45,6 @@ export async function fetchThumbnailBlob(
     if (queue.length > 0) queue.shift()!();
   }
 }
-
-const PLACEHOLDER =
-  "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
 export function lazyThumbnail(node: HTMLImageElement, url: string) {
   let abortController = new AbortController();
