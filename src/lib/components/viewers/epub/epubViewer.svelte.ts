@@ -82,7 +82,7 @@ export function createEpubViewerState(filePath: string) {
 		fontFamily: 'inherit',
 		fontSize: 18,
 		lineSpacing: 1.6,
-		contentWidth: '90',
+		contentWidth: '80', // Default width to 80% (10% each side)
 	});
 
 	function initThemeSync() {
@@ -127,8 +127,6 @@ export function createEpubViewerState(filePath: string) {
 		const bg = settings.isDark ? 'oklch(32.5% 0 none)' : 'oklch(100% 0 none)';
 		const fg = settings.isDark ? 'oklch(100% 0 none)' : 'oklch(18.22% 0 none)';
 		const linkColor = settings.isDark ? 'oklch(62.99% 0.18 255.56deg)' : 'oklch(57.05% 0.21 258.14deg)';
-		const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640;
-		const pct = isMobile ? 95 : Number(settings.contentWidth);
 
 		return `
 			html {
@@ -142,11 +140,6 @@ export function createEpubViewerState(filePath: string) {
 				color: ${fg} !important;
 				font-family: ${settings.fontFamily};
 				font-size: ${settings.fontSize}px !important;
-				max-width: ${pct}% !important;
-				margin-left: auto !important;
-				margin-right: auto !important;
-				margin-top: 0 !important;
-				margin-bottom: 0 !important;
 				padding-left: 1.5rem !important;
 				padding-right: 1.5rem !important;
 				box-sizing: border-box !important;
@@ -164,10 +157,23 @@ export function createEpubViewerState(filePath: string) {
 	/** Apply current CSS + flow to the renderer */
 	function applyStyles() {
 		if (!viewEl) return;
+
+		viewEl.style.width = '100%';
+		viewEl.style.margin = '0';
+
 		const renderer = (viewEl as any).renderer;
 		if (!renderer) return;
 		renderer.setStyles?.(buildReaderCSS());
 		renderer.setAttribute('flow', 'scrolled');
+
+		// Use foliate's native max-inline-size attribute to control content width.
+		// This sets the columnWidth used in scrolled mode and lets foliate handle
+		// both the body max-width AND iframe height calculation properly.
+		const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640;
+		const pct = isMobile ? 100 : Number(settings.contentWidth);
+		const containerWidth = containerEl?.getBoundingClientRect().width ?? window.innerWidth;
+		const maxWidth = Math.round(containerWidth * pct / 100);
+		renderer.setAttribute('max-inline-size', `${maxWidth}px`);
 	}
 
 	function setupResizeHandler() {
