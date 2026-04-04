@@ -39,6 +39,16 @@ export const FONT_OPTIONS: FontOption[] = [
 	{ label: 'Source Serif', value: '"Source Serif 4", Georgia, serif' },
 ];
 
+export const FONT_SIZE_OPTIONS = [12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32];
+export const CONTENT_WIDTH_OPTIONS = [
+	{ label: '50%', value: '50' },
+	{ label: '60%', value: '60' },
+	{ label: '70%', value: '70' },
+	{ label: '80%', value: '80' },
+	{ label: '90%', value: '90' },
+	{ label: '100%', value: '100' },
+];
+
 // ─── Controller ──────────────────────────────────────────────────────────────
 
 export function createEpubViewerState(filePath: string) {
@@ -72,7 +82,7 @@ export function createEpubViewerState(filePath: string) {
 		fontFamily: 'inherit',
 		fontSize: 18,
 		lineSpacing: 1.6,
-		contentWidth: 920,
+		contentWidth: '90',
 	});
 
 	function initThemeSync() {
@@ -114,26 +124,32 @@ export function createEpubViewerState(filePath: string) {
 
 	/** CSS injected into the book renderer on every settings change */
 	function buildReaderCSS() {
-		const bg = settings.isDark ? '#1a1a2e' : '#f8f4ef';
-		const fg = settings.isDark ? '#d4cfc8' : '#2c2825';
-		const linkColor = settings.isDark ? '#90caf9' : '#1565c0';
-		const maxWidth = settings.contentWidth > 0 ? `${settings.contentWidth}px` : 'none';
+		const bg = settings.isDark ? 'oklch(32.5% 0 none)' : 'oklch(100% 0 none)';
+		const fg = settings.isDark ? 'oklch(100% 0 none)' : 'oklch(18.22% 0 none)';
+		const linkColor = settings.isDark ? 'oklch(62.99% 0.18 255.56deg)' : 'oklch(57.05% 0.21 258.14deg)';
+		const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640;
+		const pct = isMobile ? 95 : Number(settings.contentWidth);
 
 		return `
-			:root {
-				--epub-bg: ${bg};
-				--epub-fg: ${fg};
+			html {
+				margin: 0 !important;
+				padding: 0 !important;
+				width: 100% !important;
+				box-sizing: border-box !important;
 			}
-			html, body {
+			body {
 				background: ${bg} !important;
 				color: ${fg} !important;
 				font-family: ${settings.fontFamily};
 				font-size: ${settings.fontSize}px !important;
-			}
-			body {
-				max-width: ${maxWidth};
+				max-width: ${pct}% !important;
 				margin-left: auto !important;
 				margin-right: auto !important;
+				margin-top: 0 !important;
+				margin-bottom: 0 !important;
+				padding-left: 1.5rem !important;
+				padding-right: 1.5rem !important;
+				box-sizing: border-box !important;
 			}
 			p, li, blockquote, dd {
 				line-height: ${settings.lineSpacing};
@@ -152,23 +168,19 @@ export function createEpubViewerState(filePath: string) {
 		if (!renderer) return;
 		renderer.setStyles?.(buildReaderCSS());
 		renderer.setAttribute('flow', 'scrolled');
-		renderer.setAttribute('max-inline-size', `${settings.contentWidth}px`);
+	}
 
-		const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640;
-		const contents = renderer.getContents?.();
-		if (contents?.[0]?.doc?.body) {
-			const body = contents[0].doc.body;
-			if (isMobile) {
-				body.style.maxWidth = '100%';
-				body.style.margin = '0 16px';
-			} else if (settings.contentWidth > 0) {
-				body.style.maxWidth = `${settings.contentWidth}px`;
-				body.style.margin = '0 auto';
-			} else {
-				body.style.maxWidth = 'none';
-				body.style.margin = '0';
-			}
-		}
+	function setupResizeHandler() {
+		let timer: ReturnType<typeof setTimeout>;
+		const handler = () => {
+			clearTimeout(timer);
+			timer = setTimeout(() => applyStyles(), 100);
+		};
+		window.addEventListener('resize', handler);
+		return () => {
+			clearTimeout(timer);
+			window.removeEventListener('resize', handler);
+		};
 	}
 
 	// ─── Core: init + open ────────────────────────────────────────────────────
@@ -187,7 +199,7 @@ export function createEpubViewerState(filePath: string) {
 			await import('$lib/foliate-js/view.js');
 
 			viewEl = document.createElement('foliate-view');
-			viewEl.style.cssText = 'width:100%; height:100%; display:block;';
+			viewEl.style.cssText = 'width:100%; height:100%; display:block; margin:0; padding:0; border:none;';
 			containerEl.appendChild(viewEl);
 
 			viewEl.addEventListener('load', onLoad);
@@ -268,6 +280,7 @@ export function createEpubViewerState(filePath: string) {
 	function onLoad() {
 		applyStyles();
 		setupIframeKeyboardCapture();
+		cleanupResize = setupResizeHandler();
 	}
 
 	function onRelocate(e: Event) {
@@ -344,8 +357,8 @@ export function createEpubViewerState(filePath: string) {
 		applyStyles();
 	}
 
-	function setContentWidth(val: number) {
-		settings.contentWidth = Math.max(200, Math.min(1200, val));
+	function setContentWidth(val: string) {
+		settings.contentWidth = val;
 		applyStyles();
 	}
 
@@ -460,12 +473,16 @@ export function createEpubViewerState(filePath: string) {
 		}, 2500);
 	}
 
+	let cleanupResize: (() => void) | null = null;
+
 	// ─── Cleanup ──────────────────────────────────────────────────────────────
 
 	function destroy() {
 		clearSearch();
 		if (ui.controlsHideTimer) clearTimeout(ui.controlsHideTimer);
 		if (book.coverUrl) URL.revokeObjectURL(book.coverUrl);
+		cleanupResize?.();
+		cleanupResize = null;
 		(viewEl as any)?.close?.();
 		viewEl?.remove();
 		viewEl = null;

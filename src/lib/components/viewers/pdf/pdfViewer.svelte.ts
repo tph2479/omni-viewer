@@ -5,6 +5,7 @@ export function createPdfController(initialPdfPath: string) {
   const s = $state({
     pdfPath: initialPdfPath,
     pdfjs: null as any,
+    pdfjsViewer: null as any,
     pdfDoc: null as any,
     numPages: 0,
     isLoading: false,
@@ -16,150 +17,169 @@ export function createPdfController(initialPdfPath: string) {
     isJumpPopupOpen: false,
     isSearchSidebarOpen: false,
     isSearching: false,
+    isTocSidebarOpen: false,
     hideTimerId: null as any,
     isDarkMode:
-      typeof document !== "undefined" &&
-      document.documentElement.getAttribute("data-theme") === "business",
-    isFitWidth: false,
+      (typeof document !== "undefined" &&
+      document.documentElement.getAttribute("data-theme") === "business") || true as boolean,
 
+    zoomMode: "default" as "default" | "fit-width" | "actual-size" | "custom",
     currentPageIndex: 0,
     zoomLevel: 1.0,
-    previousZoom: 1.0,
-    pendingScrollTop: null as number | null,
 
     pdfScrollContainer: undefined as HTMLElement | undefined,
+    viewerContainer: undefined as HTMLElement | undefined,
     scrollY: 0,
-    viewportHeight: 0,
 
     get smoothPercent() {
-      const maxScroll = Math.max(
-        1,
-        layout.totalHeight - this.viewportHeight,
-      );
-      return Math.min(100, Math.max(0, (this.scrollY / maxScroll) * 100));
+        if (s.numPages === 0 || !s.pdfScrollContainer) return 0;
+        const maxScroll = Math.max(1, s.pdfScrollContainer.scrollHeight - s.pdfScrollContainer.clientHeight);
+        return Math.min(100, Math.max(0, (s.scrollY / maxScroll) * 100));
     },
+
+    searchQuery: "",
+    searchResultsCount: 0,
+    currentSearchResultIndex: -1,
+
+    // Seek states
     isDraggingSeek: false,
     hasMoved: false,
     startY: 0,
     previewPercent: 0,
-    lastScrollPercent: 0,
-    anchorPercentInPage: 0,
     seekBarElement: null as HTMLElement | null,
 
-    aspectRatios: {} as Record<number, number>,
-    baseWidth: 1000,
+    toc: [] as any[],
 
-    searchQuery: "",
-    searchResults: [] as {
-      pageIndex: number;
-      matchIndex: number;
-      snippet: string;
-    }[],
-    currentSearchResultIndex: -1,
+    viewerApp: null as any,
+    eventBus: null as any,
+    pdfFindController: null as any,
+    pdfLinkService: null as any,
   });
 
-  const GAP = 0;
-  const defaultAspectRatio = 1.414;
-  let resizeHandler: (() => void) | null = null;
+  async function loadLibraries() {
+    try {
+      const mod = await import("pdfjs-dist/legacy/build/pdf.mjs");
+      const viewerMod = await import("pdfjs-dist/web/pdf_viewer.mjs");
 
-  function getPageHeight(index: number, zoom: number = s.zoomLevel) {
-    return s.baseWidth * zoom * (s.aspectRatios[index] || defaultAspectRatio);
+      s.pdfjs = mod;
+      s.pdfjsViewer = viewerMod;
+
+      if (s.pdfjs && !s.pdfjs.GlobalWorkerOptions.workerSrc) {
+        s.pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
+      }
+
+      loadPdf();
+    } catch (e: any) {
+      console.error("Failed to load PDF libraries", e);
+      s.errorMsg = "Failed to load PDF libraries: " + e.message;
+    }
   }
 
-  const layout = $derived.by(() => {
-    if (s.numPages === 0) return { totalHeight: 0, offsets: new Float64Array(0) };
-    const offsets = new Float64Array(s.numPages);
-    let total = 0;
-    for (let i = 0; i < s.numPages; i++) {
-        offsets[i] = total;
-        total += getPageHeight(i) + GAP;
-    }
-    return { totalHeight: total, offsets };
-  });
+  let resizeObserver: ResizeObserver | null = null;
 
-  const virtualData = $derived.by(() => {
-    const { totalHeight, offsets } = layout;
-    if (s.numPages === 0 || offsets.length === 0)
-      return { start: 0, end: 0, topOffset: 0, bottomOffset: 0, offsets: new Float64Array(0) };
+  function applyZoomMode() {
+      if (!s.viewerApp) return;
+      const isMobile = window.innerWidth <= 768;
 
-    const preloadPixels = s.viewportHeight * 3.5;
-    const viewTop = Math.max(0, s.scrollY - preloadPixels);
-    const viewBottom = s.scrollY + s.viewportHeight + preloadPixels;
-
-    // Binary search for 'start' index (O(log N))
-    let low = 0;
-    let high = s.numPages - 1;
-    let start = 0;
-    while (low <= high) {
-      const mid = (low + high) >> 1;
-      const midBottom = offsets[mid] + getPageHeight(mid) + GAP;
-      if (midBottom >= viewTop) {
-        start = mid;
-        high = mid - 1;
-      } else {
-        low = mid + 1;
+      if (s.zoomMode === "default") {
+          s.viewerApp.currentScaleValue = "page-width";
+          let scale = s.viewerApp.currentScale;
+          if (!isMobile) {
+              scale *= 0.8;
+          }
+          s.viewerApp.currentScale = scale;
+      } else if (s.zoomMode === "fit-width") {
+          if (s.viewerApp.currentScaleValue !== "page-width") {
+              s.viewerApp.currentScaleValue = "page-width";
+          }
+      } else if (s.zoomMode === "actual-size") {
+          if (s.viewerApp.currentScaleValue !== "page-actual") {
+              s.viewerApp.currentScaleValue = "page-actual";
+          }
       }
-    }
-
-    // Binary search for 'end' index (O(log N))
-    low = start;
-    high = s.numPages - 1;
-    let end = s.numPages - 1;
-    while (low <= high) {
-      const mid = (low + high) >> 1;
-      if (offsets[mid] <= viewBottom) {
-        end = mid;
-        low = mid + 1;
-      } else {
-        high = mid - 1;
-      }
-    }
-
-    const topOffset = offsets[start];
-    const bottomOffset = totalHeight - (offsets[end] + getPageHeight(end) + GAP);
-
-    return {
-      start,
-      end,
-      topOffset,
-      bottomOffset: Math.max(0, bottomOffset),
-      offsets,
-    };
-  });
-
-  const visiblePages = $derived(
-    s.numPages > 0
-      ? Array.from(
-          { length: Math.max(0, virtualData.end - virtualData.start + 1) },
-          (_, i) => virtualData.start + i,
-        )
-      : [],
-  );
-
-  function indexAtOffset(y: number) {
-    const { offsets } = layout;
-    if (s.numPages === 0 || offsets.length === 0) return 0;
-
-    let low = 0;
-    let high = s.numPages - 1;
-    let index = 0;
-    while (low <= high) {
-      const mid = (low + high) >> 1;
-      if (offsets[mid] <= y) {
-        index = mid;
-        low = mid + 1;
-      } else {
-        high = mid - 1;
-      }
-    }
-    return index;
   }
 
-  function updateCurrentPageAndScroll() {
-    const currentScroll = s.pdfScrollContainer?.scrollTop ?? s.scrollY;
-    if (s.numPages > 0 && layout.offsets.length > 0 && !s.isDraggingSeek) {
-      const centerPoint = currentScroll + s.viewportHeight / 2;
-      s.currentPageIndex = indexAtOffset(centerPoint);
+  function initViewerApp() {
+    if (!s.pdfScrollContainer || !s.viewerContainer || !s.pdfjsViewer || s.viewerApp) return;
+
+    try {
+      const eventBus = new s.pdfjsViewer.EventBus();
+      s.eventBus = eventBus;
+
+      const linkService = new s.pdfjsViewer.PDFLinkService({
+        eventBus,
+      });
+      s.pdfLinkService = linkService;
+
+      const findController = new s.pdfjsViewer.PDFFindController({
+        eventBus,
+        linkService,
+      });
+      s.pdfFindController = findController;
+
+      const pdfViewer = new s.pdfjsViewer.PDFViewer({
+        container: s.pdfScrollContainer,
+        viewer: s.viewerContainer,
+        eventBus,
+        linkService,
+        findController,
+        removePageBorders: true,
+        textLayerMode: 2, // 2 is TEXT_LAYER_MODE.ENABLE
+      });
+
+      s.viewerApp = pdfViewer;
+      linkService.setViewer(pdfViewer);
+
+      // Setup Event Listeners
+      eventBus.on("pagesinit", function () {
+        s.zoomMode = "default";
+        applyZoomMode();
+        s.zoomLevel = s.viewerApp.currentScale;
+      });
+
+      eventBus.on("pagechanging", function (evt: any) {
+        if (typeof evt.pageNumber === 'number') {
+          s.currentPageIndex = evt.pageNumber - 1;
+        }
+      });
+
+      eventBus.on("scalechanging", function (evt: any) {
+        if (typeof evt.scale === 'number') {
+          s.zoomLevel = evt.scale;
+        }
+      });
+
+      eventBus.on("updatefindcontrolstate", function (evt: any) {
+        if (evt.matchesCount) {
+          s.searchResultsCount = evt.matchesCount.total;
+          // In pdfjs, matches are 1-indexed. If current is 0, it means no current match mapped yet
+          s.currentSearchResultIndex = Math.max(0, evt.matchesCount.current - 1);
+        } else {
+          s.searchResultsCount = 0;
+          s.currentSearchResultIndex = -1;
+        }
+        
+        if (evt.state === 0 /* FOUND */ || evt.state === 1 /* NOT_FOUND */ || evt.state === 2 /* WRAPPED */) {
+            s.isSearching = false;
+        }
+      });
+
+      eventBus.on("updatefindmatchescount", function (evt: any) {
+        s.searchResultsCount = evt.matchesCount.total;
+        s.currentSearchResultIndex = Math.max(0, evt.matchesCount.current - 1);
+      });
+
+      // Responsive Resize Observer
+      resizeObserver = new ResizeObserver(() => {
+          if (s.zoomMode === "default") {
+              applyZoomMode();
+          }
+      });
+      resizeObserver.observe(s.pdfScrollContainer);
+
+    } catch (e: any) {
+        console.error("Failed to init viewer app", e);
+        s.errorMsg = "Init PDF Viewer Error: " + e.message;
     }
   }
 
@@ -176,61 +196,22 @@ export function createPdfController(initialPdfPath: string) {
       s.pdfDoc = await loadingTask.promise;
       s.numPages = s.pdfDoc.numPages;
 
-      // Background Ratio Discovery: Discover all page dimensions for perfect virtualization math
-      // We do this in chunks to avoid overwhelming the message bus and causing "shaking"
-      (async () => {
-        let batch: Record<number, number> = {};
-        for (let i = 0; i < s.numPages; i++) {
-          if (s.aspectRatios[i]) continue;
-          if (s.isDestroyed || !s.pdfDoc) break;
+      if (!s.viewerApp) {
+          initViewerApp();
+      }
 
-          // PAUSE WHILE SEEKING: Prevent feedback loops during drag
-          while (s.isDraggingSeek && !s.isDestroyed) {
-             await new Promise(r => setTimeout(r, 100));
-          }
-          if (s.isDestroyed) break;
+      if (s.viewerApp) {
+        s.viewerApp.setDocument(s.pdfDoc);
+        s.pdfLinkService.setDocument(s.pdfDoc, null);
+      }
 
-          try {
-            const page = await s.pdfDoc.getPage(i + 1);
-            const viewport = page.getViewport({ scale: 1.0 });
-            batch[i] = viewport.height / viewport.width;
+      try {
+        const outline = await s.pdfDoc.getOutline();
+        s.toc = outline || [];
+      } catch (e) {
+        console.warn("Failed to get outline", e);
+      }
 
-            if (typeof page.cleanup === "function") page.cleanup();
-
-            // Yield to main thread every 100 pages or on final page
-            const batchSize = s.numPages > 1000 ? 100 : 20;
-            if (Object.keys(batch).length >= batchSize || i === s.numPages - 1) {
-              // ANCHORING: Calculate shift for pages ABOVE current scroll position
-              let scrollShift = 0;
-              const currentScroll = s.pdfScrollContainer?.scrollTop || 0;
-              if (currentScroll > 0 && layout.offsets) {
-                for (const [idxStr, newRatio] of Object.entries(batch)) {
-                  const idx = parseInt(idxStr);
-                  // We check if the page's START is above the current view
-                  if (layout.offsets[idx] < currentScroll) {
-                    const oldHeight = getPageHeight(idx);
-                    const newHeight = s.baseWidth * s.zoomLevel * newRatio;
-                    scrollShift += newHeight - oldHeight;
-                  }
-                }
-              }
-
-              s.aspectRatios = { ...s.aspectRatios, ...batch };
-              batch = {};
-
-              if (scrollShift !== 0 && s.pdfScrollContainer) {
-                s.pdfScrollContainer.scrollTop += scrollShift;
-                s.scrollY = s.pdfScrollContainer.scrollTop;
-              }
-
-              await tick();
-            }
-          } catch (e: any) {
-            if (e.name === "TransportDestroyedException") break;
-            console.warn(`Failed to discover ratio for page ${i}:`, e);
-          }
-        }
-      })();
     } catch (e: any) {
       console.error("Error loading PDF:", e);
       s.errorMsg = e.message || "Failed to load PDF";
@@ -239,206 +220,130 @@ export function createPdfController(initialPdfPath: string) {
     }
   }
 
-  async function loadLibraries() {
-    s.baseWidth = Math.min(window.innerWidth * 0.9, 1000);
-    resizeHandler = () => {
-      s.baseWidth = Math.min(window.innerWidth * 0.9, 1000);
-    };
-    window.addEventListener("resize", resizeHandler);
-
-    const mod = await import("pdfjs-dist/legacy/build/pdf.mjs");
-    s.pdfjs = mod;
-
-    if (s.pdfjs && !s.pdfjs.GlobalWorkerOptions.workerSrc) {
-      s.pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
-    }
-    loadPdf();
+  function scrollToIndex(index: number) {
+    if (!s.viewerApp) return;
+    s.viewerApp.currentPageNumber = index + 1;
   }
 
-  function scrollToIndex(index: number, behavior: ScrollBehavior = "smooth") {
-    if (!s.pdfScrollContainer) return;
-    const { offsets } = layout;
-    if (offsets && offsets[index] !== undefined) {
-      s.pdfScrollContainer.scrollTo({
-        top: offsets[index],
-        behavior,
-      });
-    }
-  }
-
-  function setZoom(newZoom: number, cursorY?: number) {
-    if (!s.pdfScrollContainer || newZoom === s.zoomLevel) return;
-
-    const yAnchor = cursorY ?? window.innerHeight / 2;
-    const ratio = newZoom / s.zoomLevel;
-    const absoluteY = s.scrollY + yAnchor;
-    const newAbsoluteY = absoluteY * ratio;
-
-    s.zoomLevel = newZoom;
-    s.pendingScrollTop = newAbsoluteY - yAnchor;
-
-    tick().then(() => {
-      if (s.pdfScrollContainer && s.pendingScrollTop !== null) {
-        s.pdfScrollContainer.scrollTop = s.pendingScrollTop;
-        s.pendingScrollTop = null;
-
-        // Sync stable indicators after zoom
-        const maxScroll = Math.max(
-          1,
-          virtualData.offsets[s.numPages - 1] +
-            getPageHeight(s.numPages - 1) -
-            s.viewportHeight,
-        );
-        s.lastScrollPercent = s.pdfScrollContainer.scrollTop / maxScroll;
-
-        const anchorEl = document.getElementById(
-          `pdf-page-${s.currentPageIndex}`,
-        );
-        if (anchorEl) {
-          const rect = anchorEl.getBoundingClientRect();
-          const cRect = s.pdfScrollContainer.getBoundingClientRect();
-          s.anchorPercentInPage = (cRect.top - rect.top) / rect.height;
-        }
-      }
-    });
+  function setZoom(newZoom: number) {
+    if (!s.viewerApp) return;
+    s.zoomMode = "custom";
+    s.viewerApp.currentScaleValue = newZoom.toString();
   }
 
   function toggleFit() {
-    s.isFitWidth = !s.isFitWidth;
-    if (s.isFitWidth) {
-      s.previousZoom = s.zoomLevel;
-      const fitZoom = (window.innerWidth * 0.9) / s.baseWidth;
-      setZoom(fitZoom);
+    if (!s.viewerApp) return;
+    if (s.zoomMode === "fit-width") {
+        s.zoomMode = "actual-size";
     } else {
-      setZoom(s.previousZoom < 0.99 ? s.previousZoom : 1);
+        s.zoomMode = "fit-width";
     }
+    applyZoomMode();
   }
 
   function handlePageInput(val: string) {
     const page = parseInt(val);
-    if (!isNaN(page) && page >= 1 && page <= s.numPages) {
+    if (!isNaN(page) && Math.floor(page) > 0 && Math.floor(page) <= s.numPages) {
       scrollToIndex(page - 1);
     }
   }
 
-  async function handleSearch() {
-    if (!s.searchQuery || !s.pdfDoc) return;
-
-    s.isSearching = true;
-    s.searchResults = [];
-    s.currentSearchResultIndex = -1;
-
-    try {
-      for (let i = 0; i < s.numPages; i++) {
-        if (!s.isSearching && !s.isSearchSidebarOpen) break;
-        const page = await s.pdfDoc.getPage(i + 1);
-        const textContent = await page.getTextContent();
-        const text = textContent.items.map((item: any) => item.str).join(" ");
-
-        const regex = new RegExp(
-          s.searchQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-          "gi",
-        );
-        let match;
-        while ((match = regex.exec(text)) !== null) {
-          const startSnippet = Math.max(0, match.index - 40);
-          const endSnippet = Math.min(
-            text.length,
-            match.index + s.searchQuery.length + 40,
-          );
-          const before = text.substring(startSnippet, match.index);
-          const after = text.substring(
-            match.index + s.searchQuery.length,
-            endSnippet,
-          );
-
-          s.searchResults.push({
-            pageIndex: i,
-            matchIndex: match.index,
-            snippet: `... ${before}<mark class="bg-yellow-400/50 text-white rounded">${text.substring(match.index, match.index + s.searchQuery.length)}</mark>${after} ...`,
-          });
-        }
-        
-        if (typeof page.cleanup === "function") page.cleanup();
-        if (i % 5 === 0) await tick();
-      }
-
-      if (s.searchResults.length > 0) {
-        s.currentSearchResultIndex = 0;
-      }
-    } catch (e) {
-      console.error("Search error:", e);
-    } finally {
-      s.isSearching = false;
+  function handleSearch(type: "find" | "findagain" | "findhighlightallchange" = "find", backward = false) {
+    if (!s.pdfFindController || typeof s.searchQuery !== 'string') return;
+    if (s.searchQuery.trim().length === 0) {
+        clearSearch();
+        return;
     }
+    s.isSearching = true;
+
+    s.pdfFindController.executeCommand(type, {
+      query: s.searchQuery,
+      phraseSearch: true,
+      caseSensitive: false,
+      entireWord: false,
+      highlightAll: true,
+      findPrevious: backward
+    });
+  }
+
+  function clearSearch() {
+      s.searchQuery = "";
+      s.searchResultsCount = 0;
+      s.currentSearchResultIndex = -1;
+      s.isSearching = false;
+      if (s.pdfFindController) {
+          s.pdfFindController.executeCommand("find", {
+              query: "",
+          });
+      }
   }
 
   function nextSearchResult() {
-    if (s.searchResults.length === 0) return;
-    s.currentSearchResultIndex =
-      (s.currentSearchResultIndex + 1) % s.searchResults.length;
-    scrollToIndex(s.searchResults[s.currentSearchResultIndex].pageIndex);
+      handleSearch("findagain", false);
   }
 
   function prevSearchResult() {
-    if (s.searchResults.length === 0) return;
-    s.currentSearchResultIndex =
-      (s.currentSearchResultIndex - 1 + s.searchResults.length) %
-      s.searchResults.length;
-    scrollToIndex(s.searchResults[s.currentSearchResultIndex].pageIndex);
+      handleSearch("findagain", true);
   }
 
-  function handleSeekBarMouseDown(e: MouseEvent) {
-    if (!s.seekBarElement) return;
-    s.isDraggingSeek = true;
-    s.hasMoved = false;
-    s.startY = e.clientY;
-    updatePreview(e);
-
-    const targetIdx = Math.floor((s.previewPercent / 100) * s.numPages);
-    scrollToIndex(Math.min(targetIdx, s.numPages - 1));
+  function navigateToDest(dest: string | any[]) {
+      if (!s.pdfLinkService) return;
+      s.pdfLinkService.navigateTo(dest);
   }
 
   function updatePreview(e: MouseEvent) {
-    if (!s.seekBarElement) return;
-    const rect = s.seekBarElement.getBoundingClientRect();
-    const percentage =
-      Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height)) * 100;
-    s.previewPercent = percentage;
+      if (!s.seekBarElement) return;
+      const rect = s.seekBarElement.getBoundingClientRect();
+      const perc = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+      s.previewPercent = perc * 100;
+  }
+
+  function scrollToPreview() {
+      if (!s.pdfScrollContainer) return;
+      const maxScroll = Math.max(1, s.pdfScrollContainer.scrollHeight - s.pdfScrollContainer.clientHeight);
+      s.pdfScrollContainer.scrollTop = (s.previewPercent / 100) * maxScroll;
+      s.scrollY = s.pdfScrollContainer.scrollTop;
+  }
+
+  function handleSeekBarMouseDown(e: MouseEvent) {
+      if (!s.seekBarElement || !s.pdfScrollContainer) return;
+      s.isDraggingSeek = true;
+      s.hasMoved = false;
+      s.startY = e.clientY;
+      updatePreview(e);
+      scrollToPreview();
+  }
+
+  function handleWindowMouseUp() {
+      if (s.isDraggingSeek) {
+          s.isDraggingSeek = false;
+          s.hasMoved = false;
+      }
   }
 
   function handleWindowMouseMove(e: MouseEvent) {
     if (s.isDraggingSeek) {
       if (!s.hasMoved && Math.abs(e.clientY - s.startY) > 5) {
-        s.hasMoved = true;
+          s.hasMoved = true;
       }
       updatePreview(e);
       if (s.hasMoved) {
-        const targetIdx = Math.floor((s.previewPercent / 100) * s.numPages);
-        scrollToIndex(Math.min(targetIdx, s.numPages - 1), "instant");
+          scrollToPreview();
       }
     }
-  }
 
-  function handleWindowMouseUp() {
-    if (s.isDraggingSeek) {
-      s.isDraggingSeek = false;
-      s.hasMoved = false;
-    }
-  }
-
-  function handleContainerMouseMove(e: MouseEvent) {
     const width = window.innerWidth;
     const rightThreshold = width * 0.8;
     if (
       e.clientX > rightThreshold ||
       s.isEditingPage ||
       s.isJumpPopupOpen ||
-      s.isSearchSidebarOpen
+      s.isSearchSidebarOpen ||
+      s.isTocSidebarOpen
     ) {
       s.controlsVisible = true;
       if (s.hideTimerId) clearTimeout(s.hideTimerId);
-      if (!s.isEditingPage && !s.isJumpPopupOpen && !s.isSearchSidebarOpen) {
+      if (!s.isEditingPage && !s.isJumpPopupOpen && !s.isSearchSidebarOpen && !s.isTocSidebarOpen) {
         s.hideTimerId = setTimeout(() => {
           s.controlsVisible = false;
           s.hideTimerId = null;
@@ -449,236 +354,45 @@ export function createPdfController(initialPdfPath: string) {
     }
   }
 
-  const renderTasks = new Map<number, any>();
-  const pageTextCache = new Map<number, string[]>();
-
-  async function renderPageToCanvas(
-    pageIndex: number,
-    canvas: HTMLCanvasElement,
-    textLayerDiv: HTMLDivElement,
-  ) {
-    if (!s.pdfDoc) return;
-
-    if (renderTasks.has(pageIndex)) {
-      try {
-        renderTasks.get(pageIndex).cancel();
-      } catch (e) {}
-      renderTasks.delete(pageIndex);
-    }
-
-    try {
-      const page = await s.pdfDoc.getPage(pageIndex + 1);
-      const viewport = page.getViewport({ scale: 2.0 });
-      const context = canvas.getContext("2d");
-      if (!context) return;
-
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
-
-      s.aspectRatios[pageIndex] = viewport.height / viewport.width;
-
-      const renderTask = page.render({ canvasContext: context, viewport });
-      renderTasks.set(pageIndex, renderTask);
-
-      await renderTask.promise;
-      renderTasks.delete(pageIndex);
-
-      try {
-        if (textLayerDiv && s.pdfjs && s.pdfjs.TextLayer) {
-          textLayerDiv.innerHTML = "";
-
-          const parentWidth =
-            canvas.parentElement?.clientWidth ||
-            viewport.width / viewport.scale;
-          const pageWidthPt = viewport.width / viewport.scale;
-          const pageHeightPt =
-            ((viewport.height / viewport.height) * viewport.height) /
-            viewport.scale;
-          const totalScaleFactor = parentWidth / pageWidthPt;
-
-          // Store PDF-point dimensions for ResizeObserver
-          textLayerDiv.setAttribute("data-pt-w", String(pageWidthPt));
-          // Keep data-vw/vh for highlightAction compatibility
-          textLayerDiv.setAttribute("data-vw", String(viewport.width));
-          textLayerDiv.setAttribute("data-vh", String(viewport.height));
-
-          // Set CSS vars — TextLayer v5 uses these to size/position itself
-          textLayerDiv.style.setProperty(
-            "--scale-factor",
-            String(viewport.scale),
-          );
-          textLayerDiv.style.setProperty(
-            "--total-scale-factor",
-            String(totalScaleFactor),
-          );
-          textLayerDiv.style.setProperty("--scale-round-x", "1px");
-          textLayerDiv.style.setProperty("--scale-round-y", "1px");
-
-          // Don't set width/height/transform — TextLayer manages those
-          const textContent = await page.getTextContent();
-          const textItems = textContent.items.map(
-            (item: any) => item.str as string,
-          );
-          pageTextCache.set(pageIndex, textItems);
-
-          const textLayer = new s.pdfjs.TextLayer({
-            textContentSource: textContent,
-            container: textLayerDiv,
-            viewport,
-          });
-          await textLayer.render();
-        }
-      } catch (e) {
-        console.error("TextLayer rendering failed:", e);
-      }
-    } catch (e: any) {
-      if (e.name !== "RenderingCancelledException") {
-        console.error(`Error rendering page ${pageIndex}:`, e);
-      }
-    }
-  }
-
-  async function clearCanvas(canvas: HTMLCanvasElement, index: number) {
-    if (renderTasks.has(index)) {
-      try {
-        renderTasks.get(index).cancel();
-      } catch (e) {}
-      renderTasks.delete(index);
-    }
-    const context = canvas.getContext("2d");
-    if (context) {
-      context.clearRect(0, 0, canvas.width, canvas.height);
-      canvas.width = 0;
-      canvas.height = 0;
-    }
-    
-    // Free PDF.js page resources immediately
-    try {
-      if (s.pdfDoc) {
-        const page = await s.pdfDoc.getPage(index + 1);
-        if (page && typeof page.cleanup === "function") {
-          page.cleanup();
-        }
-      }
-    } catch (e) {}
-  }
-
-  function applySearchHighlights(
-    pageIndex: number,
-    textLayerDiv: HTMLDivElement,
-  ) {
-    // Remove old highlights
-    textLayerDiv
-      .querySelectorAll(".search-match, .search-match-selected")
-      .forEach((el) => {
-        el.classList.remove("search-match", "search-match-selected");
-      });
-
-    if (!s.searchQuery || s.searchResults.length === 0) return;
-
-    const pageMatches = s.searchResults.filter(
-      (r) => r.pageIndex === pageIndex,
-    );
-    if (pageMatches.length === 0) return;
-
-    // Get the text content spans (exclude markedContent wrappers, br, endOfContent)
-    const spans = Array.from(
-      textLayerDiv.querySelectorAll(":scope > span, .markedContent > span"),
-    ) as HTMLElement[];
-    if (spans.length === 0) return;
-
-    // Build text from spans with offset mapping
-    let fullText = "";
-    const spanMap: { start: number; end: number; span: HTMLElement }[] = [];
-    for (const span of spans) {
-      const start = fullText.length;
-      const text = span.textContent || "";
-      fullText += text;
-      spanMap.push({ start, end: fullText.length, span });
-      fullText += " "; // separator between spans
-    }
-
-    // Find matches in the concatenated text
-    const escapedQuery = s.searchQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const regex = new RegExp(escapedQuery, "gi");
-    let match;
-    let matchIdx = 0;
-    const currentResult = s.searchResults[s.currentSearchResultIndex];
-
-    while ((match = regex.exec(fullText)) !== null) {
-      const matchStart = match.index;
-      const matchEnd = matchStart + match[0].length;
-
-      const isSelected =
-        currentResult &&
-        currentResult.pageIndex === pageIndex &&
-        currentResult.matchIndex === matchStart;
-
-      // Find which spans overlap with this match
-      for (const entry of spanMap) {
-        if (entry.start < matchEnd && entry.end > matchStart) {
-          entry.span.classList.add(
-            isSelected ? "search-match-selected" : "search-match",
-          );
-        }
-      }
-      matchIdx++;
-    }
+  function handleScroll(e: Event) {
+      const target = e.target as HTMLElement;
+      s.scrollY = target.scrollTop;
   }
 
   function destroy() {
-    if (resizeHandler) {
-      window.removeEventListener("resize", resizeHandler);
-      resizeHandler = null;
+    if (resizeObserver) {
+        resizeObserver.disconnect();
+        resizeObserver = null;
     }
     if (s.hideTimerId) {
       clearTimeout(s.hideTimerId);
       s.hideTimerId = null;
     }
-    try {
-      if (s.pdfDoc && typeof s.pdfDoc.cleanup === "function") {
-        s.pdfDoc.cleanup();
-      }
-    } catch (e) {}
-    s.isDestroyed = true;
+    if (s.viewerApp && typeof s.viewerApp.cleanup === 'function') {
+        s.viewerApp.cleanup();
+    }
     if (s.pdfDoc) s.pdfDoc.destroy();
     s.pdfDoc = null;
-    for (const task of renderTasks.values()) {
-      try {
-        task.cancel();
-      } catch (e) {}
-    }
-    renderTasks.clear();
-    pageTextCache.clear();
+    s.isDestroyed = true;
   }
 
   return {
     state: s,
-    get virtualData() {
-      return virtualData;
-    },
-    get visiblePages() {
-      return visiblePages;
-    },
-
-    indexAtOffset,
-    getPageHeight,
     loadLibraries,
-    updateCurrentPageAndScroll,
+    initViewerApp,
     scrollToIndex,
     setZoom,
     toggleFit,
     handlePageInput,
     handleSearch,
+    clearSearch,
     nextSearchResult,
     prevSearchResult,
-    handleSeekBarMouseDown,
+    navigateToDest,
     handleWindowMouseMove,
     handleWindowMouseUp,
-    handleContainerMouseMove,
-    renderPageToCanvas,
-    applySearchHighlights,
-    clearCanvas,
+    handleSeekBarMouseDown,
+    handleScroll,
     destroy,
   };
 }

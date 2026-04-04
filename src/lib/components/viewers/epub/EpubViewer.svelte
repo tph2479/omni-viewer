@@ -1,6 +1,15 @@
 <script lang="ts">
 	import { onMount, onDestroy, untrack } from 'svelte';
-	import { createEpubViewerState, FONT_OPTIONS } from './epubViewer.svelte.ts';
+	import { createEpubViewerState, FONT_OPTIONS, FONT_SIZE_OPTIONS, CONTENT_WIDTH_OPTIONS } from './epubViewer.svelte.ts';
+	import {
+		Menu,
+		X,
+		Search,
+		Sun,
+		Moon,
+		ChevronLeft,
+		ChevronRight,
+	} from 'lucide-svelte';
 
 	let { filePath, onClose }: { filePath: string; onClose?: () => void } = $props();
 	// Note: filePath is intentionally captured once at mount — re-opening needs destroy+reinit
@@ -98,7 +107,9 @@
 		<aside class="toc-drawer" aria-label="Table of Contents">
 			<div class="toc-header">
 				<h3>Contents</h3>
-				<button onclick={() => (ui.isTocOpen = false)} aria-label="Close TOC">✕</button>
+				<button onclick={() => (ui.isTocOpen = false)} aria-label="Close TOC">
+					<X size={18} />
+				</button>
 			</div>
 			<nav class="toc-list" bind:this={tocListEl}>
 				{#each book.toc as item (item.href)}
@@ -142,7 +153,25 @@
 				title="Table of Contents"
 				aria-label="Toggle TOC"
 			>
-				☰
+				<Menu size={16} />
+			</button>
+
+			<!-- Chapter navigation -->
+			<button
+				class="icon-btn"
+				onclick={() => ctrl.prevChapter()}
+				title="Previous chapter"
+				aria-label="Previous chapter"
+			>
+				<ChevronLeft size={16} />
+			</button>
+			<button
+				class="icon-btn"
+				onclick={() => ctrl.nextChapter()}
+				title="Next chapter"
+				aria-label="Next chapter"
+			>
+				<ChevronRight size={16} />
 			</button>
 
 			{#if book.title}
@@ -154,7 +183,6 @@
 		<div class="toolbar-group">
 			<!-- Font picker -->
 			<label class="select-wrapper" title="Font family">
-				<span class="sr-only">Font</span>
 				<select
 					value={settings.fontFamily}
 					onchange={(e) => ctrl.setFont((e.target as HTMLSelectElement).value)}
@@ -166,24 +194,28 @@
 			</label>
 
 			<!-- Font size -->
-			<div class="font-size-group" title="Font size">
-				<button onclick={() => ctrl.setFontSize(settings.fontSize - 1)}>A−</button>
-				<span>{settings.fontSize}px</span>
-				<button onclick={() => ctrl.setFontSize(settings.fontSize + 1)}>A+</button>
-			</div>
+			<label class="select-wrapper" title="Font size">
+				<select
+					value={settings.fontSize}
+					onchange={(e) => ctrl.setFontSize(Number((e.target as HTMLSelectElement).value))}
+				>
+					{#each FONT_SIZE_OPTIONS as size (size)}
+						<option value={size}>{size}px</option>
+					{/each}
+				</select>
+			</label>
 
 			<!-- Content width -->
-			<div class="font-size-group width-group" title="Content width">
-				<button onclick={() => ctrl.setContentWidth(Math.max(200, settings.contentWidth - 100))}>W−</button>
-				<span>{settings.contentWidth > 0 ? settings.contentWidth + 'px' : 'Auto'}</span>
-				<button onclick={() => ctrl.setContentWidth(Math.min(1200, settings.contentWidth + 100))}>W+</button>
-			</div>
-
-			<!-- Chapter navigation -->
-			<div class="font-size-group" title="Chapter">
-				<button onclick={() => ctrl.prevChapter()} aria-label="Previous chapter">‹</button>
-				<button onclick={() => ctrl.nextChapter()} aria-label="Next chapter">›</button>
-			</div>
+			<label class="select-wrapper" title="Content width">
+				<select
+					value={settings.contentWidth}
+					onchange={(e) => ctrl.setContentWidth((e.target as HTMLSelectElement).value)}
+				>
+					{#each CONTENT_WIDTH_OPTIONS as opt (opt.value)}
+						<option value={opt.value}>{opt.label}</option>
+					{/each}
+				</select>
+			</label>
 
 			<!-- Search toggle -->
 			<button
@@ -196,7 +228,7 @@
 				title="Search (Ctrl+F)"
 				aria-label="Toggle search"
 			>
-				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+				<Search size={16} />
 			</button>
 
 			<!-- Dark / Light toggle -->
@@ -206,7 +238,11 @@
 				title={settings.isDark ? 'Light mode' : 'Dark mode'}
 				aria-label="Toggle dark mode"
 			>
-				{settings.isDark ? '☀' : '🌙'}
+				{#if settings.isDark}
+					<Sun size={16} />
+				{:else}
+					<Moon size={16} />
+				{/if}
 			</button>
 
 			<!-- Close button -->
@@ -216,7 +252,7 @@
 				title="Close"
 				aria-label="Close"
 			>
-				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+				<X size={16} />
 			</button>
 		</div>
 	</header>
@@ -230,7 +266,7 @@
 			<div class="search-header">
 				<span class="search-title">Search</span>
 				<button class="icon-btn" onclick={() => ui.isSearchOpen = false} aria-label="Close search">
-					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+					<X size={16} />
 				</button>
 			</div>
 			<form onsubmit={handleSearchSubmit} class="search-form">
@@ -253,9 +289,13 @@
 
 			{#if search.results.length > 0}
 				<div class="search-meta">
-					<button onclick={ctrl.prevSearchResult} aria-label="Previous result">‹</button>
+					<button onclick={ctrl.prevSearchResult} aria-label="Previous result">
+						<ChevronLeft size={18} />
+					</button>
 					<span>{search.currentIndex + 1} / {search.results.length}</span>
-					<button onclick={ctrl.nextSearchResult} aria-label="Next result">›</button>
+					<button onclick={ctrl.nextSearchResult} aria-label="Next result">
+						<ChevronRight size={18} />
+					</button>
 					<button onclick={ctrl.clearSearch} aria-label="Clear results" class="clear-btn">Clear</button>
 				</div>
 				<ol class="search-results">
@@ -293,7 +333,7 @@
 
 	<!-- ── Status bar ───────────────────────────────────────────────────── -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="status-bar" class:visible={ui.isControlsVisible} tabindex="-1">
+	<div class="status-bar" tabindex="-1">
 		{#if reading.currentTocLabel}
 			<span class="toc-label">{reading.currentTocLabel}</span>
 		{/if}
@@ -310,13 +350,13 @@
 		width: 100%;
 		height: 100%;
 		overflow: hidden;
-		background: #f8f4ef;
-		color: #2c2825;
+		background: oklch(100% 0 none);
+		color: oklch(18.22% 0 none);
 		transition: background 0.3s, color 0.3s;
 	}
 	.epub-root.dark {
-		background: #1a1a2e;
-		color: #d4cfc8;
+		background: oklch(32.5% 0 none);
+		color: oklch(100% 0 none);
 	}
 
 	/* ── Reader container (fills remaining height) ── */
@@ -347,8 +387,8 @@
 	.spinner {
 		width: 36px;
 		height: 36px;
-		border: 3px solid rgba(0, 0, 0, 0.1);
-		border-top-color: #7c6f64;
+		border: 3px solid oklch(80.78% 0 none);
+		border-top-color: oklch(57.05% 0.21 258.14deg);
 		border-radius: 50%;
 		animation: spin 0.8s linear infinite;
 	}
@@ -363,18 +403,14 @@
 		justify-content: space-between;
 		padding: 0.5rem 1rem;
 		gap: 0.5rem;
-		background: rgba(248, 244, 239, 0.92);
+		background: oklch(100% 0 none / 0.92);
 		backdrop-filter: blur(8px);
-		border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-		/* opacity: 0;
-		transform: translateY(-100%);
-		transition: opacity 0.2s, transform 0.2s;
-		z-index: 50; */
+		border-bottom: 1px solid oklch(80.78% 0 none);
 		z-index: 50;
 	}
 	.dark .toolbar {
-		background: rgba(26, 26, 46, 0.92);
-		border-bottom-color: rgba(255, 255, 255, 0.08);
+		background: oklch(32.5% 0 none / 0.92);
+		border-bottom-color: oklch(38.67% 0 none);
 	}
 	.toolbar.visible {
 		opacity: 1;
@@ -410,12 +446,12 @@
 	}
 	.icon-btn:hover,
 	.icon-btn.active {
-		background: rgba(124, 111, 100, 0.15);
-		border-color: rgba(124, 111, 100, 0.3);
+		background: oklch(57.05% 0.21 258.14deg / 0.15);
+		border-color: oklch(57.05% 0.21 258.14deg / 0.3);
 	}
 	.select-wrapper select {
 		background: transparent;
-		border: 1px solid rgba(0, 0, 0, 0.15);
+		border: 1px solid oklch(71.22% 0 none);
 		border-radius: 6px;
 		padding: 0.25rem 0.5rem;
 		font-size: 0.8rem;
@@ -423,55 +459,33 @@
 		cursor: pointer;
 	}
 	.select-wrapper select option {
-		background: #f8f4ef;
-		color: #2c2825;
+		background: oklch(100% 0 none);
+		color: oklch(18.22% 0 none);
 	}
 	.dark .select-wrapper select {
-		border-color: rgba(255, 255, 255, 0.15);
-		color: #d4cfc8;
+		border-color: oklch(44.95% 0 none);
+		color: oklch(100% 0 none);
 	}
 	.dark .select-wrapper select option {
-		background: #1a1a2e;
-		color: #d4cfc8;
-	}
-	.font-size-group {
-		display: flex;
-		align-items: center;
-		gap: 0.25rem;
-		font-size: 0.8rem;
-	}
-	.font-size-group span {
-		min-width: 36px;
-		text-align: center;
-	}
-	.font-size-group button {
-		background: none;
-		border: 1px solid rgba(0, 0, 0, 0.15);
-		border-radius: 4px;
-		padding: 0.15rem 0.4rem;
-		cursor: pointer;
-		color: inherit;
-		font-size: 0.75rem;
-	}
-	.dark .font-size-group button {
-		border-color: rgba(255, 255, 255, 0.15);
+		background: oklch(32.5% 0 none);
+		color: oklch(100% 0 none);
 	}
 
 	/* ── Progress bar ─────────────────────────────── */
 	.progress-bar-track {
 		height: 3px;
-		background: rgba(0, 0, 0, 0.08);
+		background: oklch(80.78% 0 none);
 		position: relative;
 		flex-shrink: 0;
 		outline: none;
 		tabindex: -1;
 	}
 	.dark .progress-bar-track {
-		background: rgba(255, 255, 255, 0.08);
+		background: oklch(38.67% 0 none);
 	}
 	.progress-bar-fill {
 		height: 100%;
-		background: #7c6f64;
+		background: oklch(57.05% 0.21 258.14deg);
 		transition: width 0.4s ease;
 	}
 
@@ -482,13 +496,11 @@
 		align-items: center;
 		padding: 0.25rem 1rem;
 		font-size: 0.75rem;
-		opacity: 0;
-		transition: opacity 0.2s;
+		opacity: 0.6;
 		flex-shrink: 0;
 		outline: none;
 		tabindex: -1;
 	}
-	.status-bar.visible { opacity: 0.6; }
 	.toc-label {
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -509,7 +521,7 @@
 		left: 0;
 		bottom: 0;
 		width: clamp(240px, 30%, 320px);
-		background: #f8f4ef;
+		background: oklch(100% 0 none);
 		z-index: 70;
 		display: flex;
 		flex-direction: column;
@@ -517,7 +529,7 @@
 		animation: slide-in 0.2s ease;
 	}
 	.dark .toc-drawer {
-		background: #1e1e35;
+		background: oklch(25.62% 0 none);
 	}
 	@keyframes slide-in {
 		from { transform: translateX(-100%); }
@@ -528,7 +540,7 @@
 		justify-content: space-between;
 		align-items: center;
 		padding: 1rem;
-		border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+		border-bottom: 1px solid oklch(80.78% 0 none);
 		flex-shrink: 0;
 	}
 	.toc-header h3 { margin: 0; font-size: 1rem; }
@@ -558,8 +570,15 @@
 		line-height: 1.4;
 		transition: background 0.15s;
 	}
-	.toc-item:hover { background: rgba(124, 111, 100, 0.1); }
-	.toc-item.active { background: rgba(124, 111, 100, 0.2); font-weight: 600; }
+	.toc-item:hover { background: oklch(57.05% 0.21 258.14deg / 0.1); }
+	.toc-item.active {
+		background: oklch(57.05% 0.21 258.14deg / 0.2);
+		font-weight: 600;
+		color: oklch(51.64% 0.18 257.83deg);
+	}
+	.dark .toc-item.active {
+		color: oklch(62.99% 0.18 255.56deg);
+	}
 	.toc-sub { padding-left: 2rem; opacity: 0.75; }
 
 	/* ── Search panel ─────────────────────────────── */
@@ -569,21 +588,21 @@
 		right: 0;
 		bottom: 0;
 		width: clamp(280px, 35%, 380px);
-		background: #f8f4ef;
+		background: oklch(100% 0 none);
 		z-index: 70;
 		display: flex;
 		flex-direction: column;
 		box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
 	}
 	.dark .search-panel {
-		background: #1e1e35;
+		background: oklch(25.62% 0 none);
 	}
 	.search-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
 		padding: 1rem;
-		border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+		border-bottom: 1px solid oklch(80.78% 0 none);
 		flex-shrink: 0;
 	}
 	.search-title {
@@ -594,37 +613,37 @@
 		display: flex;
 		gap: 0.4rem;
 		padding: 1rem;
-		border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+		border-bottom: 1px solid oklch(80.78% 0 none);
 		flex-shrink: 0;
 	}
 	.search-form input {
 		flex: 1;
 		padding: 0.4rem 0.6rem;
-		border: 1px solid rgba(0, 0, 0, 0.2);
+		border: 1px solid oklch(71.22% 0 none);
 		border-radius: 6px;
 		background: transparent;
 		color: inherit;
 		font-size: 0.875rem;
 	}
-	.dark .search-form input { border-color: rgba(255, 255, 255, 0.2); }
+	.dark .search-form input { border-color: oklch(44.95% 0 none); }
 	.search-form button {
 		padding: 0.4rem 0.6rem;
-		border: 1px solid rgba(0, 0, 0, 0.2);
+		border: 1px solid oklch(71.22% 0 none);
 		border-radius: 6px;
 		background: none;
 		color: inherit;
 		cursor: pointer;
 		font-size: 0.875rem;
 	}
-	.dark .search-form button { border-color: rgba(255, 255, 255, 0.2); }
+	.dark .search-form button { border-color: oklch(44.95% 0 none); }
 	.search-progress {
 		height: 3px;
-		background: rgba(0, 0, 0, 0.08);
+		background: oklch(80.78% 0 none);
 		flex-shrink: 0;
 	}
 	.search-progress-bar {
 		height: 100%;
-		background: #7c6f64;
+		background: oklch(57.05% 0.21 258.14deg);
 		transition: width 0.2s linear;
 	}
 	.search-meta {
@@ -634,7 +653,7 @@
 		gap: 0.75rem;
 		padding: 0.5rem 1rem;
 		font-size: 0.8rem;
-		border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+		border-bottom: 1px solid oklch(80.78% 0 none);
 		flex-shrink: 0;
 	}
 	.search-meta button {
@@ -647,11 +666,11 @@
 	.search-meta .clear-btn {
 		font-size: 0.8rem;
 		padding: 0.2rem 0.5rem;
-		border: 1px solid rgba(0, 0, 0, 0.15);
+		border: 1px solid oklch(71.22% 0 none);
 		border-radius: 4px;
 	}
 	.dark .search-meta .clear-btn {
-		border-color: rgba(255, 255, 255, 0.15);
+		border-color: oklch(44.95% 0 none);
 	}
 	.search-results {
 		list-style: none;
@@ -660,8 +679,11 @@
 		overflow-y: auto;
 		flex: 1;
 	}
-	.search-results li { border-bottom: 1px solid rgba(0, 0, 0, 0.06); }
-	.search-results li.selected button { background: rgba(124, 111, 100, 0.15); }
+	.search-results li { border-bottom: 1px solid oklch(98% 0 none); }
+	.dark .search-results li { border-bottom-color: oklch(32.5% 0 none); }
+	.search-results li.selected button {
+		background: oklch(57.05% 0.21 258.14deg / 0.15);
+	}
 	.search-results button {
 		display: block;
 		width: 100%;
@@ -675,7 +697,7 @@
 		line-height: 1.5;
 		transition: background 0.15s;
 	}
-	.search-results button:hover { background: rgba(124, 111, 100, 0.1); }
+	.search-results button:hover { background: oklch(57.05% 0.21 258.14deg / 0.1); }
 	.search-empty {
 		padding: 1rem;
 		opacity: 0.5;
@@ -708,9 +730,6 @@
 			display: none;
 		}
 		.select-wrapper {
-			display: none;
-		}
-		.width-group {
 			display: none;
 		}
 		.icon-btn {
