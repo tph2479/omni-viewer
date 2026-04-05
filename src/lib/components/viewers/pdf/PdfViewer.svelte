@@ -34,6 +34,12 @@
 		}
 	});
 
+	$effect(() => {
+		if (isPdfMode && s.pdfScrollContainer) {
+			s.pdfScrollContainer.focus();
+		}
+	});
+
 	onMount(() => {
 		pdf.loadLibraries();
 	});
@@ -53,10 +59,21 @@
 			if (s.isSearchSidebarOpen) {
 				s.isSearchSidebarOpen = false;
 				s.isSearching = false;
+				s.pdfScrollContainer?.focus();
 			} else if (s.isTocSidebarOpen) {
 				s.isTocSidebarOpen = false;
+				s.pdfScrollContainer?.focus();
 			} else {
 				closePdf();
+			}
+		}
+		if (event.key === 'Tab') {
+			event.preventDefault();
+			if (s.isTocSidebarOpen) {
+				s.isTocSidebarOpen = false;
+				s.pdfScrollContainer?.focus();
+			} else {
+				s.isTocSidebarOpen = true;
 			}
 		}
 		if (event.code === 'KeyF' && (event.ctrlKey || event.metaKey)) {
@@ -119,14 +136,18 @@
 
 {#snippet tocItem(item: any, depth = 0)}
 	<button 
-		class="w-full text-left p-2 hover:bg-white/10 rounded transition-colors text-sm text-white/80 hover:text-white mb-1" 
+		class="w-full text-left p-2 hover:bg-white/10 rounded transition-colors text-sm text-white/80 hover:text-white mb-1 flex items-center justify-between" 
 		style="padding-left: {depth * 1.5 + 0.5}rem" 
 		onclick={() => { 
 			pdf.navigateToDest(item.dest); 
-			if (window.innerWidth < 768) s.isTocSidebarOpen = false; 
+			s.isTocSidebarOpen = false;
+			s.pdfScrollContainer?.focus();
 		}}
 	>
-		{item.title}
+		<span class="truncate">{item.title}</span>
+		{#if item.pageNumber}
+			<span class="text-xs text-white/40 font-mono ml-2 shrink-0">{item.pageNumber}</span>
+		{/if}
 	</button>
 	{#if item.items && item.items.length > 0}
 		{#each item.items as subItem}
@@ -143,7 +164,7 @@
 <div class="fixed inset-y-0 left-0 w-80 sm:w-96 bg-zinc-950/95 border-r border-white/10 backdrop-blur-xl shadow-2xl z-[400] overflow-hidden flex flex-col animate-in slide-in-from-left duration-300">
 	<div class="p-4 border-b border-white/10 bg-zinc-950/80 backdrop-blur-md shrink-0 flex items-center justify-between">
 		<h2 class="text-white font-bold text-lg">Mục lục</h2>
-		<button class="btn btn-ghost btn-sm btn-circle text-white/50 hover:text-white transition-colors" onclick={() => { s.isTocSidebarOpen = false; }}>
+		<button class="btn btn-ghost btn-sm btn-circle text-white/50 hover:text-white transition-colors" onclick={() => { s.isTocSidebarOpen = false; s.pdfScrollContainer?.focus(); }}>
 			<X class="h-5 w-5" />
 		</button>
 	</div>
@@ -164,12 +185,12 @@
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="fixed inset-0 z-[399]" onclick={() => { s.isSearchSidebarOpen = false; s.isSearching = false; }}></div>
-<div class="fixed inset-y-0 left-0 w-80 sm:w-96 bg-zinc-950/95 border-r border-white/10 backdrop-blur-xl shadow-2xl z-[400] overflow-hidden flex flex-col animate-in slide-in-from-left duration-300">
-	<div class="p-4 border-b border-white/10 bg-zinc-950/80 backdrop-blur-md shrink-0 flex flex-col gap-3">
+<div class="fixed inset-y-0 left-0 w-80 sm:w-96 bg-zinc-900 border-r border-white/10 shadow-[20px_0_50px_rgba(0,0,0,0.5)] z-[400] overflow-hidden flex flex-col animate-in slide-in-from-left duration-300">
+	<div class="p-6 border-b border-white/10 space-y-4 relative">
 		<div class="flex items-center justify-between">
-			<h2 class="text-white font-bold text-lg">Tìm kiếm PDF</h2>
-			<button class="btn btn-ghost btn-sm btn-circle text-white/50 hover:text-white transition-colors" onclick={() => { s.isSearchSidebarOpen = false; s.isSearching = false; }}>
-				<X class="h-5 w-5" />
+			<h2 class="text-white font-black uppercase tracking-widest text-sm">Tìm kiếm PDF</h2>
+			<button class="btn btn-ghost btn-circle btn-xs text-white/40 hover:text-white" onclick={() => { s.isSearchSidebarOpen = false; s.isSearching = false; }}>
+				<X class="h-4 w-4" />
 			</button>
 		</div>
 		<div class="flex gap-2 items-center">
@@ -181,6 +202,13 @@
 					placeholder="Nhập từ khoá..."
 					class="input input-sm w-full bg-white/10 text-white border-none focus:outline-none focus:ring-[var(--color-primary-500)]"
 					onkeydown={(e) => {
+						if (e.key === 'Escape') {
+							s.isSearchSidebarOpen = false;
+							s.isSearching = false;
+							s.searchQuery = '';
+							s.pdfScrollContainer?.focus();
+							return;
+						}
 						if (e.key === 'Enter') {
 							e.preventDefault();
 							pdf.handleSearch("find");
@@ -242,27 +270,23 @@
 	<!-- Top Controls -->
 	<div class="fixed top-4 right-4 sm:right-6 pointer-events-none z-[310] transition-all duration-300 {s.controlsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}">
 		<div class="flex items-center justify-end gap-2">
-			<button class="btn rounded-xl w-12 h-12 min-h-0 p-0 bg-zinc-900/90 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl pointer-events-auto transition-all" aria-label="Toggle fit" onclick={() => { pdf.toggleFit(); }}>
+			<button class="btn rounded-xl w-10 h-10 min-h-0 p-0 bg-zinc-900 hover:bg-zinc-800 text-white border border-white/10 shadow-xl pointer-events-auto transition-all" aria-label="Toggle fit" onclick={() => { pdf.toggleFit(); s.pdfScrollContainer?.focus(); }}>
 				<Maximize2 class="h-5 w-5" />
 			</button>
-			<button class="btn rounded-xl w-12 h-12 min-h-0 p-0 bg-zinc-900/90 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl pointer-events-auto transition-all" onclick={() => s.isDarkMode = !s.isDarkMode}>
+			<button class="btn rounded-xl w-10 h-10 min-h-0 p-0 bg-zinc-900 hover:bg-zinc-800 text-white border border-white/10 shadow-xl pointer-events-auto transition-all" onclick={() => { s.isDarkMode = !s.isDarkMode; s.pdfScrollContainer?.focus(); }}>
 				{#if s.isDarkMode}
 					<Sun class="h-5 w-5" />
 				{:else}
 					<Moon class="h-5 w-5" />
 				{/if}
 			</button>
-			{#if !s.isTocSidebarOpen}
-				<button class="btn rounded-xl w-12 h-12 min-h-0 p-0 bg-zinc-900/90 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl pointer-events-auto transition-all" aria-label="TOC" onclick={() => s.isTocSidebarOpen = true}>
-					<List class="h-5 w-5" />
-				</button>
-			{/if}
-			{#if !s.isSearchSidebarOpen}
-				<button class="btn rounded-xl w-12 h-12 min-h-0 p-0 bg-zinc-900/90 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl pointer-events-auto transition-all" aria-label="Search" onclick={() => s.isSearchSidebarOpen = true}>
-					<Search class="h-5 w-5" />
-				</button>
-			{/if}
-			<button aria-label="Close (ESC)" class="btn rounded-xl w-12 h-12 min-h-0 p-0 bg-zinc-900/90 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl pointer-events-auto transition-all hover:scale-110" onclick={closePdf}>
+			<button class="btn rounded-xl w-10 h-10 min-h-0 p-0 {s.isTocSidebarOpen ? 'bg-primary-500 text-white' : 'bg-zinc-900 hover:bg-zinc-800 text-white'} border border-white/10 shadow-xl pointer-events-auto transition-all" aria-label="TOC" onclick={() => { s.isTocSidebarOpen = !s.isTocSidebarOpen; s.pdfScrollContainer?.focus(); }}>
+				<List class="h-5 w-5" />
+			</button>
+			<button class="btn rounded-xl w-10 h-10 min-h-0 p-0 {s.isSearchSidebarOpen ? 'bg-primary-500 text-white' : 'bg-zinc-900 hover:bg-zinc-800 text-white'} border border-white/10 shadow-xl pointer-events-auto transition-all" aria-label="Search" onclick={() => { s.isSearchSidebarOpen = !s.isSearchSidebarOpen; s.pdfScrollContainer?.focus(); }}>
+				<Search class="h-5 w-5" />
+			</button>
+			<button aria-label="Close (ESC)" class="btn rounded-xl w-12 h-12 min-h-0 p-0 bg-zinc-900 hover:bg-zinc-800 text-white border border-white/10 shadow-xl pointer-events-auto transition-all hover:scale-110" onclick={closePdf}>
 				<X class="h-6 w-6" />
 			</button>
 		</div>
@@ -271,53 +295,52 @@
 	<!-- Side Controls -->
 	<div class="fixed top-24 right-4 sm:right-6 bottom-4 flex flex-col items-end gap-2 z-[310] pointer-events-none transition-all duration-300 {s.controlsVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2'}">
 		<div class="flex flex-col items-end gap-2 pointer-events-auto h-full">
-			<div class="flex flex-col bg-zinc-900/90 rounded-xl backdrop-blur-xl border border-white/10 shadow-2xl mt-1 w-12 overflow-hidden">
-				<button class="btn btn-ghost btn-sm h-12 w-12 p-0 text-white rounded-none border-b border-white/10" aria-label="Zoom in" onclick={() => { pdf.setZoom(parseFloat(s.zoomLevel.toString()) * 1.2); }}>
-					<ZoomIn class="h-5 w-5" />
-				</button>
-				<span class="py-2 text-[10px] font-mono font-black text-white text-center bg-white/5">
-					{Math.round(parseFloat(s.zoomLevel.toString()) * 100) || 100}%
-				</span>
-				<button class="btn btn-ghost btn-sm h-12 w-12 p-0 text-white rounded-none border-t border-white/10" aria-label="Zoom out" onclick={() => { pdf.setZoom(parseFloat(s.zoomLevel.toString()) / 1.2); }}>
-					<ZoomOut class="h-5 w-5" />
-				</button>
-			</div>
+			<button class="btn rounded-xl w-10 h-10 min-h-0 p-0 bg-zinc-900 hover:bg-zinc-800 text-white border border-white/10 shadow-xl pointer-events-auto transition-all" aria-label="Zoom in" onclick={() => { pdf.setZoom(parseFloat(s.zoomLevel.toString()) * 1.2); s.pdfScrollContainer?.focus(); }}>
+				<ZoomIn class="h-5 w-5" />
+			</button>
+			<span class="py-1 px-2 text-[10px] font-mono font-black text-white text-center bg-zinc-900 rounded-xl border border-white/10 shadow-xl select-none">
+				{Math.round(parseFloat(s.zoomLevel.toString()) * 100) || 100}%
+			</span>
+			<button class="btn rounded-xl w-10 h-10 min-h-0 p-0 bg-zinc-900 hover:bg-zinc-800 text-white border border-white/10 shadow-xl pointer-events-auto transition-all" aria-label="Zoom out" onclick={() => { pdf.setZoom(parseFloat(s.zoomLevel.toString()) / 1.2); s.pdfScrollContainer?.focus(); }}>
+				<ZoomOut class="h-5 w-5" />
+			</button>
 
 			<!-- Page Jump & Progress -->
-			<div class="flex-1 flex flex-col items-center gap-2 mt-1 bg-zinc-900/90 py-4 rounded-xl border border-white/10 shadow-2xl pointer-events-auto w-12 backdrop-blur-xl px-0 relative">
+			<div class="flex-1 flex flex-col items-center gap-2 mt-1 w-10 relative">
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
+				<!-- svelte-ignore a11y_click_events_have_key_events -->
 				<div
 					bind:this={s.seekBarElement}
-					class="flex-1 w-3 sm:w-4 bg-white/10 rounded-full overflow-hidden border border-white/5 shadow-inner my-1 cursor-pointer group hover:bg-white/20 transition-colors relative"
+					class="flex-1 w-full bg-zinc-900 rounded-xl border border-white/10 shadow-xl overflow-hidden cursor-pointer group hover:bg-zinc-800 transition-colors relative"
 					onmousedown={pdf.handleSeekBarMouseDown}
 				>
-					<div class="absolute top-0 left-0 w-full rounded-full transition-all duration-75 ease-out origin-top z-10 pointer-events-none" style="height: {s.smoothPercent}%; background-color: white;"></div>
+					<div class="absolute top-0 left-0 w-full transition-all duration-75 ease-out origin-top z-10 pointer-events-none" style="height: {s.smoothPercent}%; background-color: white;"></div>
 					{#if s.isDraggingSeek && s.hasMoved}
-						<div class="absolute top-0 left-0 w-full bg-white/30 rounded-full origin-top z-20 pointer-events-none" style="height: {s.previewPercent}%"></div>
+						<div class="absolute top-0 left-0 w-full bg-white/30 origin-top z-20 pointer-events-none" style="height: {s.previewPercent}%"></div>
 					{/if}
-				</div>
-				<div class="flex flex-col items-center gap-1 mt-auto">
-					<span class="text-sm font-mono font-black text-white/90">
+					<span class="absolute inset-0 flex items-center justify-center z-30 pointer-events-none text-sm font-mono font-black mix-blend-difference select-none">
 						{Math.round(s.isDraggingSeek && s.hasMoved ? s.previewPercent : s.smoothPercent)}%
 					</span>
+				</div>
+				<div class="flex flex-col items-center gap-2 mt-auto">
 					<div class="relative">
 						<button
-							class="btn btn-ghost btn-circle w-10 h-10 min-h-0 p-0 text-white hover:bg-white/10 transition-all flex items-center justify-center"
-							onclick={(e) => { e.stopPropagation(); s.isJumpPopupOpen = !s.isJumpPopupOpen; }}
+							class="btn rounded-xl w-10 h-10 min-h-0 p-0 bg-zinc-900 hover:bg-zinc-800 text-white border border-white/10 shadow-xl pointer-events-auto transition-all flex items-center justify-center"
+							onclick={(e) => { e.stopPropagation(); s.isJumpPopupOpen = !s.isJumpPopupOpen; s.pdfScrollContainer?.focus(); }}
 						>
 							<Hash class="h-5 w-5" />
 						</button>
 
 						<!-- Jump Popup -->
 						{#if s.isJumpPopupOpen}
-							<div class="absolute right-full top-0 mr-4 bg-zinc-900/90 px-4 py-0 h-14 rounded-xl border border-white/10 backdrop-blur-xl shadow-2xl pointer-events-auto text-right flex items-center justify-center font-mono font-black text-sm focus:outline-none animate-in fade-in slide-in-from-right-4 duration-200 whitespace-nowrap">
+							<div class="absolute right-full top-0 mr-2 h-10 bg-zinc-900 px-3 rounded-xl border border-white/10 shadow-xl pointer-events-auto flex items-center gap-1.5 font-mono font-black text-[11px] focus:outline-none animate-in fade-in slide-in-from-right-4 duration-200 whitespace-nowrap">
 								<span
 									role="textbox"
 									aria-label="Page number"
 									tabindex="0"
 									contenteditable="true"
 									inputmode="numeric"
-									class="text-white/90 focus:outline-none hover:bg-white/5 rounded px-1 transition-colors min-w-[1ch]"
+									class="text-white focus:outline-none bg-zinc-800 rounded-lg px-2 py-0.5 transition-colors min-w-[2ch] text-center"
 									onfocus={(e) => {
 										s.isEditingPage = true;
 										const range = document.createRange();
@@ -343,7 +366,7 @@
 								>
 									{s.currentPageIndex + 1}
 								</span>
-								<span class="text-white/40 ml-2">/ {s.numPages}</span>
+								<span class="text-white/40 ml-2 select-none">/ {s.numPages}</span>
 							</div>
 						{/if}
 					</div>

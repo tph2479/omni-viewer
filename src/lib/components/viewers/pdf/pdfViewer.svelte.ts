@@ -183,6 +183,40 @@ export function createPdfController(initialPdfPath: string) {
     }
   }
 
+  async function resolveTocPages() {
+    if (!s.pdfDoc || !s.toc.length) return;
+    
+    function resolveItem(item: any) {
+      if (!item.dest) return;
+      
+      if (Array.isArray(item.dest)) {
+        const pageRef = item.dest[0];
+        if (pageRef && typeof pageRef === 'object' && 'num' in pageRef) {
+          s.pdfDoc.getPageIndex(pageRef).then((pageIndex: number) => {
+            item.pageNumber = pageIndex + 1;
+          });
+        }
+      } else if (typeof item.dest === 'string') {
+        s.pdfDoc.getDestination(item.dest).then((dest: any) => {
+          if (dest && dest[0]) {
+            s.pdfDoc.getPageIndex(dest[0]).then((pageIndex: number) => {
+              item.pageNumber = pageIndex + 1;
+            });
+          }
+        });
+      }
+    }
+    
+    for (const item of s.toc) {
+      resolveItem(item);
+      if (item.items) {
+        for (const sub of item.items) {
+          resolveItem(sub);
+        }
+      }
+    }
+  }
+
   async function loadPdf() {
     if (!s.pdfPath || s.isLoading || !s.pdfjs) return;
     s.isLoading = true;
@@ -208,6 +242,8 @@ export function createPdfController(initialPdfPath: string) {
       try {
         const outline = await s.pdfDoc.getOutline();
         s.toc = outline || [];
+        resolveTocPages();
+        s.toc = [...s.toc];
       } catch (e) {
         console.warn("Failed to get outline", e);
       }
@@ -286,9 +322,23 @@ export function createPdfController(initialPdfPath: string) {
       handleSearch("findagain", true);
   }
 
-  function navigateToDest(dest: string | any[]) {
-      if (!s.pdfLinkService) return;
-      s.pdfLinkService.navigateTo(dest);
+  async function navigateToDest(dest: string | any[]) {
+    if (!s.pdfLinkService || !s.pdfDoc) return;
+    
+    if (Array.isArray(dest) && dest[0]) {
+      const pageRef = dest[0];
+      if (typeof pageRef === 'object' && 'num' in pageRef) {
+        try {
+          const pageIndex = await s.pdfDoc.getPageIndex(pageRef);
+          scrollToIndex(pageIndex);
+          return;
+        } catch (e) {
+          console.warn('Failed to get page index from dest:', e);
+        }
+      }
+    }
+    
+    s.pdfLinkService.navigateTo(dest);
   }
 
   function updatePreview(e: MouseEvent) {
