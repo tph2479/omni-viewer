@@ -1,5 +1,7 @@
 import type { PendingFile } from "./types";
 
+export type Drive = { name: string; path: string };
+
 export class UIStore {
   isLoading = $state(false);
   isDrivesLoading = $state(false);
@@ -10,6 +12,5 @@ export class UIStore {
   lastOpenedFile = $state<string | null>(null);
   highlightedPath = $state<string | null>(null);
   pendingFile = $state<PendingFile>(null);
-  noImagesPopup = $state({ open: false, timer: null as any });
-  availableDrives = $state<any[]>([]);
+  availableDrives = $state<Drive[]>([]);
 }

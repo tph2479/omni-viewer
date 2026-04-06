@@ -6,12 +6,7 @@
     let wasModalOpen = $state(false);
 
     $effect(() => {
-        const isAnyModalOpen =
-            s.modal.image.open ||
-            s.modal.video.open ||
-            s.modal.webtoon.open ||
-            s.modal.audio.open ||
-            s.modal.pdf.open;
+        const isAnyModalOpen = s.modal.isAnyOpen;
         if (wasModalOpen && !isAnyModalOpen && s.ui.lastOpenedFile) {
             s.ui.highlightedPath = s.ui.lastOpenedFile;
             s.ui.lastOpenedFile = null;

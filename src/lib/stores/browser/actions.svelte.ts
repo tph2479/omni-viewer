@@ -130,9 +130,9 @@ export function createActions(store: BrowserStore) {
 
       if (ui.pendingFile) {
         if (ui.pendingFile.type === "cbz") {
-          openCbzInWebtoon(ui.pendingFile.path);
+          modal.openCbz(ui.pendingFile.path);
         } else if (ui.pendingFile.type === "pdf") {
-          openPdfReader(ui.pendingFile.path);
+          modal.openPdf(ui.pendingFile.path);
         } else {
           const idx = content.items.findIndex(
             (img: ImageFile) => img.path === ui.pendingFile!.path,
@@ -161,11 +161,6 @@ export function createActions(store: BrowserStore) {
     }
   }
 
-  function openPdfReader(path: string) {
-    modal.pdf.path = path;
-    modal.pdf.open = true;
-  }
-
   function openModal(index: number, items?: ImageFile[]) {
     const sourceList = items || content.items;
     const img = sourceList[index];
@@ -176,24 +171,9 @@ export function createActions(store: BrowserStore) {
 
     if (img.isVideo) modal.video.open = true;
     else if (img.isAudio) modal.audio.open = true;
-    else if (img.isPdf) openPdfReader(img.path);
-    else if (img.isEpub) {
-      modal.epub.path = img.path;
-      modal.epub.open = true;
-    } else modal.image.open = true;
-  }
-
-  function closeAllModals() {
-    modal.image.open = false;
-    modal.video.open = false;
-    modal.audio.open = false;
-    modal.pdf.open = false;
-    modal.epub.open = false;
-    modal.webtoon.open = false;
-  }
-
-  function closePicker() {
-    modal.folderPicker.open = false;
+    else if (img.isPdf) modal.openPdf(img.path);
+    else if (img.isEpub) modal.openEpub(img.path);
+    else modal.image.open = true;
   }
 
   function openDir(dirPath: string, isGoingUp = false, isFromHistory = false) {
@@ -215,13 +195,7 @@ export function createActions(store: BrowserStore) {
     loadFolder(true, savedPage);
   }
 
-  function openCbzInWebtoon(cbzPath: string, context?: string) {
-    modal.webtoon.cbzPath = cbzPath;
-    modal.webtoon.contextPath = context || "";
-    modal.webtoon.open = true;
-  }
-
-  function showNoImagesPopup() {
+  function showNoImagesToast() {
     toaster.create({
       type: "warning",
       title: "No Media Found",
@@ -246,7 +220,7 @@ export function createActions(store: BrowserStore) {
         return;
       }
 
-      showNoImagesPopup();
+      showNoImagesToast();
     } catch (e) {
       console.error(e);
     } finally {
@@ -269,7 +243,7 @@ export function createActions(store: BrowserStore) {
     while (targetIndex >= 0 && targetIndex < items.length) {
       const item = items[targetIndex];
       if (item.firstCbz || item.hasImages || item.isCbz) {
-        openCbzInWebtoon(item.firstCbz || item.path);
+        modal.openCbz(item.firstCbz || item.path);
         return;
       }
       targetIndex += direction;
@@ -343,11 +317,8 @@ export function createActions(store: BrowserStore) {
     setSort,
     setMediaType,
     loadNextPage,
-    closePicker,
+    closePicker: () => { modal.folderPicker.open = false; },
     openModal,
-    closeAllModals,
-    openPdfReader,
-    openCbzInWebtoon,
     handleOpenWebtoon,
     navigateWebtoon,
     handleToggleCoverMode,

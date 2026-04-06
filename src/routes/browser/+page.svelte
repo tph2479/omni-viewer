@@ -32,18 +32,14 @@
         const drivesPromise = s.actions.refreshDrives();
 
         if (s.folder.path) {
-            // Sanitize before loading
-            s.folder.path = s.folder.path.trim().replace(/^([A-Za-z]:\\)\1+/i, '$1');
             s.folder.path = s.folder.normalize(s.folder.path);
             const savedPage = s.folder.pageHistory[s.folder.path] || 0;
-            // loadFolder will handle error by falling back to first drive
             await s.actions.loadFolder(true, savedPage);
         } else {
             // No path saved — wait for drives and use first one
             await drivesPromise;
             if (s.ui.availableDrives.length > 0) {
-                s.folder.path = s.ui.availableDrives[0].path;
-                s.folder.path = s.folder.normalize(s.folder.path);
+                s.folder.path = s.folder.normalize(s.ui.availableDrives[0].path);
                 await s.actions.loadFolder(true, 0);
             }
         }

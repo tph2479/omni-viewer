@@ -35,16 +35,15 @@
 	<PdfReader
 		bind:isPdfMode={s.modal.pdf.open}
 		pdfPath={s.modal.pdf.path}
-		onCloseCallback={() => s.modal.pdf.path = ''}
+		onCloseCallback={() => { s.modal.pdf.path = ""; }}
 	/>
 {/if}
 
 {#if s.modal.epub.open}
-    <!-- Container styled similarly to how PDF is fullscreen -->
     <div class="fixed inset-0 z-[1000] bg-surface-100 dark:bg-surface-900 overflow-hidden flex flex-col">
-        <EpubViewer 
-            filePath={s.modal.epub.path} 
-            onClose={() => { s.modal.epub.open = false; s.modal.epub.path = ''; }}
+        <EpubViewer
+            filePath={s.modal.epub.path}
+            onClose={() => { s.modal.closeAll(); s.modal.epub.path = ""; }}
         />
     </div>
 {/if}
@@ -95,4 +94,5 @@
 		}}
 	/>
 {/if}
+
 
