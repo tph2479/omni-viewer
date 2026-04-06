@@ -20,52 +20,41 @@ export async function navigateToDest(s: PdfState, dest: string | any[]) {
     s.pdfLinkService.navigateTo(dest);
 }
 
-export async function resolveTocPages(s: PdfState) {
-    if (!s.pdfDoc || !s.toc.length) return;
+export async function resolveItemPage(s: PdfState, item: any) {
+    if (!s.pdfDoc || !item.dest || item.pageNumber) return;
     
-    // Lazy resolve sequential implementation to avoid concurrent spam that blocks PDF web worker
-    // Flatten TOC into array
-    const allItems: any[] = [];
-    function collect(items: any[]) {
-        for (const item of items) {
-            allItems.push(item);
-            if (item.items) collect(item.items);
-        }
-    }
-    collect(s.toc);
-
-    // Resolve sequentially in small batches to not lock up the PDF.js web worker
-    const BATCH_SIZE = 50; 
-    
-    for (let i = 0; i < allItems.length; i += BATCH_SIZE) {
-        if (s.isDestroyed) break;
-        
-        const batch = allItems.slice(i, i + BATCH_SIZE);
-        await Promise.all(batch.map(async (item) => {
-            if (!item.dest) return;
-            try {
-                if (Array.isArray(item.dest)) {
-                    const pageRef = item.dest[0];
-                    if (pageRef && typeof pageRef === 'object' && 'num' in pageRef) {
-                        const pageIndex = await s.pdfDoc.getPageIndex(pageRef);
-                        item.pageNumber = pageIndex + 1;
-                    }
-                } else if (typeof item.dest === 'string') {
-                    const dest = await s.pdfDoc.getDestination(item.dest);
-                    if (dest && dest[0]) {
-                        const pageIndex = await s.pdfDoc.getPageIndex(dest[0]);
-                        item.pageNumber = pageIndex + 1;
-                    }
-                }
-            } catch (err) {
-                // Ignore resolve errors on specific items
+    try {
+        if (Array.isArray(item.dest)) {
+            const pageRef = item.dest[0];
+            if (pageRef && typeof pageRef === 'object' && 'num' in pageRef) {
+                const pageIndex = await s.pdfDoc.getPageIndex(pageRef);
+                item.pageNumber = pageIndex + 1;
             }
-        }));
-        
-        // Yield to browser event loop
-        await new Promise((resolve) => setTimeout(resolve, 0));
+        } else if (typeof item.dest === 'string') {
+            const dest = await s.pdfDoc.getDestination(item.dest);
+            if (dest && dest[0]) {
+                const pageIndex = await s.pdfDoc.getPageIndex(dest[0]);
+                item.pageNumber = pageIndex + 1;
+            }
+        }
+    } catch (err) {
+        console.warn('Failed to resolve TOC item page:', err);
     }
+}
+
+export function initTocState(items: any[]) {
+    for (const item of items) {
+        item.expanded = false;
+        if (item.items) initTocState(item.items);
+    }
+}
+
+export async function resolveTocPages(s: PdfState, items: any[]) {
+    if (!s.pdfDoc || !items.length) return;
     
-    // Trigger Svelte proxy reactivity assignment by mutating the array pointer
+    // Resolve only the current level in parallel
+    await Promise.all(items.map(item => resolveItemPage(s, item)));
+    
+    // Trigger reactivity
     s.toc = [...s.toc];
 }

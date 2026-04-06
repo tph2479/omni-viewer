@@ -319,6 +319,8 @@ export function createActions(store: BrowserStore) {
     loadNextPage,
     closePicker: () => { modal.folderPicker.open = false; },
     openModal,
+    openCbz: (path: string, context = "") => modal.openCbz(path, context),
+    openCbzInWebtoon: (path: string, context = "") => modal.openCbz(path, context),
     handleOpenWebtoon,
     navigateWebtoon,
     handleToggleCoverMode,

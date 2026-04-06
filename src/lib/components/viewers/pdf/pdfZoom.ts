@@ -5,12 +5,14 @@ export function applyZoomMode(s: PdfState) {
     const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
 
     if (s.zoomMode === "default") {
+        // Use fit-width to determine the maximum possible scale for the container
         s.viewerApp.currentScaleValue = "page-width";
-        let scale = s.viewerApp.currentScale;
-        if (!isMobile) {
-            scale *= 0.8;
+        const fitWidthScale = s.viewerApp.currentScale;
+        
+        // If 100% (scale 1.0) is within the container, use 1.0, otherwise keep fit-width
+        if (fitWidthScale >= 1.0) {
+            s.viewerApp.currentScaleValue = "1.0";
         }
-        s.viewerApp.currentScale = scale;
     } else if (s.zoomMode === "fit-width") {
         if (s.viewerApp.currentScaleValue !== "page-width") {
             s.viewerApp.currentScaleValue = "page-width";

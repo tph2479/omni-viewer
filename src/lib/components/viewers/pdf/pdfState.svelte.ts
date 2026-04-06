@@ -26,11 +26,7 @@ export class PdfState {
     viewerContainer = $state<HTMLElement | undefined>(undefined);
     scrollY = $state(0);
 
-    get smoothPercent() {
-        if (this.numPages === 0 || !this.pdfScrollContainer) return 0;
-        const maxScroll = Math.max(1, this.pdfScrollContainer.scrollHeight - this.pdfScrollContainer.clientHeight);
-        return Math.min(100, Math.max(0, (this.scrollY / maxScroll) * 100));
-    }
+    smoothPercent = $state(0);
 
     searchQuery = $state("");
     searchResultsCount = $state(0);

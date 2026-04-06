@@ -55,14 +55,15 @@ export function handleWindowMouseMove(s: PdfState, e: MouseEvent) {
 
     const width = window.innerWidth;
     const rightThreshold = width * 0.8;
-    if (
+    const shouldShow =
         e.clientX > rightThreshold ||
         s.isEditingPage ||
         s.isJumpPopupOpen ||
         s.isSearchSidebarOpen ||
-        s.isTocSidebarOpen
-    ) {
-        s.controlsVisible = true;
+        s.isTocSidebarOpen;
+
+    if (shouldShow) {
+        if (!s.controlsVisible) s.controlsVisible = true;
         if (s.hideTimerId) clearTimeout(s.hideTimerId);
         if (!s.isEditingPage && !s.isJumpPopupOpen && !s.isSearchSidebarOpen && !s.isTocSidebarOpen) {
             s.hideTimerId = setTimeout(() => {
@@ -71,11 +72,21 @@ export function handleWindowMouseMove(s: PdfState, e: MouseEvent) {
             }, 2000);
         }
     } else {
-        s.controlsVisible = false;
+        if (s.controlsVisible) s.controlsVisible = false;
     }
 }
 
+let scrollRafId: number | null = null;
 export function handleScroll(s: PdfState, e: Event) {
+    if (scrollRafId !== null) return;
     const target = e.target as HTMLElement;
-    s.scrollY = target.scrollTop;
+    scrollRafId = requestAnimationFrame(() => {
+        if (s.isDestroyed || !target) return;
+        s.scrollY = target.scrollTop;
+        const sh = target.scrollHeight;
+        const ch = target.clientHeight;
+        const maxScroll = Math.max(1, sh - ch);
+        s.smoothPercent = Math.min(100, Math.max(0, (target.scrollTop / maxScroll) * 100));
+        scrollRafId = null;
+    });
 }

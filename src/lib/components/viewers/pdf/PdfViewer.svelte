@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy, tick } from 'svelte';
 	import { createPdfController } from './pdfController.svelte.ts';
+	import { resolveTocPages } from './pdfToc';
 	import 'pdfjs-dist/web/pdf_viewer.css';
 	import { X, Search, Moon, Sun, ZoomIn, ZoomOut, Maximize2, Hash, List, ChevronUp, ChevronDown } from 'lucide-svelte';
 
@@ -135,25 +136,47 @@
 />
 
 {#snippet tocItem(item: any, depth = 0)}
-	<button 
-		class="w-full text-left p-2 hover:bg-white/10 rounded transition-colors text-sm text-white/80 hover:text-white mb-1 flex items-center justify-between" 
-		style="padding-left: {depth * 1.5 + 0.5}rem" 
-		onclick={() => { 
-			pdf.navigateToDest(item.dest); 
-			s.isTocSidebarOpen = false;
-			s.pdfScrollContainer?.focus();
-		}}
-	>
-		<span class="truncate">{item.title}</span>
-		{#if item.pageNumber}
-			<span class="text-xs text-white/40 font-mono ml-2 shrink-0">{item.pageNumber}</span>
+	<div class="flex flex-col mb-1">
+		<div class="flex items-center gap-1 group">
+			{#if item.items && item.items.length > 0}
+				<button 
+					class="w-6 h-6 flex items-center justify-center text-white/40 hover:text-white transition-colors"
+					onclick={(e) => { 
+						e.stopPropagation(); 
+						item.expanded = !item.expanded; 
+						if (item.expanded && item.items) {
+							resolveTocPages(s, item.items);
+						}
+						s.toc = [...s.toc]; 
+					}}
+				>
+					<span class="transition-transform duration-200" style="transform: {item.expanded ? 'rotate(90deg)' : 'rotate(0deg)'}">▶</span>
+				</button>
+			{:else}
+				<div class="w-6 h-6"></div>
+			{/if}
+			<button 
+				class="flex-1 text-left p-2 hover:bg-white/10 rounded transition-colors text-sm text-white/80 hover:text-white flex items-center justify-between overflow-hidden" 
+				onclick={() => { 
+					pdf.navigateToDest(item.dest); 
+					s.isTocSidebarOpen = false;
+					s.pdfScrollContainer?.focus();
+				}}
+			>
+				<span class="truncate">{item.title}</span>
+				{#if item.pageNumber}
+					<span class="text-xs text-white/40 font-mono ml-2 shrink-0">{item.pageNumber}</span>
+				{/if}
+			</button>
+		</div>
+		{#if item.expanded && item.items && item.items.length > 0}
+			<div class="ml-4 border-l border-white/5">
+				{#each item.items as subItem}
+					{@render tocItem(subItem, depth + 1)}
+				{/each}
+			</div>
 		{/if}
-	</button>
-	{#if item.items && item.items.length > 0}
-		{#each item.items as subItem}
-			{@render tocItem(subItem, depth + 1)}
-		{/each}
-	{/if}
+	</div>
 {/snippet}
 
 <!-- TOC Sidebar -->
@@ -283,7 +306,13 @@
 			<button class="btn rounded-xl w-10 h-10 min-h-0 p-0 {s.isTocSidebarOpen ? 'bg-primary-500 text-white' : 'bg-zinc-900 hover:bg-zinc-800 text-white'} border border-white/10 shadow-xl pointer-events-auto transition-all" aria-label="TOC" onclick={() => { s.isTocSidebarOpen = !s.isTocSidebarOpen; s.pdfScrollContainer?.focus(); }}>
 				<List class="h-5 w-5" />
 			</button>
-			<button class="btn rounded-xl w-10 h-10 min-h-0 p-0 {s.isSearchSidebarOpen ? 'bg-primary-500 text-white' : 'bg-zinc-900 hover:bg-zinc-800 text-white'} border border-white/10 shadow-xl pointer-events-auto transition-all" aria-label="Search" onclick={() => { s.isSearchSidebarOpen = !s.isSearchSidebarOpen; s.pdfScrollContainer?.focus(); }}>
+			<button class="btn rounded-xl w-10 h-10 min-h-0 p-0 {s.isSearchSidebarOpen ? 'bg-primary-500 text-white' : 'bg-zinc-900 hover:bg-zinc-800 text-white'} border border-white/10 shadow-xl pointer-events-auto transition-all" aria-label="Search" onclick={() => { 
+				s.isSearchSidebarOpen = !s.isSearchSidebarOpen; 
+				if (s.isSearchSidebarOpen) {
+					import('./pdfSearch').then(mod => mod.initFindController(s));
+				}
+				s.pdfScrollContainer?.focus(); 
+			}}>
 				<Search class="h-5 w-5" />
 			</button>
 			<button aria-label="Close (ESC)" class="btn rounded-xl w-12 h-12 min-h-0 p-0 bg-zinc-900 hover:bg-zinc-800 text-white border border-white/10 shadow-xl pointer-events-auto transition-all hover:scale-110" onclick={closePdf}>

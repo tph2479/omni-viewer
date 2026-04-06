@@ -1,7 +1,7 @@
 import type { PdfState } from './pdfState.svelte';
 import pdfWorker from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url";
 import { applyZoomMode } from './pdfZoom';
-import { resolveTocPages } from './pdfToc';
+import { resolveTocPages, initTocState, resolveItemPage } from './pdfToc';
 
 export async function loadLibraries(s: PdfState) {
     try {
@@ -35,20 +35,20 @@ export function initViewerApp(s: PdfState) {
         });
         s.pdfLinkService = linkService;
 
-        const findController = new s.pdfjsViewer.PDFFindController({
-            eventBus,
-            linkService,
-        });
-        s.pdfFindController = findController;
+        // Defer FindController creation entirely to save memory/CPU
+        s.pdfFindController = null;
 
         const pdfViewer = new s.pdfjsViewer.PDFViewer({
             container: s.pdfScrollContainer,
             viewer: s.viewerContainer,
             eventBus,
             linkService,
-            findController,
+            findController: null, 
             removePageBorders: true,
-            textLayerMode: 2,
+            textLayerMode: 0, // DISABLE text layer for massive RAM/CPU savings
+            annotationMode: 0, // DISABLE annotations for faster rendering
+            imageResourcesPath: "",
+            renderInteractiveForms: false,
         });
 
         s.viewerApp = pdfViewer;
@@ -57,8 +57,12 @@ export function initViewerApp(s: PdfState) {
 
         eventBus.on("pagesinit", function () {
             s.zoomMode = "default";
-            applyZoomMode(s);
-            s.zoomLevel = s.viewerApp.currentScale;
+            // Delay zoom to avoid thrashing during node creation
+            setTimeout(() => {
+                if (s.isDestroyed) return;
+                applyZoomMode(s);
+                s.zoomLevel = s.viewerApp.currentScale;
+            }, 500);
         });
 
         eventBus.on("pagechanging", function (evt: any) {
@@ -91,10 +95,21 @@ export function initViewerApp(s: PdfState) {
             s.currentSearchResultIndex = Math.max(0, evt.matchesCount.current - 1);
         });
 
-        s.resizeObserver = new ResizeObserver(() => {
-            if (s.zoomMode === "default") {
-                applyZoomMode(s);
-            }
+        let lastWidth = 0;
+        let resizeTimeout: any = null;
+        s.resizeObserver = new ResizeObserver((entries) => {
+            if (!entries[0]) return;
+            const width = entries[0].contentRect.width;
+            if (Math.abs(width - lastWidth) < 2) return;
+            lastWidth = width;
+
+            if (resizeTimeout) clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                if (s.isDestroyed) return;
+                if (s.zoomMode === "default") {
+                    applyZoomMode(s);
+                }
+            }, 250);
         });
         s.resizeObserver.observe(s.pdfScrollContainer);
 
@@ -111,12 +126,13 @@ async function loadPdf(s: PdfState) {
     try {
         const loadingTask = s.pdfjs.getDocument({
             url: `/api/ebook?path=${encodeURIComponent(s.pdfPath)}`,
-            disableAutoFetch: false, // Eagerly preload remaining chunks to speed up tree parsing
+            disableAutoFetch: true, // Eagerly preloading is the main RAM killer
             disableStream: false,
-            rangeChunkSize: 5242880, // 5MB chunks (drastically eliminates waterfall 206 limits for localhost)
-            cMapUrl: "https://unpkg.com/pdfjs-dist@5.5.207/cmaps/",
+            rangeChunkSize: 2097152, // 2MB – Sumatra-style bulk loading for efficiency
+            cMapUrl: "/pdfjs/cmaps/",
             cMapPacked: true,
-            standardFontDataUrl: "https://unpkg.com/pdfjs-dist@5.5.207/standard_fonts/",
+            standardFontDataUrl: "/pdfjs/standard_fonts/",
+            stopAtErrors: true,
         });
         s.pdfDoc = await loadingTask.promise;
         s.numPages = s.pdfDoc.numPages;
@@ -126,6 +142,10 @@ async function loadPdf(s: PdfState) {
         }
 
         if (s.viewerApp) {
+            // Set loading false early for huge docs (7000+ pages) 
+            // The viewer will then incrementally show pages.
+            s.isLoading = false; 
+
             s.viewerApp.setDocument(s.pdfDoc);
             s.pdfLinkService.setDocument(s.pdfDoc, null);
         }
@@ -134,8 +154,9 @@ async function loadPdf(s: PdfState) {
             const outline = await s.pdfDoc.getOutline();
             s.toc = outline || [];
             
-            // Only trigger async TOC resolve without awaiting to not block rendering
-            resolveTocPages(s).catch((err) => console.warn("TOC extraction err", err));
+            initTocState(s.toc);
+            // DO NOT resolve any page numbers at startup for 7000+ page files.
+            // Resolution will happen on-demand when user expands items in the UI.
             
         } catch (e) {
             console.warn("Failed to get outline", e);
@@ -144,12 +165,17 @@ async function loadPdf(s: PdfState) {
     } catch (e: any) {
         console.error("Error loading PDF:", e);
         s.errorMsg = e.message || "Failed to load PDF";
-    } finally {
-        s.isLoading = false;
-    }
+        s.isLoading = false; // Reset on error
+    } 
 }
 
 export function destroyPdf(s: PdfState) {
+    if (s.pdfFindController) {
+        try {
+            s.pdfFindController.executeCommand("find", { query: "" });
+        } catch (e) {}
+    }
+
     if (s.resizeObserver) {
         s.resizeObserver.disconnect();
         s.resizeObserver = null;
@@ -161,7 +187,15 @@ export function destroyPdf(s: PdfState) {
     if (s.viewerApp && typeof s.viewerApp.cleanup === 'function') {
         s.viewerApp.cleanup();
     }
-    if (s.pdfDoc) s.pdfDoc.destroy();
-    s.pdfDoc = null;
+    if (s.pdfDoc) {
+        s.pdfDoc.destroy();
+        s.pdfDoc = null;
+    }
+    
+    // Attempt to terminate GlobalWorker if s.pdfjs is available
+    if (s.pdfjs && typeof s.pdfjs.destroy === 'function') {
+        s.pdfjs.destroy();
+    }
+    
     s.isDestroyed = true;
 }
