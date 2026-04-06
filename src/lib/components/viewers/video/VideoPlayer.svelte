@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { isVideoFile, formatBytes, formatDateTime, type ImageFile } from '$lib/utils/utils';
+	import { type ImageFile } from '$lib/utils/fileUtils'; import { formatBytes, formatDateTime } from '$lib/utils/formatters';
+	import { isVideoFile } from '$lib/utils/fileUtils';
 	import { onDestroy } from 'svelte';
-	import { cacheVersion } from '$lib/stores/cache.svelte';
+	import { cacheVersion } from '$lib/stores/system/cache.svelte';
 	import { createVideoController } from './videoPlayer.svelte.ts';
 	import { X, ChevronLeft, ChevronRight, Play, Pause, Volume2, VolumeX, RotateCw, Maximize, Minimize, Music, Repeat, Lock, Unlock } from 'lucide-svelte';
 

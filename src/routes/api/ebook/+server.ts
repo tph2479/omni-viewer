@@ -2,54 +2,50 @@ import { error } from '@sveltejs/kit';
 import type { RequestEvent } from '@sveltejs/kit';
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
-import path from 'node:path';
-import { isPdfFile, isEpubFile, isCbzFile } from '$lib/fileUtils';
+import { decodePath, resolvePath } from '../_shared/pathUtils';
 
-import { handleMetadata } from './handlers/metadata';
-import { handleCover } from './handlers/cover';
-import { handleArchive } from './handlers/archive';
-import { handleServe } from './handlers/serve';
+import {
+    getEbookMetadata,
+    getEbookCover,
+    serveArchiveEntry,
+    serveEbookFile,
+} from '$lib/server/services/ebook';
 
 export async function GET({ url, request }: RequestEvent) {
-	const filePathParam = url.searchParams.get('path');
-	const isCover = url.searchParams.get('cover') === 'true';
-	const isThumbnail = url.searchParams.get('thumbnail') === 'true';
-	const getMetadataOnly = url.searchParams.get('metadata') === 'true';
+    try {
+        const filePathParam = url.searchParams.get('path');
+        const isCover = url.searchParams.get('cover') === 'true';
+        const isThumbnail = url.searchParams.get('thumbnail') === 'true';
+        const getMetadataOnly = url.searchParams.get('metadata') === 'true';
 
-	if (!filePathParam) throw error(400, 'Missing path');
+        if (!filePathParam) throw error(400, 'Missing path');
 
-	let decodedPath: string;
-	try {
-		decodedPath = decodeURIComponent(filePathParam);
-	} catch (e) {
-		decodedPath = filePathParam;
-	}
+        const { absolutePath, internalPath, isArchivePath, normalizedPath } = resolvePath(
+            decodePath(filePathParam),
+        );
 
-	const normalizedPath = decodedPath.replace(/\\/g, '/');
-	const isArchivePath = normalizedPath.includes('::');
-	const [baseFilePath, internalPath] = isArchivePath ? normalizedPath.split('::') : [normalizedPath, null];
+        if (!fs.existsSync(absolutePath)) throw error(404, 'File not found');
+        const stat = await fsp.stat(absolutePath);
 
-	const absolutePath = baseFilePath.startsWith('/') || /^[a-zA-Z]:/.test(baseFilePath)
-		? baseFilePath
-		: path.resolve(baseFilePath);
+        if (getMetadataOnly) {
+            return getEbookMetadata(absolutePath, normalizedPath, stat);
+        }
 
-	if (!fs.existsSync(absolutePath)) throw error(404, 'File not found');
-	const stat = await fsp.stat(absolutePath);
-	const ext = path.extname(absolutePath).toLowerCase();
+        if (isCover || isThumbnail) {
+            const res = await getEbookCover(absolutePath, stat, request.signal);
+            if (res) return res;
+            // E.g. PDF covers aren't supported via this endpoint, return 204
+            return new Response(null, { status: 204 });
+        }
 
-	if (getMetadataOnly) {
-		return handleMetadata(absolutePath, normalizedPath, stat);
-	}
+        if (isArchivePath && internalPath) {
+            return serveArchiveEntry(absolutePath, internalPath);
+        }
 
-	if (isCover || (isThumbnail && (isPdfFile(ext) || isEpubFile(ext) || isCbzFile(ext)))) {
-		if (isCbzFile(ext) || isEpubFile(ext)) {
-			return handleCover(absolutePath, stat, request.signal);
-		}
-	}
-
-	if (isArchivePath && internalPath) {
-		return handleArchive(absolutePath, internalPath);
-	}
-
-	return handleServe(absolutePath, stat, request.headers.get('range'), request.signal);
+        return serveEbookFile(absolutePath, stat, request.headers.get('range'), request.signal);
+    } catch (err: any) {
+        if (err?.status) throw err;
+        console.error('[Ebook API Error]', err);
+        throw error(500, `Internal error: ${err?.message ?? 'Unknown error'}`);
+    }
 }

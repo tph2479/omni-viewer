@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy, tick } from 'svelte';
-	import { createPdfController } from './pdfViewer.svelte.ts';
+	import { createPdfController } from './pdfController.svelte.ts';
 	import 'pdfjs-dist/web/pdf_viewer.css';
 	import { X, Search, Moon, Sun, ZoomIn, ZoomOut, Maximize2, Hash, List, ChevronUp, ChevronDown } from 'lucide-svelte';
 
@@ -29,7 +29,7 @@
 	});
 
 	$effect(() => {
-		if (s.pdfScrollContainer && s.viewerContainer && s.pdfjsViewer && !s.viewerApp) {
+		if (s.pdfScrollContainer && s.viewerContainer && s.isPdfjsLoaded && !s.isViewerAppInitialized) {
 			pdf.initViewerApp();
 		}
 	});

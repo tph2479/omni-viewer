@@ -1,6 +1,6 @@
 <script lang="ts">
-    import GalleryToolbar from "$lib/components/GalleryToolbar.svelte";
-    import { browserStore as s } from "$lib/stores/browser.svelte";
+    import GalleryToolbar from "$lib/components/browser/ui/GalleryToolbar.svelte";
+    import { browserStore as s } from "$lib/stores/browser/index.svelte";
     import { Pin } from "lucide-svelte";
 
     function setSort(

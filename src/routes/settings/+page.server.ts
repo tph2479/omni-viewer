@@ -1,4 +1,4 @@
-import { getDefaultAppPath, setDefaultAppPath } from '$lib/server/db';
+import { getDefaultAppPath, setDefaultAppPath } from '$lib/server/database/db';
 import type { Actions, PageServerLoad } from './$types';
 import { fail } from '@sveltejs/kit';
 import { statSync } from 'node:fs';

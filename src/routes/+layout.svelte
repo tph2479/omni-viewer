@@ -12,8 +12,8 @@
         Link,
     } from "lucide-svelte";
     import { Navigation, Portal, Tooltip } from "@skeletonlabs/skeleton-svelte";
-    import GalleryModals from "$lib/components/GalleryModals.svelte";
-    import BrowserNotifications from "$lib/components/BrowserNotifications.svelte";
+    import GalleryModals from "$lib/components/browser/modals/GalleryModals.svelte";
+    import BrowserNotifications from "$lib/components/browser/ui/BrowserNotifications.svelte";
     import type { Snippet } from "svelte";
     import { fade, scale } from "svelte/transition";
 
@@ -81,14 +81,16 @@
 
 <svelte:head>
     <script>
-        let savedMode = localStorage.getItem("mode");
-        if (!savedMode) {
-            savedMode = window.matchMedia("(prefers-color-scheme: dark)").matches
-                ? "dark"
-                : "light";
-        }
-        document.documentElement.setAttribute("data-mode", savedMode);
-        document.documentElement.classList.toggle("dark", savedMode === "dark");
+        (() => {
+            let savedMode = localStorage.getItem("mode");
+            if (!savedMode) {
+                savedMode = window.matchMedia("(prefers-color-scheme: dark)").matches
+                    ? "dark"
+                    : "light";
+            }
+            document.documentElement.setAttribute("data-mode", savedMode);
+            document.documentElement.classList.toggle("dark", savedMode === "dark");
+        })();
     </script>
 </svelte:head>
 

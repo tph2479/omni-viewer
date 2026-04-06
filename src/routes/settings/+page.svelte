@@ -5,11 +5,11 @@
         FolderOpenIcon,
         FolderIcon,
     } from "lucide-svelte";
-    import { cacheVersion } from "$lib/stores/cache.svelte";
+    import { cacheVersion } from "$lib/stores/system/cache.svelte";
     import { enhance } from "$app/forms";
-    import FolderPicker from "$lib/components/FolderPicker.svelte";
-    import { browserStore } from "$lib/stores/browser.svelte";
-    import { toaster } from "$lib/stores/toaster";
+    import FolderPicker from "$lib/components/browser/modals/FolderPicker.svelte";
+    import { browserStore } from "$lib/stores/browser/index.svelte";
+    import { toaster } from "$lib/stores/ui/toaster";
     import { untrack, tick } from "svelte";
     import { goto } from "$app/navigation";
 

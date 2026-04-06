@@ -1,6 +1,9 @@
 import { tick } from 'svelte';
-import type { ImageFile } from '$lib/utils/utils';
-import { cacheVersion } from '$lib/stores/cache.svelte';
+import type { ImageFile } from '$lib/utils/fileUtils';
+import { cacheVersion } from '$lib/stores/system/cache.svelte';
+
+export const IMAGE_CONTEXT_KEY = Symbol('image-context');
+export type ImageViewerContext = ReturnType<typeof createImageModalState>;
 
 const minZoom = 0.001;
 const maxZoom = 500;
@@ -673,6 +676,8 @@ export function createImageModalState(props: {
         get currentItem() { return currentItem; },
         get absoluteZoomPercent() { return absoluteZoomPercent; },
         get currentImageIndexDisplay() { return currentImageIndexDisplay; },
+        get totalImages() { return props.totalImages; },
+        get loadedImages() { return props.loadedImages; },
 
         set isHoveringInfo(v: boolean) { isHoveringInfo = v; },
         set isHoveringRightControls(v: boolean) { isHoveringRightControls = v; },

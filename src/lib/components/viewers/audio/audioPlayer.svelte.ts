@@ -1,4 +1,24 @@
-export function createAudioController() {
+import type { ImageFile } from '$lib/utils/fileUtils';
+
+export const AUDIO_CONTEXT_KEY = Symbol('audio-context');
+export type AudioViewerContext = ReturnType<typeof createAudioController>;
+
+interface AudioPlayerProps {
+    get isModalOpen(): boolean;
+    set isModalOpen(v: boolean);
+    get selectedImageIndex(): number;
+    set selectedImageIndex(v: number);
+    get loadedImages(): ImageFile[];
+    get totalImages(): number;
+    get hasMore(): boolean;
+    get currentPage(): number;
+    get loadFolder(): (reset: boolean, page: number, append?: boolean) => Promise<void>;
+    get isGrouped(): boolean;
+    get onSwitchToPagination(): (() => Promise<void>) | undefined;
+    get onSwitchToVideo(): (() => void) | undefined;
+}
+
+export function createAudioController(props: AudioPlayerProps) {
   const s = $state({
     audioPlayer: null as HTMLAudioElement | null,
     isLooping: false,
@@ -336,6 +356,95 @@ export function createAudioController() {
     s.sourceNode = null;
   }
 
+  function close() {
+      props.isModalOpen = false;
+  }
+
+  function isAudioOrVideo(item: ImageFile) {
+      return (
+          item &&
+          !item.isDir &&
+          !item.isCbz &&
+          !item.isPdf &&
+          !item.isEpub &&
+          (item.isAudio || item.isVideo)
+      );
+  }
+
+  function prev() {
+      let prevIdx = props.selectedImageIndex - 1;
+      while (prevIdx >= 0) {
+          if (isAudioOrVideo(props.loadedImages[prevIdx])) {
+              props.selectedImageIndex = prevIdx;
+              return;
+          }
+          prevIdx--;
+      }
+
+      if (props.currentPage > 0) {
+          const targetPage = props.currentPage - 1;
+          props.selectedImageIndex = -1;
+          props.loadFolder(false, targetPage, false).then(() => {
+              if (props.loadedImages.length > 0) {
+                  let lastIdx = -1;
+                  for (let i = props.loadedImages.length - 1; i >= 0; i--) {
+                      if (isAudioOrVideo(props.loadedImages[i])) {
+                          lastIdx = i;
+                          break;
+                      }
+                  }
+                  if (lastIdx !== -1) {
+                      props.selectedImageIndex = lastIdx;
+                  }
+              }
+          });
+      }
+  }
+
+  async function next() {
+      let nextIdx = props.selectedImageIndex + 1;
+
+      if (
+          props.isGrouped &&
+          nextIdx >= props.loadedImages.length &&
+          props.onSwitchToPagination
+      ) {
+          await props.onSwitchToPagination();
+      }
+
+      while (nextIdx < props.loadedImages.length) {
+          if (isAudioOrVideo(props.loadedImages[nextIdx])) {
+              props.selectedImageIndex = nextIdx;
+              return;
+          }
+          nextIdx++;
+      }
+
+      if (props.hasMore && !props.isGrouped) {
+          props.selectedImageIndex = -1;
+          await props.loadFolder(false, props.currentPage + 1, false);
+          let startIdx = 0;
+          while (startIdx < props.loadedImages.length) {
+              if (isAudioOrVideo(props.loadedImages[startIdx])) {
+                  props.selectedImageIndex = startIdx;
+                  return;
+              }
+              startIdx++;
+          }
+      }
+  }
+
+  function formatTime(seconds: number) {
+      if (isNaN(seconds)) return "0:00";
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const sec = Math.floor(seconds % 60);
+      return [h, m, sec]
+          .map((v) => (v < 10 ? "0" + v : v))
+          .filter((v, i) => v !== "00" || i > 0)
+          .join(":");
+  }
+
   return {
     state: s,
     togglePlay,
@@ -344,5 +453,14 @@ export function createAudioController() {
     handlePlay,
     stopVisualizer,
     destroy,
+    close,
+    prev,
+    next,
+    formatTime,
+    get currentAudio() { return props.loadedImages[props.selectedImageIndex]; },
+    get extension() { return this.currentAudio?.name.split(".").pop()?.toUpperCase() || "AUDIO"; },
+    get totalImages() { return props.totalImages; },
+    get selectedImageIndexDisplay() { return props.selectedImageIndex + 1; },
+    get onSwitchToVideo() { return props.onSwitchToVideo; }
   };
 }

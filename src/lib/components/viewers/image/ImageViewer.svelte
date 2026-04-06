@@ -1,23 +1,10 @@
 <script lang="ts">
-	import {
-		handleImageError,
-		formatBytes,
-		formatDateTime,
-		type ImageFile,
-	} from "$lib/utils/utils";
-	import { onDestroy, tick } from "svelte";
-	import { createImageModalState } from "./imageViewer.svelte.ts";
-	import {
-		X,
-		ChevronLeft,
-		ChevronRight,
-		Maximize2,
-		Minimize2,
-		RotateCw,
-		Grid3x3,
-		Plus,
-		Minus,
-	} from "lucide-svelte";
+	import { handleImageError } from "$lib/actions/imageError";
+	import { type ImageFile } from "$lib/utils/fileUtils";
+	import { onDestroy, tick, setContext } from "svelte";
+	import { createImageModalState, IMAGE_CONTEXT_KEY } from "./imageViewer.svelte.ts";
+	import ImageToolbar from "./ImageToolbar.svelte";
+	import ImageControls from "./ImageControls.svelte";
 
 	// Props using Svelte 5 runes
 	let {
@@ -82,6 +69,8 @@
 		},
 	});
 
+	setContext(IMAGE_CONTEXT_KEY, imgState);
+
 	let modalContainer: HTMLElement | null = $state(null);
 
 	$effect(() => {
@@ -121,222 +110,8 @@
 		onmousemove={imgState.handleMouseMoveVisibility}
 		onmouseleave={() => imgState.hideControlsImmediately()}
 	>
-		<!-- TOP BACKGROUND SHADOW (Full Width) -->
-		<div
-			class="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-black/60 to-transparent pointer-events-none transition-opacity duration-300 {imgState.infoVisible
-				? 'opacity-100'
-				: 'opacity-0'} z-[110]"
-		></div>
-
-		<!-- Toolbar (Top) -->
-		<div
-			class="absolute top-0 w-full p-4 flex justify-between items-start z-[110] bg-transparent pointer-events-none transition-all duration-300 {imgState.infoVisible
-				? 'opacity-100 translate-y-0'
-				: 'opacity-0 -translate-y-4'}"
-		>
-			<!-- TOP LEFT: Info Area -->
-			<div
-				class="text-white/90 pointer-events-auto flex flex-col max-w-full pr-12"
-				onclick={(e) => e.stopPropagation()}
-				onkeydown={(e) => e.stopPropagation()}
-				onmouseenter={() => (imgState.isHoveringInfo = true)}
-				onmouseleave={() => (imgState.isHoveringInfo = false)}
-				role="presentation"
-			>
-				{#if imgState.currentItem}
-					<p
-						class="select-text text-white font-black text-lg sm:text-2xl tracking-tight leading-tight image-title-scroll"
-						style="mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent);"
-					>
-						<span class="px-2 py-0.5 -mx-2 rounded-lg">
-							{imgState.currentImageIndexDisplay} / {totalImages} —
-							{imgState.currentItem.name}
-						</span>
-					</p>
-					{#if imgState.currentMetadata}
-						<p
-							class="select-text text-white/50 text-[10px] sm:text-xs font-mono mt-1"
-						>
-							<span class="px-1 rounded-sm">
-								{formatBytes(imgState.currentMetadata.size)}
-								{#if imgState.naturalWidth > 0 && imgState.naturalHeight > 0}
-									• {imgState.naturalWidth} x {imgState.naturalHeight}
-								{:else if imgState.currentMetadata.width && imgState.currentMetadata.height}
-									• {imgState.currentMetadata.width} x {imgState
-										.currentMetadata.height}
-								{/if}
-								• {formatDateTime(
-									imgState.currentMetadata.lastModified,
-								)}
-							</span>
-						</p>
-					{:else}
-						<div class="flex items-center gap-2 mt-2">
-							<span class="w-[10px] h-[10px] border-2 border-white/20 border-t-white/60 rounded-full animate-spin opacity-20"></span>
-							<span
-								class="text-white/20 text-[10px] font-mono italic"
-								>Loading details...</span
-							>
-						</div>
-					{/if}
-				{/if}
-			</div>
-		</div>
-
-		<!-- RIGHT: Button Area (Vertically Centered) -->
-		<div
-			class="absolute right-2 top-1/2 -translate-y-1/2 flex flex-col items-center z-[110] bg-transparent pointer-events-none transition-all duration-300 {imgState.rightControlsVisible
-				? 'opacity-100 translate-x-0'
-				: 'opacity-0 translate-x-4'}"
-		>
-			<div
-				class="flex flex-col items-center gap-3 pointer-events-auto"
-				onmouseenter={() => (imgState.isHoveringRightControls = true)}
-				onmouseleave={() => (imgState.isHoveringRightControls = false)}
-				role="presentation"
-			>
-				<!-- Close Button -->
-				<button
-					aria-label="Close"
-					class="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-xl bg-zinc-900/95 hover:bg-zinc-800 text-white border border-white/10 backdrop-blur-xl shadow-2xl transition-all hover:scale-110 mb-2 cursor-pointer"
-					tabindex="-1"
-					style="touch-action: manipulation;"
-					onclick={(e) => {
-						e.stopPropagation();
-						imgState.closeModal();
-					}}
-					onpointerdown={(e) => e.preventDefault()}
-				>
-					<X class="h-6 w-6 sm:h-7 sm:w-7" />
-				</button>
-
-				<!-- Navigation Group -->
-				<div
-					class="flex flex-col bg-zinc-900/95 rounded-xl backdrop-blur-xl border border-white/10 overflow-hidden shadow-2xl w-12 sm:w-14 mb-3"
-				>
-					<button
-						aria-label="Previous"
-						class="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center bg-transparent text-white border-b border-white/10 transition-colors hover:bg-white/5 cursor-pointer"
-						tabindex="-1"
-						style="touch-action: manipulation;"
-						onclick={(e) => {
-							e.stopPropagation();
-							imgState.prevImage();
-						}}
-						onpointerdown={(e) => e.preventDefault()}
-					>
-						<ChevronLeft class="h-6 w-6 sm:h-7 sm:w-7" />
-					</button>
-					<button
-						aria-label="Next"
-						class="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center bg-transparent text-white border-none transition-colors hover:bg-white/5 cursor-pointer"
-						tabindex="-1"
-						style="touch-action: manipulation;"
-						onclick={(e) => {
-							e.stopPropagation();
-							imgState.nextImage();
-						}}
-						onpointerdown={(e) => e.preventDefault()}
-					>
-						<ChevronRight class="h-6 w-6 sm:h-7 sm:w-7" />
-					</button>
-				</div>
-
-				<!-- Zoom Modes -->
-				<div
-					class="flex flex-col bg-zinc-900/95 rounded-xl backdrop-blur-xl border border-white/10 overflow-hidden shadow-2xl w-12 sm:w-14 mb-3"
-				>
-					<button
-						aria-label="Fit Width"
-						class="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center bg-transparent text-white border-b border-white/10 transition-colors hover:bg-white/5 cursor-pointer"
-						tabindex="-1"
-						style="touch-action: manipulation;"
-						onclick={(e) => {
-							e.stopPropagation();
-							imgState.toggleFitWidth();
-						}}
-						onpointerdown={(e) => e.preventDefault()}
-					>
-						<Maximize2 class="h-6 w-6 sm:h-7 sm:w-7" />
-					</button>
-					<button
-						aria-label="Toggle 1:1"
-						class="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center bg-transparent text-white border-none font-black font-mono text-xs transition-colors hover:bg-white/5 cursor-pointer"
-						tabindex="-1"
-						style="touch-action: manipulation;"
-						onclick={(e) => {
-							e.stopPropagation();
-							imgState.toggleZoom(e.clientX, e.clientY);
-						}}
-						onpointerdown={(e) => e.preventDefault()}
-					>
-						1:1
-					</button>
-					<button
-						aria-label="Rotate"
-						class="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center bg-transparent text-white border-t border-white/10 transition-colors hover:bg-white/5 cursor-pointer"
-						tabindex="-1"
-						style="touch-action: manipulation;"
-						onclick={(e) => {
-							e.stopPropagation();
-							imgState.rotateImage();
-						}}
-						onpointerdown={(e) => e.preventDefault()}
-					>
-						<RotateCw class="h-6 w-6 sm:h-7 sm:w-7" />
-					</button>
-				</div>
-
-				<!-- Zoom Controls -->
-				<div
-					class="flex flex-col bg-zinc-900/95 rounded-xl backdrop-blur-xl border border-white/10 overflow-hidden shadow-2xl w-12 sm:w-14"
-				>
-					<button
-						aria-label="Zoom In"
-						class="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center bg-transparent text-white border-b border-white/10 transition-colors hover:bg-white/5 cursor-pointer"
-						tabindex="-1"
-						style="touch-action: manipulation;"
-						onclick={(e) => {
-							e.stopPropagation();
-							imgState.performZoom(
-								Math.min(500, imgState.zoomLevel * 1.35),
-							);
-						}}
-						onpointerdown={(e) => e.preventDefault()}
-					>
-						<Plus class="h-6 w-6 sm:h-7 sm:w-7" />
-					</button>
-					<button
-						aria-label="Current Zoom"
-						class="w-full py-2 sm:py-3 text-xs font-mono font-black text-white hover:bg-white/10 transition-colors bg-white/5 flex items-center justify-center tracking-tighter cursor-pointer"
-						tabindex="-1"
-						style="touch-action: manipulation;"
-						onclick={(e) => {
-							e.stopPropagation();
-							imgState.resetAll();
-						}}
-						onpointerdown={(e) => e.preventDefault()}
-					>
-						{imgState.absoluteZoomPercent}%
-					</button>
-					<button
-						aria-label="Zoom Out"
-						class="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center bg-transparent text-white border-t border-white/10 transition-colors hover:bg-white/5 cursor-pointer"
-						tabindex="-1"
-						style="touch-action: manipulation;"
-						onclick={(e) => {
-							e.stopPropagation();
-							imgState.performZoom(
-								Math.max(0.001, imgState.zoomLevel / 1.35),
-							);
-						}}
-						onpointerdown={(e) => e.preventDefault()}
-					>
-						<Minus class="h-6 w-6 sm:h-7 sm:w-7" />
-					</button>
-				</div>
-			</div>
-		</div>
+		<ImageToolbar />
+		<ImageControls />
 
 		<!-- Main View Area -->
 		<div
@@ -425,17 +200,3 @@
 		</div>
 	</div>
 {/if}
-
-<style>
-	/* Scrollable title - hidden scrollbar */
-	:global(.image-title-scroll) {
-		overflow-x: auto;
-		white-space: nowrap;
-		/* Hide scrollbar for all browsers */
-		scrollbar-width: none; /* Firefox */
-		-ms-overflow-style: none; /* IE/Edge */
-	}
-	:global(.image-title-scroll::-webkit-scrollbar) {
-		display: none; /* Chrome/Safari/Opera */
-	}
-</style>

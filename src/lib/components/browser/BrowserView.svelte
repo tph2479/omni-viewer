@@ -1,7 +1,7 @@
 <script lang="ts">
-    import { browserStore as s } from "$lib/stores/browser.svelte";
-    import NormalGrid from "./NormalGrid.svelte";
-    import GroupedGrid from "./GroupedGrid.svelte";
+    import { browserStore as s } from "$lib/stores/browser/index.svelte";
+    import NormalGrid from "./grids/NormalGrid.svelte";
+    import GroupedGrid from "./grids/GroupedGrid.svelte";
 
     let {
         highlightedPath = null,

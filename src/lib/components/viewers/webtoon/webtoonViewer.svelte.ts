@@ -1,5 +1,7 @@
 import { tick } from 'svelte';
-import type { ImageFile } from '$lib/utils/utils';
+import type { ImageFile } from '$lib/utils/fileUtils';
+export const WEBTOON_CONTEXT_KEY = Symbol('webtoon-context');
+export type WebtoonViewerContext = ReturnType<typeof createWebtoonController>;
 
 export function createWebtoonController(folderPath: string, contextPath: string = "", actions: any) {
 	const s = $state({

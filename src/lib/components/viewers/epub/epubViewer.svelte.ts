@@ -10,6 +10,10 @@
  *   search   — query + results
  */
 
+/** Context key for accessing the epub controller in child components. */
+export const EPUB_CONTEXT_KEY = Symbol('epub-context');
+export type EpubViewerContext = ReturnType<typeof createEpubViewerState>;
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export type TocItem = {
@@ -142,6 +146,7 @@ export function createEpubViewerState(filePath: string) {
 	let lastScrollTime = 0;
 	const SCROLL_COOLDOWN = 600; // ms to prevent rapid skipping
 	let containerEl: HTMLElement | null = null; // wrapper div
+	let metadataLoaded = false; // guard against re-reading on every relocate
 
 	// ─── Helpers ──────────────────────────────────────────────────────────────
 
@@ -275,7 +280,7 @@ export function createEpubViewerState(filePath: string) {
 
 		try {
 			initThemeSync();
-			await import('$lib/foliate-js/view.js');
+			await import('$lib/vendor/foliate-js/view.js');
 
 			viewEl = document.createElement('foliate-view');
 			viewEl.style.cssText = 'width:100%; height:100%; display:block; margin:0; padding:0; border:none;';
@@ -363,11 +368,26 @@ export function createEpubViewerState(filePath: string) {
 		cleanupResize = setupResizeHandler();
 	}
 
+	// Track iframe docs already captured for wheel events
+	const capturedWheelDocs = new WeakSet<Document>();
+
 	function setupIframeWheelCapture() {
-		const iframe = viewEl?.querySelector('iframe');
-		const doc = iframe?.contentDocument;
-		if (doc) {
-			doc.addEventListener('wheel', handleWheel, { passive: true });
+		const renderer = (viewEl as any)?.renderer;
+		if (!renderer) return;
+		const contents = renderer.getContents?.();
+		if (!contents?.length) {
+			// Fallback: try querySelector for a single iframe
+			const doc = viewEl?.querySelector('iframe')?.contentDocument;
+			if (doc && !capturedWheelDocs.has(doc)) {
+				capturedWheelDocs.add(doc);
+				doc.addEventListener('wheel', handleWheel, { passive: true });
+			}
+			return;
+		}
+		for (const c of contents) {
+			if (!c?.doc || capturedWheelDocs.has(c.doc)) continue;
+			capturedWheelDocs.add(c.doc);
+			c.doc.addEventListener('wheel', handleWheel, { passive: true });
 		}
 	}
 
@@ -400,8 +420,11 @@ export function createEpubViewerState(filePath: string) {
 		reading.fraction = fraction ?? 0;
 		reading.currentTocLabel = tocItem?.label ?? '';
 
-		// Populate book metadata + TOC on very first relocate
-		if (!book.title) {
+		// Populate book metadata + TOC on very first relocate only.
+		// Bug fix: previously used `if (!book.title)` which re-ran on every relocate
+		// for books with empty/missing titles, causing redundant metadata reads.
+		if (!metadataLoaded) {
+			metadataLoaded = true;
 			const b = (viewEl as any)?.book;
 			if (b) {
 				book.title = resolveLanguageMap(b.metadata?.title) ?? '';
@@ -520,6 +543,13 @@ export function createEpubViewerState(filePath: string) {
 	async function runSearch(query: string) {
 		if (!viewEl || !query.trim()) return;
 
+		// Bug fix: abort any in-flight search before starting a new one, to prevent
+		// zombie generators from writing stale results into the new results array.
+		if (searchAbortController) {
+			searchAbortController.abort();
+			searchAbortController = null;
+		}
+
 		// Smart Re-search: If query is same and we have results, just filter out passed sections
 		if (query === search.query && search.results.length > 0) {
 			const currentIndex = (viewEl as any).renderer.getContents()?.[0]?.index ?? 0;
@@ -632,6 +662,7 @@ export function createEpubViewerState(filePath: string) {
 		if (book.coverUrl) URL.revokeObjectURL(book.coverUrl);
 		cleanupResize?.();
 		cleanupResize = null;
+		metadataLoaded = false;
 		(viewEl as any)?.close?.();
 		viewEl?.remove();
 		viewEl = null;

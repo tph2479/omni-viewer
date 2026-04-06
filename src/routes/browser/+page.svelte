@@ -3,7 +3,7 @@
     import BrowserHeader from "./components/BrowserHeader.svelte";
     import BrowserContent from "./components/BrowserContent.svelte";
 
-    import { browserStore as s } from "$lib/stores/browser.svelte";
+    import { browserStore as s } from "$lib/stores/browser/index.svelte";
 
     const { data } = $props();
 
