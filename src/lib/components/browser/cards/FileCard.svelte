@@ -1,9 +1,6 @@
 <script lang="ts">
     import { onDestroy } from "svelte";
-    import {
-        isZipFile,
-        type ImageFile,
-    } from "$lib/utils/fileUtils";
+    import { isZipFile, type ImageFile } from "$lib/utils/fileUtils";
     import {
         isVideoFile,
         isCbzFile,
@@ -16,7 +13,6 @@
         Folder,
         FileArchive,
         FileText,
-        FileVideo,
         FileAudio,
         Play,
         BookOpen,
@@ -28,7 +24,6 @@
         openCbz: (path: string, context?: string) => void;
         openModal: (index: number) => void;
     };
-
 
     let {
         img = $bindable(),
@@ -48,7 +43,7 @@
             return;
         }
         if (isCbzFile(img.name) || img.isCbz) {
-            const parentPath = img.path.split(/[/\\]/).slice(0, -1).join('/');
+            const parentPath = img.path.split(/[/\\]/).slice(0, -1).join("/");
             actions.openCbz(img.path, parentPath);
             return;
         }
@@ -94,17 +89,16 @@
 <div class="group flex flex-col">
     <button
         id="item-{img.path.replace(/[^a-zA-Z0-9]/g, '-')}"
-        class="relative aspect-square bg-surface-200 dark:bg-surface-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:ring-2 hover:ring-primary-500/50 transition-all duration-300 cursor-pointer border border-surface-300 dark:border-surface-700 w-full"
+        class="relative aspect-square bg-surface-200 dark:bg-surface-800 rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer border border-surface-300 dark:border-surface-700 w-full"
         onclick={handleCardClick}
     >
         {#if img.isDir}
             <!-- Folder card -->
             <div
-                class="absolute inset-0 flex flex-col items-center justify-center bg-surface-100 dark:bg-surface-900 group-hover:bg-surface-200 dark:group-hover:bg-surface-800 transition-colors"
+                class="absolute inset-0 flex flex-col items-center justify-center bg-surface-100 dark:bg-surface-900 dark:group-hover:bg-surface-700 transition-colors"
             >
                 <Folder
-                    class="w-1/2 h-1/2 text-surface-900 dark:text-surface-300 transition-transform duration-300"
-                    strokeWidth={1.5}
+                    class="w-1/3 h-1/3 text-surface-800 dark:text-surface-400"
                 />
             </div>
             {#if browserStore.cover.enabled}
@@ -116,26 +110,28 @@
                 />
                 <div class="absolute top-2 left-2 z-10">
                     <div
-                        class="bg-black/60 p-1.5 rounded-lg border border-white/20 shadow-lg"
+                        class="bg-black/60 p-1.5 rounded-xl border border-white/20 shadow-lg"
                     >
-                        <Folder class="w-4 h-4 text-white" strokeWidth={1.5} />
+                        <Folder class="w-4 h-4 text-white" />
                     </div>
                 </div>
             {/if}
 
             {#if browserStore.cover.enabled && (img.firstCbz || img.hasImages)}
-                <div 
+                <div
                     class="absolute bottom-2 right-2 z-20"
                     onclick={(e) => {
                         e.stopPropagation();
                         // If we have a firstCbz, context is the current folder (img.path)
                         // If we are opening the folder itself as a book, context is the parent folder
                         const target = img.firstCbz || img.path;
-                        const context = img.firstCbz ? img.path : img.path.split(/[/\\]/).slice(0, -1).join('/');
+                        const context = img.firstCbz
+                            ? img.path
+                            : img.path.split(/[/\\]/).slice(0, -1).join("/");
                         actions.openCbz(target, context);
                     }}
                     onkeydown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
+                        if (e.key === "Enter" || e.key === " ") {
                             e.stopPropagation();
                             actions.openCbz(img.firstCbz || img.path, img.path);
                         }
@@ -144,14 +140,17 @@
                     tabindex="0"
                 >
                     <div
-                        class="flex items-center gap-1.5 py-1 px-2.5 
+                        class="flex items-center gap-1.5 py-1 px-2.5
                             bg-black/60 hover:bg-primary-500/80 backdrop-blur-md
                             text-white rounded-lg border border-white/20 shadow-lg
                             transition-all duration-200 scale-90 hover:scale-100 shadow-xl"
                         title={img.firstCbz ? "Open first CBZ" : "Open images"}
                     >
                         <BookOpen size={14} strokeWidth={2} />
-                        <span class="text-[10px] font-black uppercase tracking-wider">Open</span>
+                        <span
+                            class="text-[10px] font-black uppercase tracking-wider"
+                            >Open</span
+                        >
                     </div>
                 </div>
             {/if}
@@ -165,14 +164,13 @@
             >
                 <FileArchive
                     class="w-1/2 h-1/2 text-amber-600 opacity-20 transition-all duration-500"
-                    strokeWidth={1.5}
                 />
             </div>
             <div class="absolute top-2 left-2 z-10">
                 <div
                     class="bg-black/60 p-1.5 rounded-lg border border-white/20 shadow-lg"
                 >
-                    <FileArchive class="w-4 h-4 text-white" strokeWidth={1.5} />
+                    <FileArchive class="w-4 h-4 text-white" />
                 </div>
             </div>
         {:else if isCbzFile(img.name)}
@@ -182,13 +180,13 @@
                 decoding="async"
                 fetchpriority={index < 12 ? "high" : "auto"}
                 alt={img.name}
-                class="absolute inset-0 w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-700 ease-out"
+                class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
             />
             <div class="absolute top-2 left-2 z-10">
                 <div
                     class="bg-black/60 p-1.5 rounded-lg border border-white/20 shadow-lg"
                 >
-                    <FileArchive class="w-4 h-4 text-white" strokeWidth={1.5} />
+                    <FileArchive class="w-4 h-4 text-white" />
                 </div>
             </div>
             <!-- Fallback Icon for CBZ (Hidden by default, shown on error) -->
@@ -198,7 +196,7 @@
                     ? "rgba(59, 130, 246, 0.5)"
                     : undefined}
             >
-                <FileArchive class="w-1/2 h-1/2 text-amber-500 opacity-50" strokeWidth={1.5} />
+                <FileArchive class="w-1/2 h-1/2 text-amber-500 opacity-50" />
             </div>
         {:else if isVideoFile(img.name)}
             <div
@@ -212,14 +210,14 @@
                     decoding="async"
                     fetchpriority={index < 12 ? "high" : "auto"}
                     alt={img.name}
-                    class="absolute inset-0 w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-700 ease-out"
+                    class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                 />
             </div>
             <div class="absolute top-2 left-2 z-10">
                 <div
                     class="bg-black/60 p-1.5 rounded-lg border border-white/20 shadow-lg"
                 >
-                    <Play class="w-4 h-4 text-white" strokeWidth={1.5} />
+                    <Play class="w-4 h-4 text-white" />
                 </div>
             </div>
         {:else if img.isAudio}
@@ -234,14 +232,14 @@
                     decoding="async"
                     fetchpriority="auto"
                     alt={img.name}
-                    class="absolute inset-0 w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-700 ease-out"
+                    class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                 />
             </div>
             <div class="absolute top-2 left-2 z-10">
                 <div
                     class="bg-black/60 p-1.5 rounded-lg border border-white/20 shadow-lg"
                 >
-                    <FileAudio class="w-4 h-4 text-white" strokeWidth={1.5} />
+                    <FileAudio class="w-4 h-4 text-white" />
                 </div>
             </div>
         {:else if isPdfFile(img.name) || img.isPdf}
@@ -253,7 +251,6 @@
             >
                 <FileText
                     class="w-1/3 h-1/3 text-red-600 opacity-20 transition-all duration-500"
-                    strokeWidth={1.5}
                 />
             </div>
             <img
@@ -261,13 +258,13 @@
                 decoding="async"
                 fetchpriority="auto"
                 alt={img.name}
-                class="absolute inset-0 w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-700 ease-out z-10"
+                class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out z-10"
             />
             <div class="absolute top-2 left-2 z-10">
                 <div
                     class="bg-black/60 p-1.5 rounded-lg border border-white/20 shadow-lg"
                 >
-                    <FileText class="w-4 h-4 text-white" strokeWidth={1.5} />
+                    <FileText class="w-4 h-4 text-white" />
                 </div>
             </div>
         {:else if isEpubFile(img.name) || img.isEpub}
@@ -279,7 +276,6 @@
             >
                 <BookOpen
                     class="w-1/3 h-1/3 text-emerald-600 opacity-20 transition-all duration-500"
-                    strokeWidth={1.5}
                 />
             </div>
             <img
@@ -287,13 +283,13 @@
                 decoding="async"
                 fetchpriority="auto"
                 alt={img.name}
-                class="absolute inset-0 w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-700 ease-out z-10"
+                class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out z-10"
             />
             <div class="absolute top-2 left-2 z-10">
                 <div
                     class="bg-black/60 p-1.5 rounded-lg border border-white/20 shadow-lg"
                 >
-                    <BookOpen class="w-4 h-4 text-white" strokeWidth={1.5} />
+                    <BookOpen class="w-4 h-4 text-white" />
                 </div>
             </div>
         {:else}
@@ -308,27 +304,19 @@
                     decoding="async"
                     fetchpriority={index < 12 ? "high" : "auto"}
                     alt={img.name}
-                    class="absolute inset-0 w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-700 ease-out"
+                    class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                 />
             </div>
         {/if}
     </button>
     <div class="flex flex-col items-center mt-auto pt-1">
         <p
-            class="text-[10px] sm:text-[11px] font-bold truncate text-center px-1 text-surface-600 dark:text-surface-400 group-hover:text-[var(--color-primary-500)] transition-colors duration-300 w-full cursor-help"
+            class="text-[10px] sm:text-[11px] font-bold truncate text-center px-1 text-surface-600 dark:text-surface-100 group-hover:text-[var(--color-primary-500)] transition-colors duration-300 w-full"
             title={img.name}
             onmouseenter={handleMouseEnter}
             onmouseleave={handleMouseLeave}
         >
             {img.name}
         </p>
-        {#if img.width && img.height}
-            <div
-                class="text-[9px] font-mono font-black opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-[-2px] group-hover:translate-y-0"
-                style="color: color-mix(in srgb, var(--color-primary-500) 50%, transparent);"
-            >
-                {img.width}x{img.height}
-            </div>
-        {/if}
     </div>
 </div>

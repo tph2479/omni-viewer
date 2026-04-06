@@ -1,6 +1,6 @@
 <script lang="ts">
-    import { Toast, Portal } from "@skeletonlabs/skeleton-svelte";
     import { toaster } from "$lib/stores/ui/toaster";
+    import { Portal, Toast } from "@skeletonlabs/skeleton-svelte";
 </script>
 
 <Portal>
@@ -14,11 +14,11 @@
                 class="pointer-events-auto flex items-center gap-3.5 w-80 px-4 py-3.5
                     bg-surface-100 dark:bg-surface-900
                     border border-surface-200 dark:border-surface-800
-                    rounded-2xl shadow-xl"
+                    rounded-xl shadow-xl"
             >
                 <!-- Type indicator bar -->
                 <span
-                    class="w-1 self-stretch rounded-full shrink-0"
+                    class="w-1 self-stretch rounded-xl shrink-0"
                     style="background-color: {toast.type === 'success'
                         ? 'var(--color-success-500)'
                         : toast.type === 'error'
@@ -39,7 +39,7 @@
                         </div>
                     {/if}
                 </div>
-                <Toast.CloseTrigger class="btn-icon shrink-0 size-6 rounded-lg text-surface-400 hover:text-surface-700 dark:hover:text-surface-200 hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors text-xs">
+                <Toast.CloseTrigger class="btn-icon shrink-0 size-6 rounded-xl text-surface-400 hover:text-surface-700 dark:hover:text-surface-200 hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors text-xs">
                     ✕
                 </Toast.CloseTrigger>
             </Toast>

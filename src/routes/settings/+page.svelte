@@ -172,7 +172,7 @@
                                 onclick={openPicker}
                                 title="Browse folders"
                             >
-                                <FolderIcon size={18} strokeWidth={1.5} />
+                                <FolderIcon size={18}  />
                             </button>
                         </div>
                     </form>

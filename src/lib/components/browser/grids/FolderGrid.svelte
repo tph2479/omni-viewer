@@ -33,10 +33,10 @@
 >
     {#each folders as folder}
         <div class="group flex flex-col">
-            <button
-                class="relative aspect-square bg-surface-50 dark:bg-surface-900 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:ring-2 hover:ring-primary-500/50 transition-all duration-300 cursor-pointer border-2 border-primary-500/20 hover:border-primary-500/40 w-full"
-                onclick={() => onFolderClick(folder.path)}
-            >
+             <button
+                 class="relative aspect-square bg-surface-50 dark:bg-surface-900 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer border-2 border-primary-500/20 hover:border-primary-500/40 w-full"
+                 onclick={() => onFolderClick(folder.path)}
+             >
                 <img
                     use:lazyThumbnail={`/api/media?path=${encodeURIComponent(folder.coverPath)}&thumbnail=true&v=${cacheVersion.value}`}
                     decoding="async"
@@ -45,7 +45,7 @@
                 />
                 <div class="absolute top-2 left-2 z-10">
                     <div class="bg-black/60 backdrop-blur-md p-1.5 rounded-lg border border-white/20 shadow-lg">
-                        <Library size={16} strokeWidth={1.5} class="text-white" />
+                        <Library size={16}  class="text-white" />
                     </div>
                 </div>
                 <div

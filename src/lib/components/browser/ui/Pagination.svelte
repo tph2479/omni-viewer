@@ -46,7 +46,7 @@
             disabled={currentPage === 0 || isLoading}
             aria-label="Previous page"
         >
-            <ChevronLeft size={16} strokeWidth={1.5} />
+            <ChevronLeft size={16}  />
         </button>
 
         <div class="flex items-center gap-2 font-mono text-sm">
@@ -76,7 +76,7 @@
             disabled={!hasMore || isLoading}
             aria-label="Next page"
         >
-            <ChevronRight size={16} strokeWidth={1.5} />
+            <ChevronRight size={16}  />
         </button>
     </div>
 {/if}

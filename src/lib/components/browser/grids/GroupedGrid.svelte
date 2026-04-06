@@ -54,14 +54,13 @@
 
                         {#if groupInfo && groupInfo.total > groupInfo.items.length}
                             <div class="flex flex-col">
-                                <button
-                                    class="relative rounded-2xl overflow-hidden transition-all duration-200 cursor-pointer group w-full aspect-square flex flex-col items-center justify-center
+                                 <button
+                                     class="relative rounded-2xl overflow-hidden transition-all duration-200 cursor-pointer group w-full aspect-square flex flex-col items-center justify-center
 									bg-surface-100/50 dark:bg-surface-800/50
 									border border-surface-200 dark:border-surface-700
-									hover:bg-surface-200/50 dark:hover:bg-surface-700/50
-									hover:border-primary-500/50 dark:hover:border-primary-500/50"
-                                    onclick={() => actions.openGroup?.(groupKey)}
-                                >
+									hover:bg-surface-200/50 dark:hover:bg-surface-700/50"
+                                     onclick={() => actions.openGroup?.(groupKey)}
+                                 >
                                     <div class="relative z-10 flex flex-col items-center justify-center gap-2 transition-transform duration-200 group-hover:scale-105">
                                         <div class="size-11 rounded-full flex items-center justify-center
 											bg-surface-200 dark:bg-surface-700

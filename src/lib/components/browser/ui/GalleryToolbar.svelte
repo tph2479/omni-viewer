@@ -1,19 +1,18 @@
 <script lang="ts">
     import type { ImageFile } from "$lib/utils/fileUtils";
     import {
-        FolderOpen,
         ArrowUp,
-        RefreshCw,
-        Layers,
-        Image,
-        Video,
-        Music,
         BookOpen,
-        LayoutGrid,
         ChevronsRight,
-        Maximize,
-        ScrollText,
+        FolderOpen,
+        Image,
+        LayoutGrid,
         Library,
+        Maximize,
+        Music,
+        RefreshCw,
+        ScrollText,
+        Video,
     } from "lucide-svelte";
 
     type FolderState = {
@@ -25,7 +24,6 @@
         items: ImageFile[];
         onPathChange?: (v: string) => void;
     };
-
 
     type StatsState = {
         items: number;
@@ -89,11 +87,6 @@
     const exclusiveType = $derived(folder?.exclusiveType ?? null);
     const loadedImages = $derived(folder?.items ?? []);
 
-    const folderPath = $derived.by(() => {
-        if (!folderPathRaw) return "";
-        return exclusiveType ? `${folderPathRaw} > ${exclusiveType}` : folderPathRaw;
-    });
-
     const totalItems = $derived(stats?.items ?? 0);
     const totalImages = $derived(stats?.images ?? 0);
     const totalVideos = $derived(stats?.videos ?? 0);
@@ -106,7 +99,9 @@
     const parentPath = $derived.by(() => {
         if (exclusiveType) return "EXIT_EXCLUSIVE"; // Special value to signal exit
         if (!folderPathRaw) return null;
-        const normalized = folderPathRaw.replace(/\\/g, "/").replace(/\/+$/, "");
+        const normalized = folderPathRaw
+            .replace(/\\/g, "/")
+            .replace(/\/+$/, "");
         if (/^[a-zA-Z]:$/.test(normalized)) return null;
         const parts = normalized.split("/");
         if (parts.length <= 1) return null;
@@ -122,7 +117,7 @@
 
     let innerWidth = $state(1024);
     const isMobile = $derived(innerWidth < 640);
-    
+
     import { onMount } from "svelte";
     onMount(() => {
         innerWidth = window.innerWidth;
@@ -181,18 +176,16 @@
     }
 </script>
 
-<div
-    class="relative flex items-center w-full sm:w-3/5 mx-auto h-14 gap-2"
->
+<div class="relative flex items-center w-full sm:w-3/5 mx-auto h-14 gap-2">
     <!-- Left buttons -->
     <div
-        class="flex items-center px-1
+        class="flex items-center 
                bg-surface-100/70 dark:bg-surface-800/70 backdrop-blur-md
-               border border-surface-200/50 dark:border-surface-800/50 shadow-lg rounded-full shrink-0"
+               border border-surface-200/50 dark:border-surface-800/50 shadow-lg rounded-xl shrink-0"
     >
         <button
             class="hidden sm:flex items-center justify-center w-10 h-10 shrink-0
-                   rounded-full text-sm font-medium
+                   rounded-xl text-sm font-medium
                    hover:preset-tonal-surface transition-colors"
             onclick={actions.onOpenPicker}
             onmousedown={(e) => e.preventDefault()}
@@ -203,22 +196,22 @@
 
         <button
             class="flex items-center justify-center w-10 h-10 shrink-0
-                   rounded-full hover:preset-tonal-surface transition-colors
+                   rounded-xl hover:preset-tonal-surface transition-colors
                    disabled:opacity-30"
             onclick={() => parentPath && actions.onGoUp(parentPath)}
             disabled={!parentPath || isLoading}
             onmousedown={(e) => e.preventDefault()}
             title="Up one level"
         >
-            <ArrowUp size={20} strokeWidth={1.5} />
+            <ArrowUp size={20} />
         </button>
     </div>
 
     <!-- Input -->
     <div
-        class="flex items-center flex-1 min-w-0 h-10 px-1
+        class="flex items-center flex-1 min-w-0 h-10 
                bg-surface-100/70 dark:bg-surface-800/70 backdrop-blur-md
-               border border-surface-200/50 dark:border-surface-800/50 shadow-lg rounded-full"
+               border border-surface-200/50 dark:border-surface-800/50 shadow-lg rounded-xl"
     >
         {#if isMobile}
             <div
@@ -233,9 +226,12 @@
                 aria-label="Folder path"
                 role="button"
                 tabindex="0"
-                onkeydown={(e) => e.key === 'Enter' && actions.onOpenPicker()}
+                onkeydown={(e) => e.key === "Enter" && actions.onOpenPicker()}
             >
-                {folderPathRaw || (isMobile ? "Tap to browse…" : "Enter folder path or search…")}
+                {folderPathRaw ||
+                    (isMobile
+                        ? "Tap to browse…"
+                        : "Enter folder path or search…")}
             </div>
         {:else}
             <input
@@ -252,13 +248,17 @@
                 placeholder="Enter folder path or search…"
             />
         {/if}
-        
+
         {#if exclusiveType}
-            <div class="flex items-center gap-1.5 shrink-0 ml-1 mr-2 animate-in fade-in slide-in-from-right-2 duration-300">
-                <div class="w-px h-4 bg-surface-500/20 mx-0.5"></div>
-                <div class="flex items-center gap-1.5 py-1 px-2.5 rounded-full shadow-sm" style="background-color: color-mix(in srgb, var(--color-primary-500) 10%, transparent); border: 1px solid color-mix(in srgb, var(--color-primary-500) 20%, transparent); color: var(--color-primary-500);">
-                    <LayoutGrid size={12} strokeWidth={2.5} class="opacity-70" />
-                    <span class="text-[10px] font-black uppercase tracking-wider whitespace-nowrap">
+            <div class="flex items-center gap-1.5 shrink-0 ml-1 mr-2">
+                <div class="w-px bg-surface-500/20 mx-0.5"></div>
+                <div
+                    class="flex items-center py-1 px-2.5 rounded-xl shadow-sm"
+                    style="background-color: color-mix(in srgb, var(--color-primary-500) 10%, transparent); color: var(--color-primary-500);"
+                >
+                    <span
+                        class="text-[10px] font-black uppercase tracking-wider whitespace-nowrap"
+                    >
                         {exclusiveType}
                     </span>
                 </div>
@@ -266,16 +266,15 @@
         {/if}
     </div>
 
-
     <!-- Right buttons -->
     <div
-        class="flex items-center px-1
+        class="flex items-center 
                bg-surface-100 dark:bg-surface-800
-               border border-surface-200 dark:border-surface-800 shadow-lg rounded-full shrink-0"
+               border border-surface-200 dark:border-surface-800 shadow-lg rounded-xl shrink-0"
     >
         <button
             class="flex items-center justify-center w-10 h-10 shrink-0
-                   rounded-full hover:preset-tonal-surface transition-colors
+                   rounded-xl hover:preset-tonal-surface transition-colors
                    disabled:opacity-30"
             onclick={actions.onLoad}
             disabled={isLoading}
@@ -285,56 +284,62 @@
             {#if isLoading}
                 <span class="spinner-third w-4 h-4 border-2"></span>
             {:else}
-                <RefreshCw size={20} strokeWidth={1.5} />
+                <RefreshCw size={20} />
             {/if}
         </button>
 
         <button
             type="button"
             class="flex items-center justify-center w-10 h-10 shrink-0
-                   rounded-full hover:preset-tonal-surface transition-colors
+                   rounded-xl hover:preset-tonal-surface transition-colors
                    disabled:opacity-30"
             onclick={actions.onOpenWebtoon}
             title="Webtoon view"
         >
-            <ScrollText size={20} strokeWidth={1.5} />
+            <ScrollText size={20} />
         </button>
 
         <button
             type="button"
             class="flex items-center justify-center w-10 h-10 shrink-0
-                   rounded-full hover:preset-tonal-surface transition-colors
-                   disabled:opacity-30 {folder.isCoverMode ? 'preset-filled-primary-500' : ''}"
+                   rounded-xl hover:preset-tonal-surface transition-colors
+                   disabled:opacity-30 {folder.isCoverMode
+                ? 'preset-filled-primary-500'
+                : ''}"
             onclick={actions.onToggleCoverMode}
             title="Toggle Folder Thumbnails"
         >
-            <Library size={20} strokeWidth={1.5} />
+            <Library size={20} />
         </button>
 
         <button
             type="button"
             class="flex items-center justify-center w-10 h-10 shrink-0
-                   rounded-full hover:preset-tonal-surface transition-colors
+                   rounded-xl hover:preset-tonal-surface transition-colors
                    disabled:opacity-30"
             onclick={() => {
                 if (!document.fullscreenElement) {
-                    document.documentElement.requestFullscreen().catch((err) => {
-                        console.error(`Error attempting to enable fullscreen: ${err.message}`);
-                    });
+                    document.documentElement
+                        .requestFullscreen()
+                        .catch((err) => {
+                            console.error(
+                                `Error attempting to enable fullscreen: ${err.message}`,
+                            );
+                        });
                 } else {
                     document.exitFullscreen();
                 }
             }}
             title="Toggle Fullscreen"
         >
-            <Maximize size={20} strokeWidth={1.5} />
+            <Maximize size={20} />
         </button>
 
         {#if isFolderSelected}
             <div class="relative flex items-center" bind:this={menuRef}>
                 <button
                     class="flex items-center justify-center w-10 h-10 shrink-0
-                           rounded-full transition-colors
+                           rounded-xl transition-colors
                            {menuOpen
                         ? 'preset-filled-primary-500'
                         : 'hover:preset-tonal-surface'}"
@@ -343,7 +348,7 @@
                     title="View options"
                     aria-expanded={menuOpen}
                 >
-                    <ChevronsRight size={20} strokeWidth={1.5} />
+                    <ChevronsRight size={20} />
                 </button>
 
                 <!-- Popup -->
@@ -351,22 +356,24 @@
                     <div
                         class="popup absolute right-0 top-[calc(100%+8px)]
                                 w-64 p-4 space-y-4 z-[200]
-                                rounded-3xl
+                                rounded-xl
                                 bg-surface-100 dark:bg-surface-900/95 backdrop-blur-xl
                                 border border-surface-200/50 dark:border-white/10
-                                shadow-[0_25px_70px_-15px_rgba(0,0,0,0.5)] dark:shadow-[0_25px_70px_-15px_rgba(0,0,0,0.8)]
-                                pointer-events-auto animate-in fade-in zoom-in-95 duration-200"
+                                shadow-[0_25px_70px_-15px_rgba(0,0,0,0.3)] dark:shadow-[0_25px_70px_-15px_rgba(0,0,0,0.8)]
+                                pointer-events-auto"
                     >
                         <!-- Media type -->
                         <div class="space-y-2">
-                            <p class="text-[10px] font-black tracking-widest uppercase opacity-40 ml-1">
+                            <p
+                                class="text-[10px] font-black tracking-widest uppercase ml-1"
+                            >
                                 Media type
                             </p>
-                            <div class="grid grid-cols-3 gap-2">
+                            <div class="grid grid-cols-3 gap-3">
                                 {#each mediaOptions as opt}
                                     <button
                                         class="flex flex-col items-center gap-1.5 py-2.5 px-1
-                                               rounded-2xl text-xs transition-all duration-200
+                                               rounded-xl text-xs transition-all duration-200
                                                border border-surface-200 dark:border-white/5
                                                {mediaType === opt.value
                                             ? 'preset-filled-primary-500 shadow-lg shadow-primary-500/20 scale-105 z-10'
@@ -377,8 +384,11 @@
                                             loadedImages.length === 0}
                                         title="{opt.label} ({opt.count})"
                                     >
-                                        <opt.icon size={18} strokeWidth={1.5} />
-                                        <span class="text-[9px] font-bold opacity-80">{opt.count}</span>
+                                        <opt.icon size={18} />
+                                        <span
+                                            class="text-[9px] font-bold"
+                                            >{opt.count}</span
+                                        >
                                     </button>
                                 {/each}
                             </div>
@@ -386,7 +396,9 @@
 
                         <!-- Sort -->
                         <div class="space-y-2">
-                            <p class="text-[10px] font-black tracking-widest uppercase opacity-40 ml-1">
+                            <p
+                                class="text-[10px] font-black tracking-widest uppercase ml-1"
+                            >
                                 Sort by
                             </p>
                             <div class="grid grid-cols-2 gap-2">

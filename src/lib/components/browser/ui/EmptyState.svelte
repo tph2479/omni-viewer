@@ -1,7 +1,5 @@
 <script lang="ts">
-    import { FolderOpen, Plus } from "lucide-svelte";
-
-    let { onOpenPicker }: { onOpenPicker: () => void } = $props();
+    import { FolderOpen } from "lucide-svelte";
 </script>
 
 <div
@@ -16,7 +14,10 @@
         <div
             class="relative bg-surface-100 dark:bg-surface-800 p-8 rounded-[2.5rem] border border-surface-200 dark:border-surface-700 shadow-2xl"
         >
-            <FolderOpen size={64} strokeWidth={1.5} style="color: var(--color-primary-500);" />
+            <FolderOpen
+                size={64}
+                style="color: var(--color-primary-500);"
+            />
         </div>
     </div>
 

@@ -56,7 +56,8 @@
             }
         };
         window.addEventListener("pointerdown", handlePointerDown);
-        return () => window.removeEventListener("pointerdown", handlePointerDown);
+        return () =>
+            window.removeEventListener("pointerdown", handlePointerDown);
     });
 
     // --- CẤU HÌNH LINKS ---
@@ -64,7 +65,7 @@
         { label: "Home", href: "/", icon: HouseIcon },
         { label: "Gallery", href: "/gallery", icon: BookIcon },
         { label: "Browser", href: "/browser", icon: FolderTree },
-        { label: "Get", href: "/get", icon: Link },
+        { label: "Getter", href: "/getter", icon: Link },
         { label: "Import", href: "/import", icon: HardDriveDownload },
         { label: "Settings", href: "/settings", icon: SettingsIcon },
     ];
@@ -84,28 +85,32 @@
         (() => {
             let savedMode = localStorage.getItem("mode");
             if (!savedMode) {
-                savedMode = window.matchMedia("(prefers-color-scheme: dark)").matches
+                savedMode = window.matchMedia("(prefers-color-scheme: dark)")
+                    .matches
                     ? "dark"
                     : "light";
             }
             document.documentElement.setAttribute("data-mode", savedMode);
-            document.documentElement.classList.toggle("dark", savedMode === "dark");
+            document.documentElement.classList.toggle(
+                "dark",
+                savedMode === "dark",
+            );
         })();
     </script>
 </svelte:head>
 
 {#snippet ThemeIconToggle(isMobileNav = false)}
     <Tooltip openDelay={0} closeDelay={0} positioning={{ placement: "right" }}>
-        <Tooltip.Trigger 
+        <Tooltip.Trigger
             onclick={toggleMode}
             class="flex flex-col items-center justify-center transition-all duration-100 w-full py-2 text-surface-600 dark:text-surface-400 hover:text-[var(--color-primary-600)] dark:hover:text-[var(--color-primary-400)] active:scale-95"
             aria-label="Toggle Theme"
         >
             <div class="relative size-7 flex items-center justify-center">
                 {#if isDark}
-                        <Moon class="size-[28px] stroke-[1.5px]" />
+                    <Moon class="size-[28px] stroke-[1.5px]" />
                 {:else}
-                        <Sun class="size-[28px] stroke-[1.5px]" />
+                    <Sun class="size-[28px] stroke-[1.5px]" />
                 {/if}
             </div>
         </Tooltip.Trigger>
@@ -115,7 +120,9 @@
                     class="preset-filled-surface-950-50 text-xs px-3 py-1.5 rounded-md shadow-xl relative z-[10000]"
                 >
                     <Tooltip.Arrow>
-                        <div class="preset-filled-surface-950-50 size-2 rotate-45 absolute -left-1 top-1/2 -translate-y-1/2 -z-10"></div>
+                        <div
+                            class="preset-filled-surface-950-50 size-2 rotate-45 absolute -left-1 top-1/2 -translate-y-1/2 -z-10"
+                        ></div>
                     </Tooltip.Arrow>
                     {isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
                 </Tooltip.Content>
@@ -142,7 +149,9 @@
                         ></div>
                     {/if}
                     <Icon
-                        class="size-7 {active ? 'stroke-[1.8px] text-[var(--color-primary-600)] dark:text-[var(--color-primary-400)]' : 'stroke-[1.5px] text-surface-600 dark:text-surface-400 hover:text-[var(--color-primary-600)] dark:hover:text-[var(--color-primary-400)]'} transition-colors"
+                        class="size-7 {active
+                            ? 'stroke-[1.8px] text-[var(--color-primary-600)] dark:text-[var(--color-primary-400)]'
+                            : 'stroke-[1.5px] text-surface-600 dark:text-surface-400 hover:text-[var(--color-primary-600)] dark:hover:text-[var(--color-primary-400)]'} transition-colors"
                     />
                 </Navigation.TriggerAnchor>
             {/snippet}
@@ -153,7 +162,9 @@
                     class="preset-filled-surface-950-50 text-xs px-3 py-1.5 rounded-md shadow-xl relative z-[10000]"
                 >
                     <Tooltip.Arrow>
-                        <div class="preset-filled-surface-950-50 size-2 rotate-45 absolute -left-1 top-1/2 -translate-y-1/2 -z-10"></div>
+                        <div
+                            class="preset-filled-surface-950-50 size-2 rotate-45 absolute -left-1 top-1/2 -translate-y-1/2 -z-10"
+                        ></div>
                     </Tooltip.Arrow>
                     {label}
                 </Tooltip.Content>
@@ -166,11 +177,9 @@
     <Navigation
         layout={isMobileNav ? "bar" : "rail"}
         class="h-full w-full flex {isMobileNav
-            ? 'flex-row bg-surface-100 dark:bg-surface-900 border-t border-surface-200 dark:border-surface-800'
-            : 'flex-col bg-surface-100 dark:bg-surface-900 border-r border-surface-200 dark:border-surface-800'}"
+            ? 'flex-row bg-surface-100 dark:bg-surface-900'
+            : 'flex-col bg-surface-100 dark:bg-surface-900'}"
     >
-
-
         <Navigation.Content class="flex-1 {isMobileNav ? 'w-full' : ''}">
             <Navigation.Menu
                 class={isMobileNav
@@ -182,8 +191,6 @@
                         {@render NavItem(link, isMobileNav)}
                     </div>
                 {/each}
-
-
             </Navigation.Menu>
         </Navigation.Content>
         {#if !isMobileNav}
