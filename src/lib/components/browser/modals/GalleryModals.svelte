@@ -17,12 +17,12 @@
 	/>
 {/if}
 
-{#if s.modal.image.open && s.content.items.length > s.modal.image.index}
+{#if s.modal.image.open}
 	<ImageModal
 		bind:isModalOpen={s.modal.image.open}
 		bind:selectedImageIndex={s.modal.image.index}
 		loadedImages={s.content.items}
-		totalImages={s.content.totals.images}
+		totalImages={s.content.isGrouped ? s.content.items.length : s.content.totals.images}
 		hasMore={s.pagination.hasMore}
 		currentPage={s.pagination.currentPage}
 		loadFolder={s.actions.loadFolder}
@@ -48,12 +48,12 @@
     </div>
 {/if}
 
-{#if s.modal.video.open && s.content.items.length > s.modal.image.index}
+{#if s.modal.video.open}
 	<VideoModal
 		bind:isModalOpen={s.modal.video.open}
 		bind:selectedImageIndex={s.modal.image.index}
 		loadedImages={s.content.items}
-		totalImages={s.content.totals.videos}
+		totalImages={s.content.isGrouped ? s.content.items.length : s.content.totals.videos}
 		hasMore={s.pagination.hasMore}
 		currentPage={s.pagination.currentPage}
 		loadFolder={s.actions.loadFolder}
@@ -63,12 +63,12 @@
 	/>
 {/if}
 
-{#if s.modal.audio.open && s.content.items.length > s.modal.image.index}
+{#if s.modal.audio.open}
 	<AudioModal
 		bind:isModalOpen={s.modal.audio.open}
 		bind:selectedImageIndex={s.modal.image.index}
 		loadedImages={s.content.items}
-		totalImages={s.content.totals.audio}
+		totalImages={s.content.isGrouped ? s.content.items.length : s.content.totals.audio}
 		hasMore={s.pagination.hasMore}
 		currentPage={s.pagination.currentPage}
 		loadFolder={s.actions.loadFolder}

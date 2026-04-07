@@ -1,23 +1,6 @@
 <script lang="ts">
     import GalleryToolbar from "$lib/components/browser/ui/GalleryToolbar.svelte";
     import { browserStore as s } from "$lib/stores/browser/index.svelte";
-    import { Pin } from "lucide-svelte";
-
-    function setSort(
-        v:
-            | "date_desc"
-            | "date_asc"
-            | "name_asc"
-            | "name_desc"
-            | "size_asc"
-            | "size_desc",
-    ) {
-        s.actions.setSort(v);
-    }
-
-    function setFilter(v: "all" | "images" | "videos" | "audio" | "ebook") {
-        s.actions.setMediaType(v);
-    }
 
     const toolbarActions = $derived({
         onLoad: async () => {
@@ -57,14 +40,22 @@
             }}
 
             stats={{
-                items: s.cover.enabled ? s.cover.total : s.content.totals.media,
-                images: s.cover.enabled ? 0 : s.content.totals.images,
-                videos: s.cover.enabled ? 0 : s.content.totals.videos,
-                audio: s.cover.enabled ? 0 : s.content.totals.audio,
-                ebook: s.cover.enabled ? 0 : s.content.totals.ebook,
+                items: s.cover.enabled ? (s.cover.savedState?.counts?.media ?? s.content.totals.media) : s.content.totals.media,
+                images: s.cover.enabled 
+                    ? (s.cover.savedState?.counts?.images ?? s.content.totals.images) 
+                    : s.content.totals.images,
+                videos: s.cover.enabled 
+                    ? (s.cover.savedState?.counts?.videos ?? s.content.totals.videos) 
+                    : s.content.totals.videos,
+                audio: s.cover.enabled 
+                    ? (s.cover.savedState?.counts?.audio ?? s.content.totals.audio) 
+                    : s.content.totals.audio,
+                ebook: s.cover.enabled 
+                    ? (s.cover.savedState?.counts?.ebook ?? s.content.totals.ebook) 
+                    : s.content.totals.ebook,
             }}
-            sort={{ current: s.pagination.sort, onChange: setSort }}
-            filter={{ type: s.pagination.mediaType, onChange: setFilter }}
+            sort={{ current: s.pagination.sort, onChange: s.actions.setSort }}
+            filter={{ type: s.pagination.mediaType, onChange: s.actions.setMediaType }}
             actions={toolbarActions}
             isLoading={s.ui.isLoading}
         />

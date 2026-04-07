@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { type ImageFile } from '$lib/utils/fileUtils'; import { formatBytes, formatDateTime } from '$lib/utils/formatters';
+	import type { MediaFile } from '$lib/stores/browser/types';
+import { formatBytes, formatDateTime } from '$lib/utils/formatters';
 	import { isVideoFile } from '$lib/utils/fileUtils';
 	import { onDestroy } from 'svelte';
 	import { cacheVersion } from '$lib/stores/system/cache.svelte';
@@ -20,7 +21,7 @@
 	}: {
 		isModalOpen: boolean;
 		selectedImageIndex: number;
-		loadedImages: ImageFile[];
+		loadedImages: MediaFile[];
 		totalImages: number;
 		hasMore: boolean;
 		currentPage: number;
@@ -53,8 +54,8 @@
 		isModalOpen = false;
 	}
 
-	function isVideoItem(item: ImageFile) {
-		return item && !item.isDir && !item.isCbz && item.isVideo;
+	function isVideoItem(item: MediaFile) {
+		return item && item.mediaType === 'video';
 	}
 
 	async function nextVideo() {

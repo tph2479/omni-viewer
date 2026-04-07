@@ -1,9 +1,8 @@
 import { tick } from "svelte";
 import { pushState } from "$app/navigation";
 import { toaster } from "$lib/stores/ui/toaster";
-import type { ImageFile } from "$lib/utils/fileUtils";
+import type { MediaFile, SortType, FilterType } from "./types";
 import type { BrowserStore } from "./index.svelte.js";
-import type { SortType, MediaType } from "./types";
 
 export function createActions(store: BrowserStore) {
   const { folder, content, pagination, ui, modal, cover } = store;
@@ -113,29 +112,30 @@ export function createActions(store: BrowserStore) {
         JSON.stringify(folder.pageHistory),
       );
 
-      if (targetId) {
-        tick().then(() => {
-          const el = document.getElementById(targetId);
-          if (el) {
-            el.scrollIntoView({ behavior: "instant", block: "center" });
-            el.classList.add("ring-[1.5px]", "ring-primary", "z-10");
-            setTimeout(
-              () => el.classList.remove("ring-[1.5px]", "ring-primary", "z-10"),
-              2500,
-            );
-          }
-          ui.lastOpenedFolder = null;
-        });
-      }
+if (targetId) {
+  tick().then(() => {
+    const el = document.getElementById(targetId);
+    if (el) {
+      el.scrollIntoView({ behavior: "instant", block: "center" });
+      el.classList.add("ring-[1.5px]", "ring-primary-300", "z-10");
+      setTimeout(
+        () => el.classList.remove("ring-[1.5px]", "ring-primary-300", "z-10"),
+        2500,
+      );
+    }
+    ui.lastOpenedFolder = null;
+  });
+}
 
       if (ui.pendingFile) {
+        ui.lastOpenedFile = ui.pendingFile.path;
         if (ui.pendingFile.type === "cbz") {
           modal.openCbz(ui.pendingFile.path);
         } else if (ui.pendingFile.type === "pdf") {
           modal.openPdf(ui.pendingFile.path);
         } else {
           const idx = content.items.findIndex(
-            (img: ImageFile) => img.path === ui.pendingFile!.path,
+            (item: MediaFile) => item.path === ui.pendingFile!.path,
           );
           if (idx !== -1) openModal(idx);
         }
@@ -161,18 +161,19 @@ export function createActions(store: BrowserStore) {
     }
   }
 
-  function openModal(index: number, items?: ImageFile[]) {
+  function openModal(index: number, items?: MediaFile[]) {
     const sourceList = items || content.items;
-    const img = sourceList[index];
-    if (!img) return;
+    const item = sourceList[index];
+    if (!item) return;
 
     if (items) content.items = items;
     modal.image.index = index;
+    ui.lastOpenedFile = item.path;
 
-    if (img.isVideo) modal.video.open = true;
-    else if (img.isAudio) modal.audio.open = true;
-    else if (img.isPdf) modal.openPdf(img.path);
-    else if (img.isEpub) modal.openEpub(img.path);
+    if (item.mediaType === 'video') modal.video.open = true;
+    else if (item.mediaType === 'audio') modal.audio.open = true;
+    else if (item.mediaType === 'pdf') modal.openPdf(item.path);
+    else if (item.mediaType === 'epub') modal.openEpub(item.path);
     else modal.image.open = true;
   }
 
@@ -234,16 +235,16 @@ export function createActions(store: BrowserStore) {
 
     const currentPath = modal.webtoon.cbzPath || folder.path;
     let currentIndex = items.findIndex(
-      (item: ImageFile) => item.firstCbz === currentPath || item.path === currentPath,
+      (item: MediaFile) => item.entryPath === currentPath || item.path === currentPath,
     );
 
     if (currentIndex === -1) return;
 
     let targetIndex = currentIndex + direction;
     while (targetIndex >= 0 && targetIndex < items.length) {
-      const item = items[targetIndex];
-      if (item.firstCbz || item.hasImages || item.isCbz) {
-        modal.openCbz(item.firstCbz || item.path);
+      const target = items[targetIndex];
+      if (target.entryPath || target.containsImages || target.mediaType === 'cbz') {
+        modal.openCbz(target.entryPath || target.path);
         return;
       }
       targetIndex += direction;
@@ -251,11 +252,25 @@ export function createActions(store: BrowserStore) {
   }
 
   function handleToggleCoverMode() {
+    const wasEnabled = cover.enabled;
     cover.enabled = !cover.enabled;
+    
     if (cover.enabled) {
+      cover.savedState = {
+        path: folder.path,
+        sort: pagination.sort,
+        counts: { ...content.totals },
+      } as any;
       pagination.sort = "name_asc";
+      loadFolder(true, 0);
+    } else if (cover.savedState) {
+      pagination.sort = cover.savedState.sort || "date_desc";
+      loadFolder(true, 0).then(() => {
+        if (cover.savedState?.counts) {
+          content.totals = cover.savedState.counts;
+        }
+      });
     }
-    loadFolder(true, 0);
   }
 
   async function handleSwitchToPaginationToContinue() {
@@ -263,11 +278,11 @@ export function createActions(store: BrowserStore) {
     if (!firstItem) return;
 
     let key = "images";
-    if (firstItem.isVideo) key = "videos";
-    else if (firstItem.isAudio) key = "audio";
-    else if (firstItem.isPdf) key = "pdf";
-    else if (firstItem.isCbz) key = "cbz";
-    else if (firstItem.isEpub) key = "epub";
+    if (firstItem.mediaType === 'video') key = "videos";
+    else if (firstItem.mediaType === 'audio') key = "audio";
+    else if (firstItem.mediaType === 'pdf') key = "pdf";
+    else if (firstItem.mediaType === 'cbz') key = "cbz";
+    else if (firstItem.mediaType === 'epub') key = "epub";
 
     const scrollContainer = document.querySelector(".drawer-content");
     if (scrollContainer) ui.groupScrollPosition = scrollContainer.scrollTop;
@@ -301,7 +316,7 @@ export function createActions(store: BrowserStore) {
     loadFolder(true, 0);
   }
 
-  function setMediaType(type: MediaType) {
+  function setMediaType(type: FilterType) {
     pagination.mediaType = type;
     loadFolder(true, 0);
   }
@@ -319,8 +334,14 @@ export function createActions(store: BrowserStore) {
     loadNextPage,
     closePicker: () => { modal.folderPicker.open = false; },
     openModal,
-    openCbz: (path: string, context = "") => modal.openCbz(path, context),
-    openCbzInWebtoon: (path: string, context = "") => modal.openCbz(path, context),
+    openCbz: (path: string, context = "") => {
+      ui.lastOpenedFile = path;
+      modal.openCbz(path, context);
+    },
+    openCbzInWebtoon: (path: string, context = "") => {
+      ui.lastOpenedFile = path;
+      modal.openCbz(path, context);
+    },
     handleOpenWebtoon,
     navigateWebtoon,
     handleToggleCoverMode,

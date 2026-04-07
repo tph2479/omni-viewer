@@ -1,12 +1,12 @@
 <script lang="ts">
-    import { type ImageFile } from '$lib/utils/fileUtils';
+    import { type MediaFile } from '$lib/stores/browser/types';
     import FileCard from "../cards/FileCard.svelte";
     import { FolderOpen } from "lucide-svelte";
 
     type FileActions = {
         openDir: (path: string) => void;
         openCbz: (path: string) => void;
-        openModal: (index: number, items: ImageFile[]) => void;
+        openModal: (index: number, items: MediaFile[]) => void;
     };
 
     let {
@@ -15,7 +15,7 @@
         highlightedPath = null,
         actions,
     }: {
-        items?: ImageFile[];
+        items?: MediaFile[];
         isLoading?: boolean;
         highlightedPath?: string | null;
         actions: FileActions;
@@ -84,7 +84,7 @@
 {:else}
     {#each items as _, i}
         <FileCard
-            bind:img={items[i]}
+            bind:item={items[i]}
             index={i}
             highlighted={highlightedPath === items[i].path}
             actions={{

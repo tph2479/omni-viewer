@@ -1,15 +1,15 @@
 <script lang="ts">
-    import { type ImageFile } from '$lib/utils/fileUtils';
+    import { type MediaFile } from '$lib/stores/browser/types';
     import { ArrowRight } from "lucide-svelte";
     import FileGridBase from "./FileGridBase.svelte";
 
-    type GroupInfo = { items: ImageFile[]; total: number };
+    type GroupInfo = { items: MediaFile[]; total: number };
     type GroupedData = Record<string, GroupInfo>;
 
     type FileActions = {
         openDir: (path: string) => void;
         openCbz: (path: string) => void;
-        openModal: (index: number, items: ImageFile[]) => void;
+        openModal: (index: number, items: MediaFile[]) => void;
         openGroup?: (type: string) => void;
     };
 

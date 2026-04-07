@@ -1,4 +1,4 @@
-import type { ImageFile } from '$lib/utils/fileUtils';
+import type { MediaFile } from '$lib/stores/browser/types';
 
 export const AUDIO_CONTEXT_KEY = Symbol('audio-context');
 export type AudioViewerContext = ReturnType<typeof createAudioController>;
@@ -8,7 +8,7 @@ interface AudioPlayerProps {
     set isModalOpen(v: boolean);
     get selectedImageIndex(): number;
     set selectedImageIndex(v: number);
-    get loadedImages(): ImageFile[];
+    get loadedImages(): MediaFile[];
     get totalImages(): number;
     get hasMore(): boolean;
     get currentPage(): number;
@@ -360,15 +360,8 @@ export function createAudioController(props: AudioPlayerProps) {
       props.isModalOpen = false;
   }
 
-  function isAudioOrVideo(item: ImageFile) {
-      return (
-          item &&
-          !item.isDir &&
-          !item.isCbz &&
-          !item.isPdf &&
-          !item.isEpub &&
-          (item.isAudio || item.isVideo)
-      );
+  function isAudioOrVideo(item: MediaFile) {
+      return item && (item.mediaType === 'audio' || item.mediaType === 'video');
   }
 
   function prev() {

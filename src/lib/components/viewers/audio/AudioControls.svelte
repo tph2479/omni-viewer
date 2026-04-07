@@ -154,7 +154,7 @@
 </div>
 
 <!-- Switch to Video (if applicable) -->
-{#if ctrl.currentAudio?.isVideo && ctrl.onSwitchToVideo}
+{#if ctrl.currentAudio?.mediaType === 'video' && ctrl.onSwitchToVideo}
     <button
         class="btn btn-sm variant-filled-primary mt-4"
         onclick={ctrl.onSwitchToVideo}

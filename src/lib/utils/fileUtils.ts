@@ -3,6 +3,8 @@
  * This file is shared between client-side and server-side code.
  */
 
+import type { MediaType } from '$lib/stores/browser/types';
+
 export const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif', '.bmp', '.heic', '.heif'];
 export const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mkv', '.avi', '.flv', '.mov', '.m4v'];
 export const AUDIO_EXTENSIONS = ['.mp3', '.wav', '.ogg', '.flac', '.m4a', '.aac', '.opus', '.m4b'];
@@ -10,7 +12,7 @@ export const ARCHIVE_EXTENSIONS = ['.cbz', '.zip'];
 export const PDF_EXTENSIONS = ['.pdf'];
 export const EPUB_EXTENSIONS = ['.epub'];
 
-export const ALL_ALLOWED_EXTENSIONS = [
+const ALL_EXTENSIONS = [
     ...IMAGE_EXTENSIONS,
     ...VIDEO_EXTENSIONS,
     ...AUDIO_EXTENSIONS,
@@ -19,127 +21,127 @@ export const ALL_ALLOWED_EXTENSIONS = [
     ...EPUB_EXTENSIONS
 ];
 
-export const ALLOWED_EXTENSIONS = new Set(ALL_ALLOWED_EXTENSIONS);
+export const ALLOWED_EXTENSIONS = new Set(ALL_EXTENSIONS);
 
-/**
- * Checks if a filename or extension is an image file.
- * @param filename File name or extension (e.g. 'image.jpg' or '.jpg')
- */
-export function isImageFile(filename: string): boolean {
-    const ext = filename.toLowerCase().includes('.') ? '.' + filename.toLowerCase().split('.').pop() : filename.toLowerCase();
-    return IMAGE_EXTENSIONS.includes(ext);
-}
-
-/**
- * Checks if a filename or extension is a video file.
- */
-export function isVideoFile(filename: string): boolean {
-    const ext = filename.toLowerCase().includes('.') ? '.' + filename.toLowerCase().split('.').pop() : filename.toLowerCase();
-    return VIDEO_EXTENSIONS.includes(ext);
-}
-
-/**
- * Checks if a filename or extension is an audio file.
- */
-export function isAudioFile(filename: string): boolean {
-    const ext = filename.toLowerCase().includes('.') ? '.' + filename.toLowerCase().split('.').pop() : filename.toLowerCase();
-    return AUDIO_EXTENSIONS.includes(ext);
-}
-
-/**
- * Checks if a filename or extension is a PDF file.
- */
-export function isPdfFile(filename: string): boolean {
-    const ext = filename.toLowerCase().includes('.') ? '.' + filename.toLowerCase().split('.').pop() : filename.toLowerCase();
-    return PDF_EXTENSIONS.includes(ext);
-}
-
-/**
- * Checks if a filename or extension is an EPUB file.
- */
-export function isEpubFile(filename: string): boolean {
-    const ext = filename.toLowerCase().includes('.') ? '.' + filename.toLowerCase().split('.').pop() : filename.toLowerCase();
-    return EPUB_EXTENSIONS.includes(ext);
-}
-
-/**
- * Checks if a filename or extension is a CBZ/Archive file.
- */
-export function isCbzFile(filename: string): boolean {
-    const ext = filename.toLowerCase().includes('.') ? '.' + filename.toLowerCase().split('.').pop() : filename.toLowerCase();
-    return ARCHIVE_EXTENSIONS.includes(ext);
-}
-
-/**
- * Gets the standardized media type for a filename or extension.
- */
-export function getFileType(filename: string): 'image' | 'video' | 'audio' | 'pdf' | 'epub' | 'cbz' | 'unknown' {
-    if (isImageFile(filename)) return 'image';
-    if (isVideoFile(filename)) return 'video';
-    if (isAudioFile(filename)) return 'audio';
-    if (isPdfFile(filename)) return 'pdf';
-    if (isEpubFile(filename)) return 'epub';
-    if (isCbzFile(filename)) return 'cbz';
-    return 'unknown';
-}
-
-/**
- * Return the appropriate HTTP Content-Type for the given lowercase file
- * extension (including the leading dot, e.g. '.jpg').
- * Falls back to 'application/octet-stream' for unknown types.
- */
-export function getContentType(ext: string): string {
-	switch (ext) {
-		case '.jpg':
-		case '.jpeg': return 'image/jpeg';
-		case '.png':  return 'image/png';
-		case '.webp': return 'image/webp';
-		case '.gif':  return 'image/gif';
-		case '.avif': return 'image/avif';
-		case '.bmp':  return 'image/bmp';
-		case '.heic':
-		case '.heif': return 'image/heic';
-		case '.mp4':  return 'video/mp4';
-		case '.webm': return 'video/webm';
-		case '.mp3':  return 'audio/mpeg';
-		case '.wav':  return 'audio/wav';
-		case '.ogg':  return 'audio/ogg';
-		case '.flac': return 'audio/flac';
-		case '.m4a':  return 'audio/mp4';
-		case '.aac':  return 'audio/aac';
-		case '.opus': return 'audio/opus';
-		case '.m4b':  return 'audio/mp4';
-		case '.mkv':  return 'video/x-matroska';
-		case '.avi':  return 'video/x-msvideo';
-		case '.flv':  return 'video/x-flv';
-		case '.mov':  return 'video/quicktime';
-		case '.m4v':  return 'video/x-m4v';
-		case '.pdf':  return 'application/pdf';
-		case '.epub': return 'application/epub+zip';
-		default:      return 'application/octet-stream';
-	}
-}
-
-/**
- * Checks if a filename or extension is a traditional ZIP file.
- */
-export function isZipFile(filename: string): boolean {
-	return filename.toLowerCase().endsWith('.zip');
-}
-
-export type ImageFile = { 
-    name: string; 
-    path: string; 
-    size: number; 
-    lastModified: number; 
-    isCbz?: boolean; 
-    isDir?: boolean; 
-    isVideo?: boolean; 
-    isAudio?: boolean; 
-    isPdf?: boolean; 
-    isEpub?: boolean; 
-    width?: number; 
-    height?: number; 
-    firstCbz?: string; 
-    hasImages?: boolean; 
+const CONTENT_TYPES: Record<string, string> = {
+    '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+    '.png': 'image/png', '.webp': 'image/webp',
+    '.gif': 'image/gif', '.avif': 'image/avif',
+    '.bmp': 'image/bmp', '.heic': 'image/heic', '.heif': 'image/heic',
+    '.mp4': 'video/mp4', '.webm': 'video/webm',
+    '.mkv': 'video/x-matroska', '.avi': 'video/x-msvideo',
+    '.flv': 'video/x-flv', '.mov': 'video/quicktime', '.m4v': 'video/x-m4v',
+    '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.ogg': 'audio/ogg',
+    '.flac': 'audio/flac', '.m4a': 'audio/mp4', '.aac': 'audio/aac',
+    '.opus': 'audio/opus', '.m4b': 'audio/mp4',
+    '.pdf': 'application/pdf', '.epub': 'application/epub+zip',
+    '.cbz': 'application/vnd.comicbook+zip', '.zip': 'application/zip',
 };
+
+function getExtension(filename: string): string {
+    if (!filename.includes('.')) return filename.toLowerCase();
+    return '.' + filename.toLowerCase().split('.').pop()!;
+}
+
+function hasExtension(ext: string, extensions: readonly string[]): boolean {
+    return extensions.includes(ext);
+}
+
+export function isImageFile(filename: string): boolean {
+    return hasExtension(getExtension(filename), IMAGE_EXTENSIONS);
+}
+
+export function isVideoFile(filename: string): boolean {
+    return hasExtension(getExtension(filename), VIDEO_EXTENSIONS);
+}
+
+export function isAudioFile(filename: string): boolean {
+    return hasExtension(getExtension(filename), AUDIO_EXTENSIONS);
+}
+
+export function isPdfFile(filename: string): boolean {
+    return hasExtension(getExtension(filename), PDF_EXTENSIONS);
+}
+
+export function isEpubFile(filename: string): boolean {
+    return hasExtension(getExtension(filename), EPUB_EXTENSIONS);
+}
+
+export function isCbzFile(filename: string): boolean {
+    return hasExtension(getExtension(filename), ARCHIVE_EXTENSIONS);
+}
+
+export function isZipFile(filename: string): boolean {
+    return getExtension(filename) === '.zip';
+}
+
+export function getContentType(filename: string): string {
+    return CONTENT_TYPES[getExtension(filename)] ?? 'application/octet-stream';
+}
+
+export const MEDIA_TYPE_MAP = new Map<string, MediaType>([
+    ['.jpg', 'image'], ['.jpeg', 'image'], ['.png', 'image'], ['.webp', 'image'],
+    ['.gif', 'image'], ['.avif', 'image'], ['.bmp', 'image'], ['.heic', 'image'], ['.heif', 'image'],
+    ['.mp4', 'video'], ['.webm', 'video'], ['.mkv', 'video'], ['.avi', 'video'],
+    ['.flv', 'video'], ['.mov', 'video'], ['.m4v', 'video'],
+    ['.mp3', 'audio'], ['.wav', 'audio'], ['.ogg', 'audio'], ['.flac', 'audio'],
+    ['.m4a', 'audio'], ['.aac', 'audio'], ['.opus', 'audio'], ['.m4b', 'audio'],
+    ['.pdf', 'pdf'], ['.epub', 'epub'],
+    ['.cbz', 'cbz'], ['.zip', 'cbz'],
+]);
+
+export function getMediaType(filename: string): MediaType {
+    const ext = getExtension(filename);
+    return MEDIA_TYPE_MAP.get(ext) ?? 'unknown';
+}
+
+export type GroupedItems = {
+    folders: any[];
+    images: any[];
+    cbz: any[];
+    pdf: any[];
+    epub: any[];
+    audio: any[];
+    videos: any[];
+};
+
+export type GroupedResult = {
+    groups: GroupedItems;
+    counts: {
+        total: number;
+        totalImages: number;
+        totalVideos: number;
+        totalAudio: number;
+        totalEbook: number;
+    };
+};
+
+export function groupItemsByMediaType(items: any[]): GroupedResult {
+    const groups: GroupedItems = {
+        folders: [], images: [], cbz: [], pdf: [],
+        epub: [], audio: [], videos: []
+    };
+
+    for (const item of items) {
+        switch (item.mediaType) {
+            case 'directory': groups.folders.push(item); break;
+            case 'image': groups.images.push(item); break;
+            case 'cbz': groups.cbz.push(item); break;
+            case 'pdf': groups.pdf.push(item); break;
+            case 'epub': groups.epub.push(item); break;
+            case 'audio': groups.audio.push(item); break;
+            case 'video': groups.videos.push(item); break;
+        }
+    }
+
+    return {
+        groups,
+        counts: {
+            total: items.length,
+            totalImages: groups.images.length,
+            totalVideos: groups.videos.length,
+            totalAudio: groups.audio.length,
+            totalEbook: groups.cbz.length + groups.pdf.length + groups.epub.length,
+        }
+    };
+}

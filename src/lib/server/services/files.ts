@@ -17,7 +17,10 @@ import {
     isPdfFile,
     isEpubFile,
     isCbzFile,
+    getMediaType,
+    groupItemsByMediaType,
 } from '$lib/utils/fileUtils';
+import type { MediaType } from '$lib/stores/browser/types';
 
 const execAsync = promisify(exec);
 
@@ -137,6 +140,7 @@ export interface ListDirectoryOptions {
     imagesOnly: boolean;
     exclusiveType: string | null;
     isCover: boolean;
+    isToc: boolean;
     noGroup: boolean;
 }
 
@@ -145,7 +149,7 @@ export interface ListDirectoryOptions {
  * sorting, type filtering, and optional grouping by media type.
  */
 export async function listDirectory(folderPath: string, opts: ListDirectoryOptions) {
-    const { page, limit, sortBy, typeFilter, imagesOnly, exclusiveType, isCover, noGroup } = opts;
+    const { page, limit, sortBy, typeFilter, imagesOnly, exclusiveType, isCover, isToc, noGroup } = opts;
 
     const stat = await fs.stat(folderPath);
     let items: any[] = [];
@@ -162,7 +166,7 @@ export async function listDirectory(folderPath: string, opts: ListDirectoryOptio
                         path: `${folderPath}::${entry.filename}`,
                         size: entry.uncompressedSize,
                         mtime: Date.now(),
-                        isDir: false,
+                        mediaType: 'image' as MediaType,
                     });
                 }
             }
@@ -173,6 +177,8 @@ export async function listDirectory(folderPath: string, opts: ListDirectoryOptio
         // ── Directory ──
         const entries = await fs.readdir(folderPath, { withFileTypes: true });
         const CHUNK = 50;
+        let mediaCount = 0;
+        const mediaTypes = new Set<string>();
 
         for (let i = 0; i < entries.length; i += CHUNK) {
             const results = await Promise.all(
@@ -180,54 +186,94 @@ export async function listDirectory(folderPath: string, opts: ListDirectoryOptio
                     const fullPath = path.join(folderPath, entry.name);
                     const ext = path.extname(entry.name).toLowerCase();
                     const isDir = entry.isDirectory();
-                    const isCbz = !isDir && isCbzFile(ext);
-                    const isVideo = !isDir && isVideoFile(ext);
-                    const isAudio = !isDir && isAudioFile(ext);
-                    const isPdf = !isDir && isPdfFile(ext);
-                    const isEpub = !isDir && isEpubFile(ext);
-                    const isImg = !isDir && !isCbz && !isVideo && !isAudio && !isPdf && !isEpub;
 
-                    let allowed = isDir || isCbz || isAudio || isPdf || isEpub || ALLOWED_EXTENSIONS.has(ext);
+                    let mediaType: MediaType = isDir ? 'directory' : getMediaType(ext);
+
+                    const isMedia = mediaType !== 'unknown' && mediaType !== 'directory';
+                    if (isMedia) {
+                        mediaCount++;
+                        mediaTypes.add(ext.replace('.', '').toUpperCase());
+                    }
+
+                    let allowed = isDir || isMedia;
 
                     if (!isDir && allowed) {
-                        if (typeFilter === 'images' && (isVideo || isAudio || isPdf || isEpub || isCbz)) allowed = false;
-                        if (typeFilter === 'videos' && !isVideo) allowed = false;
-                        if (typeFilter === 'audio' && !isAudio) allowed = false;
-                        if (typeFilter === 'ebook' && !isPdf && !isEpub && !isCbz) allowed = false;
+                        if (typeFilter === 'images' && (mediaType === 'video' || mediaType === 'audio' || mediaType === 'pdf' || mediaType === 'epub' || mediaType === 'cbz')) allowed = false;
+                        if (typeFilter === 'videos' && mediaType !== 'video') allowed = false;
+                        if (typeFilter === 'audio' && mediaType !== 'audio') allowed = false;
+                        if (typeFilter === 'ebook' && mediaType !== 'pdf' && mediaType !== 'epub' && mediaType !== 'cbz') allowed = false;
                     }
 
                     if (!allowed) return null;
-                    if (imagesOnly && (isDir || isVideo || isAudio || isCbz || isPdf || isEpub)) return null;
+                    if (imagesOnly && mediaType !== 'image') return null;
 
                     if (exclusiveType) {
-                        if (exclusiveType === 'folders' && !isDir) return null;
-                        if (exclusiveType !== 'folders' && isDir) return null;
-                        if (exclusiveType === 'images' && (isVideo || isAudio || isCbz || isPdf || isEpub)) return null;
-                        if (exclusiveType === 'cbz' && !isCbz) return null;
-                        if (exclusiveType === 'pdf' && !isPdf) return null;
-                        if (exclusiveType === 'epub' && !isEpub) return null;
-                        if (exclusiveType === 'audio' && !isAudio) return null;
-                        if (exclusiveType === 'videos' && !isVideo) return null;
+                        if (exclusiveType === 'folders' && mediaType !== 'directory') return null;
+                        if (exclusiveType !== 'folders' && mediaType === 'directory') return null;
+                        if (exclusiveType === 'images' && mediaType !== 'image') return null;
+                        if (exclusiveType === 'cbz' && mediaType !== 'cbz') return null;
+                        if (exclusiveType === 'pdf' && mediaType !== 'pdf') return null;
+                        if (exclusiveType === 'epub' && mediaType !== 'epub') return null;
+                        if (exclusiveType === 'audio' && mediaType !== 'audio') return null;
+                        if (exclusiveType === 'videos' && mediaType !== 'video') return null;
                     }
 
                     try {
                         const entryStat = await fs.stat(fullPath);
-                        let firstCbz: string | undefined;
-                        let hasImages: boolean | undefined;
+                        let entryPath: string | undefined;
+                        let containsImages: boolean | undefined;
 
                         if (isDir && isCover) {
                             const sub = await fs.readdir(fullPath, { withFileTypes: true });
                             const sorted = sub.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
                             const foundCbz = sorted.find(e => !e.isDirectory() && isCbzFile(path.extname(e.name).toLowerCase()));
                             if (foundCbz) {
-                                firstCbz = path.join(fullPath, foundCbz.name);
+                                entryPath = path.join(fullPath, foundCbz.name);
                             } else {
                                 const imgFiles = sorted.filter(e => !e.isDirectory() && isImageFile(path.extname(e.name).toLowerCase()));
                                 if (imgFiles.length > 1) {
-                                    hasImages = true;
+                                    containsImages = true;
                                 } else {
                                     const firstSub = sorted.find(e => e.isDirectory());
-                                    if (firstSub) firstCbz = path.join(fullPath, firstSub.name);
+                                    if (firstSub) {
+                                        const subPath = path.join(fullPath, firstSub.name);
+                                        const subContent = await fs.readdir(subPath, { withFileTypes: true });
+                                        const subHasImages = subContent.some(e => !e.isDirectory() && isImageFile(path.extname(e.name).toLowerCase()));
+                                        if (subHasImages) {
+                                            entryPath = subPath;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if (isDir && isToc) {
+                            const sub = await fs.readdir(fullPath, { withFileTypes: true });
+                            const sorted = sub.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+                            
+                            const imgFiles = sorted.filter(e => !e.isDirectory() && isImageFile(path.extname(e.name).toLowerCase()));
+                            const hasImages = imgFiles.length > 1;
+                            const hasCbz = sorted.some(e => !e.isDirectory() && isCbzFile(path.extname(e.name).toLowerCase()));
+                            
+                            if (hasImages) {
+                                containsImages = true;
+                            } else {
+                                const firstSub = sorted.find(e => e.isDirectory());
+                                if (firstSub) {
+                                    const subPath = path.join(fullPath, firstSub.name);
+                                    const subContent = await fs.readdir(subPath, { withFileTypes: true });
+                                    const subHasImages = subContent.some(e => !e.isDirectory() && isImageFile(path.extname(e.name).toLowerCase()));
+                                    if (subHasImages) {
+                                        entryPath = subPath;
+                                    }
+                                }
+                            }
+                            
+                            if (hasCbz && !hasImages && !entryPath) {
+                            } else if (hasCbz) {
+                                const foundCbz = sorted.find(e => !e.isDirectory() && isCbzFile(path.extname(e.name).toLowerCase()));
+                                if (foundCbz) {
+                                    entryPath = path.join(fullPath, foundCbz.name);
                                 }
                             }
                         }
@@ -237,8 +283,9 @@ export async function listDirectory(folderPath: string, opts: ListDirectoryOptio
                             path: fullPath,
                             mtime: entryStat.mtimeMs,
                             size: entryStat.size,
-                            isDir, isCbz, isVideo, isAudio, isPdf, isEpub,
-                            firstCbz, hasImages,
+                            mediaType,
+                            entryPath,
+                            containsImages,
                         };
                     } catch {
                         return null;
@@ -254,8 +301,8 @@ export async function listDirectory(folderPath: string, opts: ListDirectoryOptio
     // ── Sort ──
     items.sort((a, b) => {
         if (!noGroup) {
-            if (a.isDir && !b.isDir) return -1;
-            if (!a.isDir && b.isDir) return 1;
+            if (a.mediaType === 'directory' && b.mediaType !== 'directory') return -1;
+            if (a.mediaType !== 'directory' && b.mediaType === 'directory') return 1;
         }
         if (sortBy === 'date_desc') return b.mtime - a.mtime;
         if (sortBy === 'date_asc') return a.mtime - b.mtime;
@@ -265,42 +312,25 @@ export async function listDirectory(folderPath: string, opts: ListDirectoryOptio
         return 0;
     });
 
-    const isPlainImage = (i: any) => !i.isDir && !i.isCbz && !i.isVideo && !i.isAudio && !i.isPdf && !i.isEpub;
-
-    const totalCount = items.length;
-    const totalImages = items.filter(isPlainImage).length;
-    const totalVideos = items.filter(i => i.isVideo).length;
-    const totalAudio = items.filter(i => i.isAudio).length;
-    const totalEbook = items.filter(i => i.isPdf || i.isEpub || i.isCbz).length;
-
     const toDto = (item: any) => ({
         name: item.name, path: item.path,
-        isDir: item.isDir, isCbz: item.isCbz, isVideo: item.isVideo,
-        isAudio: item.isAudio, isPdf: item.isPdf, isEpub: item.isEpub,
-        firstCbz: item.firstCbz, size: item.size, lastModified: item.mtime,
+        mediaType: item.mediaType,
+        entryPath: item.entryPath,
+        containsImages: item.containsImages,
+        size: item.size, lastModified: item.mtime,
     });
 
-    const counts = { total: totalCount, totalImages, totalVideos, totalAudio, totalEbook };
+    const { groups, counts } = groupItemsByMediaType(items);
+    const nonEmptyGroups = Object.entries(groups)
+        .filter(([_, arr]) => (arr as any[]).length > 0)
+        .map(([type, arr]) => ({ type, items: arr as any[] }));
 
-    // ── Grouping ──
-    if (!exclusiveType && !noGroup) {
-        const groups = [
-            { type: 'folders', items: items.filter(i => i.isDir) },
-            { type: 'images',  items: items.filter(isPlainImage) },
-            { type: 'cbz',     items: items.filter(i => i.isCbz) },
-            { type: 'pdf',     items: items.filter(i => i.isPdf) },
-            { type: 'epub',    items: items.filter(i => i.isEpub) },
-            { type: 'audio',   items: items.filter(i => i.isAudio) },
-            { type: 'videos',  items: items.filter(i => i.isVideo) },
-        ].filter(g => g.items.length > 0);
-
-        if (groups.length > 1) {
-            const groupedResponse: Record<string, any> = {};
-            for (const g of groups) {
-                groupedResponse[g.type] = { total: g.items.length, items: g.items.slice(0, 11).map(toDto) };
-            }
-            return json({ isGrouped: true, groups: groupedResponse, ...counts });
+    if (!exclusiveType && !noGroup && nonEmptyGroups.length > 1) {
+        const groupedResponse: Record<string, any> = {};
+        for (const g of nonEmptyGroups) {
+            groupedResponse[g.type] = { total: g.items.length, items: g.items.slice(0, 11).map(toDto) };
         }
+        return json({ isGrouped: true, groups: groupedResponse, ...counts });
     }
 
     // ── Paginated flat list ──
@@ -308,7 +338,7 @@ export async function listDirectory(folderPath: string, opts: ListDirectoryOptio
     return json({
         images: items.slice(start, start + limit).map(toDto),
         page,
-        hasMore: start + limit < totalCount,
+        hasMore: start + limit < items.length,
         ...counts,
     });
 }

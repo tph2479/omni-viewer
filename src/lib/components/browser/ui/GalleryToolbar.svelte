@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { ImageFile } from "$lib/utils/fileUtils";
+    import type { MediaFile, FilterType } from "$lib/stores/browser/types";
     import {
         ArrowUp,
         BookOpen,
@@ -21,7 +21,7 @@
         isGrouped: boolean;
         isCoverMode?: boolean;
         exclusiveType?: string | null;
-        items: ImageFile[];
+        items: MediaFile[];
         onPathChange?: (v: string) => void;
     };
 
@@ -53,8 +53,8 @@
     };
 
     type FilterState = {
-        type: "all" | "images" | "videos" | "audio" | "ebook";
-        onChange: (v: "all" | "images" | "videos" | "audio" | "ebook") => void;
+        type: FilterType;
+        onChange: (v: FilterType) => void;
     };
 
     type ToolbarActions = {
@@ -165,7 +165,7 @@
         { value: "name_desc", label: "Z – A" },
     ] as const;
 
-    function selectMedia(v: typeof mediaType) {
+    function selectMedia(v: FilterType) {
         filter.onChange(v);
         actions.onLoad();
     }

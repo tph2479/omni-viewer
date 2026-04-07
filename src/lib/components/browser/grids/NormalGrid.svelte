@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { type ImageFile } from '$lib/utils/fileUtils';
+    import { type MediaFile } from '$lib/stores/browser/types';
     import { ArrowLeft } from "lucide-svelte";
     import Pagination from "../ui/Pagination.svelte";
     import FileGridBase from "./FileGridBase.svelte";
@@ -7,7 +7,7 @@
     type FileActions = {
         openDir: (path: string) => void;
         openCbz: (path: string) => void;
-        openModal: (index: number, items: ImageFile[]) => void;
+        openModal: (index: number, items: MediaFile[]) => void;
     };
 
     let {
@@ -23,7 +23,7 @@
         },
         actions,
     }: {
-        items?: ImageFile[];
+        items?: MediaFile[];
         total: number;
         isLoading?: boolean;
         highlightedPath?: string | null;

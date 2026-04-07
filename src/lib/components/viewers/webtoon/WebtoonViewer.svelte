@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { tick, onMount, onDestroy, setContext } from 'svelte';
-	import { type ImageFile } from '$lib/utils/fileUtils';
+	import type { MediaFile } from '$lib/stores/browser/types';
 	import { isVideoFile } from '$lib/utils/fileUtils';
 	import { cacheVersion } from '$lib/stores/system/cache.svelte';
 	import { browserStore } from '$lib/stores/browser/index.svelte';
@@ -235,7 +235,7 @@
 	<!-- Nội dung Webtoon -->
 	<div class="flex flex-col items-center pb-20 pt-4 min-h-dvh outline-none w-full">
 		<div class="flex flex-col items-center" style="width: {s.webtoonZoomLevel * 100}%; max-width: none; flex-shrink: 0;">
-			{#each s.loadedImages as img, i}
+			{#each s.loadedImages as mediaItem, i}
 				{@const inBuffer = Math.abs(i - s.currentImageIndex) <= ctrl.BUFFER_SIZE}
 				<!-- svelte-ignore a11y_missing_attribute -->
 				<div
@@ -245,13 +245,13 @@
 					class="w-full flex flex-col items-center justify-center border-b border-white/5 bg-black relative"
 				>
 					<img
-						src={inBuffer ? `/api/media?path=${encodeURIComponent(img.path)}&v=${cacheVersion.value}` : undefined}
+						src={inBuffer ? `/api/media?path=${encodeURIComponent(mediaItem.path)}&v=${cacheVersion.value}` : undefined}
 						alt=""
 						class="w-full h-auto object-contain block m-0 p-0 pointer-events-none"
 						onload={(e) => {
-							const img = e.currentTarget as HTMLImageElement;
-							if (img.naturalWidth && img.naturalHeight) {
-								s.aspectRatios[i] = img.naturalWidth / img.naturalHeight;
+							const el = e.currentTarget as HTMLImageElement;
+							if (el.naturalWidth && el.naturalHeight) {
+								s.aspectRatios[i] = el.naturalWidth / el.naturalHeight;
 							}
 						}}
 					/>

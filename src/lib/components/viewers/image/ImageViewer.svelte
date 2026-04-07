@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { handleImageError } from "$lib/actions/imageError";
-	import { type ImageFile } from "$lib/utils/fileUtils";
+	import type { MediaFile } from "$lib/stores/browser/types";
 	import { onDestroy, tick, setContext } from "svelte";
 	import { createImageModalState, IMAGE_CONTEXT_KEY } from "./imageViewer.svelte.ts";
 	import ImageToolbar from "./ImageToolbar.svelte";
@@ -20,7 +20,7 @@
 	}: {
 		isModalOpen: boolean;
 		selectedImageIndex: number;
-		loadedImages: ImageFile[];
+		loadedImages: MediaFile[];
 		totalImages: number;
 		hasMore: boolean;
 		currentPage: number;

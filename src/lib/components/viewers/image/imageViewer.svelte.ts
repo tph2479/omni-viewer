@@ -1,5 +1,5 @@
 import { tick } from 'svelte';
-import type { ImageFile } from '$lib/utils/fileUtils';
+import type { MediaFile } from '$lib/stores/browser/types';
 import { cacheVersion } from '$lib/stores/system/cache.svelte';
 
 export const IMAGE_CONTEXT_KEY = Symbol('image-context');
@@ -13,7 +13,7 @@ export function createImageModalState(props: {
 	set isModalOpen(v: boolean);
 	get selectedImageIndex(): number;
 	set selectedImageIndex(v: number);
-	get loadedImages(): ImageFile[];
+	get loadedImages(): MediaFile[];
 	get totalImages(): number;
 	get hasMore(): boolean;
 	get currentPage(): number;
@@ -512,8 +512,8 @@ export function createImageModalState(props: {
 		isDragging = false;
 	}
 
-	function isImage(item: ImageFile) {
-		return item && !item.isDir && !item.isCbz && !item.isVideo && !item.isAudio && !item.isPdf && !item.isEpub;
+	function isImage(item: MediaFile) {
+		return item && item.mediaType === 'image';
 	}
 
 	async function nextImage() {
@@ -615,22 +615,22 @@ export function createImageModalState(props: {
 			case 'ArrowDown':
 				if (needsVerticalPan) { event.preventDefault(); translateY -= 30; }
 				break;
-			case 'PageUp':
-				event.preventDefault();
-				if (needsVerticalPan && translateY < maxTranslateY - 1) { 
-					translateY += window.innerHeight * 0.8; 
-				} else {
-					prevImage();
-				}
-				break;
-			case 'PageDown':
-				event.preventDefault();
-				if (needsVerticalPan && translateY > -maxTranslateY + 1) { 
-					translateY -= window.innerHeight * 0.8; 
-				} else {
-					nextImage();
-				}
-				break;
+case 'PageUp':
+                event.preventDefault();
+                if (needsVerticalPan && translateY < maxTranslateY - 1) { 
+                    translateY += window.innerHeight * 0.8; 
+                } else if (Math.abs(zoomLevel - getBestFitZoom()) < 0.01) { // Only change image if at fit zoom
+                    prevImage();
+                }
+                break;
+            case 'PageDown':
+                event.preventDefault();
+                if (needsVerticalPan && translateY > -maxTranslateY + 1) { 
+                    translateY -= window.innerHeight * 0.8; 
+                } else if (Math.abs(zoomLevel - getBestFitZoom()) < 0.01) { // Only change image if at fit zoom
+                    nextImage();
+                }
+                break;
 			case 'Home':
 				if (needsVerticalPan) {
 					event.preventDefault();

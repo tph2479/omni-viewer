@@ -143,3 +143,4 @@ build
 fixme.txt
 db/
 .opencode
+.qwen

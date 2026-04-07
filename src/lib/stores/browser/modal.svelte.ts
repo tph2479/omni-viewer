@@ -12,7 +12,7 @@ export class ModalStore {
   folderPicker = $state({ open: false });
 
   get isAnyOpen() {
-    return this.image.open || this.video.open || this.webtoon.open || this.audio.open || this.pdf.open;
+    return this.image.open || this.video.open || this.webtoon.open || this.audio.open || this.pdf.open || this.epub.open;
   }
 
   closeAll() {

@@ -28,6 +28,7 @@ export async function GET({ url }: RequestEvent) {
             const typeFilter = url.searchParams.get('type') ?? 'all';
             const imagesOnly = url.searchParams.get('imagesOnly') === 'true';
             const isCover = url.searchParams.get('isCover') === 'true';
+            const isToc = url.searchParams.get('isToc') === 'true';
             const exclusiveType = url.searchParams.get('exclusiveType');
             const noGroup = url.searchParams.get('noGroup') === 'true';
 
@@ -37,7 +38,7 @@ export async function GET({ url }: RequestEvent) {
 
             return await listDirectory(path.resolve(folderParam), {
                 page, limit, sortBy, typeFilter,
-                imagesOnly, exclusiveType, isCover, noGroup,
+                imagesOnly, exclusiveType, isCover, isToc, noGroup,
             });
         }
 

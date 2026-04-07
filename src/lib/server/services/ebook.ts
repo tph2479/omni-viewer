@@ -9,6 +9,7 @@ import path from 'node:path';
 import { Readable } from 'node:stream';
 
 import { isPdfFile, isEpubFile, isCbzFile, getContentType, isImageFile } from '$lib/utils/fileUtils';
+import type { MediaType } from '$lib/stores/browser/types';
 import { serveFileResponse, rangeStreamResponse, CACHE_IMMUTABLE, CACHE_SHORT } from '../../../routes/api/_shared/responseUtils';
 import yauzl from 'yauzl-promise';
 import sharp from 'sharp';
@@ -25,14 +26,18 @@ export async function getEbookMetadata(
     stat: Stats,
 ) {
     const ext = path.extname(absolutePath).toLowerCase();
+    
+    let mediaType: MediaType = 'unknown';
+    if (isPdfFile(ext)) mediaType = 'pdf';
+    else if (isEpubFile(ext)) mediaType = 'epub';
+    else if (isCbzFile(ext)) mediaType = 'cbz';
+    
     return json({
         name: path.basename(absolutePath),
         path: normalizedPath,
         size: stat.size,
         lastModified: stat.mtimeMs,
-        isPdf: isPdfFile(ext),
-        isEpub: isEpubFile(ext),
-        isCbz: isCbzFile(ext),
+        mediaType,
     });
 }
 

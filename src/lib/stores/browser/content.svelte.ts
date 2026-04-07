@@ -1,7 +1,7 @@
-import type { ImageFile } from "$lib/utils/fileUtils";
+import type { MediaFile } from "./types";
 
 export class ContentStore {
-  items = $state<ImageFile[]>([]);
+  items = $state<MediaFile[]>([]);
   groupedData = $state<any>(null);
   isGrouped = $state(false);
   totals = $state({

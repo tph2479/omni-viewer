@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onDestroy, setContext } from "svelte";
     import { fade } from "svelte/transition";
-    import { type ImageFile } from '$lib/utils/fileUtils';
+    import type { MediaFile } from '$lib/stores/browser/types';
     import { cacheVersion } from "$lib/stores/system/cache.svelte";
     import { createAudioController, AUDIO_CONTEXT_KEY } from "./audioPlayer.svelte.ts";
     import { Disc } from "lucide-svelte";
@@ -22,7 +22,7 @@
     }: {
         isModalOpen: boolean;
         selectedImageIndex: number;
-        loadedImages: ImageFile[];
+        loadedImages: MediaFile[];
         totalImages: number;
         hasMore: boolean;
         currentPage: number;

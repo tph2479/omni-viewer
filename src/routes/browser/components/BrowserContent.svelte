@@ -1,9 +1,18 @@
 <script lang="ts">
-    import EmptyState from "$lib/components/browser/ui/EmptyState.svelte";
     import BrowserView from "$lib/components/browser/BrowserView.svelte";
     import { browserStore as s } from "$lib/stores/browser/index.svelte";
 
     let wasModalOpen = $state(false);
+
+    $effect(() => {
+        const idx = s.modal.image.index;
+        if (s.modal.image.open || s.modal.video.open || s.modal.audio.open) {
+            const item = s.content.items[idx];
+            if (item) {
+                s.ui.lastOpenedFile = item.path;
+            }
+        }
+    });
 
     $effect(() => {
         const isAnyModalOpen = s.modal.isAnyOpen;
@@ -11,25 +20,24 @@
             s.ui.highlightedPath = s.ui.lastOpenedFile;
             s.ui.lastOpenedFile = null;
             setTimeout(() => {
+                if (!s.ui.highlightedPath) return;
                 const el = document.getElementById(
-                    `item-${s.ui.highlightedPath?.replace(/[^a-zA-Z0-9]/g, "-")}`,
+                    `item-${s.ui.highlightedPath.replace(/[^a-zA-Z0-9]/g, "-")}`,
                 );
-                if (el)
+                if (el) {
                     el.scrollIntoView({ behavior: "instant", block: "center" });
+                    setTimeout(() => {
+                        s.ui.highlightedPath = null;
+                    }, 2500);
+                } else {
+                    s.ui.highlightedPath = null;
+                }
             }, 0);
-            setTimeout(() => {
-                s.ui.highlightedPath = null;
-            }, 2500);
         }
         wasModalOpen = isAnyModalOpen;
     });
 </script>
 
 <div class="flex-1 flex flex-col">
-    {#if !s.folder.isSelected && !s.ui.isLoading}
-        <EmptyState onOpenPicker={() => (s.modal.folderPicker.open = true)} />
-    {:else if s.folder.isSelected}
-        <BrowserView highlightedPath={s.ui.highlightedPath} />
-    {/if}
+    <BrowserView highlightedPath={s.ui.highlightedPath} />
 </div>
-

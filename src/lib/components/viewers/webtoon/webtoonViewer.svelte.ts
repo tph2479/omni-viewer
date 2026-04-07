@@ -1,5 +1,5 @@
 import { tick } from 'svelte';
-import type { ImageFile } from '$lib/utils/fileUtils';
+import type { MediaFile } from '$lib/stores/browser/types';
 export const WEBTOON_CONTEXT_KEY = Symbol('webtoon-context');
 export type WebtoonViewerContext = ReturnType<typeof createWebtoonController>;
 
@@ -7,10 +7,10 @@ export function createWebtoonController(folderPath: string, contextPath: string 
 	const s = $state({
 		folderPath,
 		contextPath,
-		siblings: [] as ImageFile[],
+		siblings: [] as MediaFile[],
 		currentIndex: -1,
 		isTocOpen: false,
-		loadedImages: [] as ImageFile[],
+		loadedImages: [] as MediaFile[],
 		totalImages: 0,
 		isLoading: false,
 		errorMsg: '',
@@ -75,16 +75,17 @@ export function createWebtoonController(folderPath: string, contextPath: string 
 			// Normalize path for API
 			const normalizedContext = s.contextPath.replace(/\\/g, '/');
 			// Use noGroup=true to get a flat list even if folders and CBZs are mixed
-			const res = await fetch(`/api/file?action=gallery&folder=${encodeURIComponent(normalizedContext)}&sort=name_asc&type=all&limit=10000&noGroup=true`);
+			// isToc=true to get entryPath/containsImages for TOC
+			const res = await fetch(`/api/file?action=gallery&folder=${encodeURIComponent(normalizedContext)}&sort=name_asc&type=all&limit=10000&noGroup=true&isToc=true`);
 			const data = await res.json();
 			
 			if (data.images) {
-				// Filter for books/chapters (both CBZ files and folders)
-				s.siblings = (data.images as ImageFile[]).filter(item => 
-					item.isCbz || 
-					item.isDir ||
+				// Filter for books/chapters (both CBZ files and folders with images)
+				s.siblings = (data.images as MediaFile[]).filter(item => 
+					item.mediaType === 'cbz' || 
 					item.name.toLowerCase().endsWith('.cbz') || 
-					item.name.toLowerCase().endsWith('.zip')
+					item.name.toLowerCase().endsWith('.zip') ||
+					(item.mediaType === 'directory' && (item.entryPath || item.containsImages))
 				);
 				refreshCurrentIndex();
 			}
@@ -105,15 +106,15 @@ export function createWebtoonController(folderPath: string, contextPath: string 
 		
 		s.currentIndex = s.siblings.findIndex(item => {
 			const itemPath = norm(item.path);
-			const firstCbz = norm(item.firstCbz || "");
-			return itemPath === current || (firstCbz && firstCbz === current);
+			const entryPathNorm = norm(item.entryPath || "");
+			return itemPath === current || (entryPathNorm && entryPathNorm === current);
 		});
 	}
 
 	async function goToIndex(index: number) {
 		if (index >= 0 && index < s.siblings.length) {
 			const item = s.siblings[index];
-			const path = item.firstCbz || item.path;
+			const path = item.entryPath || item.path;
 			actions.openCbzInWebtoon(path, s.contextPath);
 			s.isTocOpen = false;
 			await tick();

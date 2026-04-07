@@ -10,14 +10,14 @@
         X,
         AlertCircle,
         FolderX,
+        FileArchive,
+        Play,
     } from "lucide-svelte";
 
     type DirectoryEntry = {
         name: string;
         path: string;
-        isDir?: boolean;
-        isCbz?: boolean;
-        isMedia?: boolean;
+        mediaType?: 'directory' | 'cbz' | 'media' | 'unknown';
     };
 
     let {
@@ -142,11 +142,21 @@
 
             pickerCurrentPath = data.currentPath || "";
             pickerParentPath = data.parentPath ?? null;
-            subdirectoryEntries = (data.directories as DirectoryEntry[]).map(
-                (d) => ({
-                    ...d,
-                    path: normalizePath(d.path),
-                }),
+            subdirectoryEntries = (data.directories as any[]).map(
+                (d) => {
+                    const isDir = d.isDir;
+                    const isCbz = d.isCbz;
+                    const isMedia = d.isMedia;
+                    let mediaType: 'directory' | 'cbz' | 'media' | 'unknown' = 'unknown';
+                    if (isDir) mediaType = 'directory';
+                    else if (isCbz) mediaType = 'cbz';
+                    else if (isMedia) mediaType = 'media';
+                    return {
+                        name: d.name,
+                        path: normalizePath(d.path),
+                        mediaType,
+                    };
+                },
             );
         } catch (e: any) {
             pickerError = e.message;
@@ -224,20 +234,21 @@
     }
 
     function handleEntryClick(dir: DirectoryEntry) {
-        if (dir.isDir === false && !dir.isCbz && !dir.isMedia) return;
+        const mt = dir.mediaType || 'unknown';
+        if (mt === 'unknown') return;
 
-        if (dir.isDir !== false) {
+        if (mt === 'directory') {
             loadPickerData(dir.path);
             return;
         }
-        if (dir.isCbz) {
+        if (mt === 'cbz') {
             folderPath = dir.path;
             isFolderPickerOpen = false;
             onOpenFile?.(dir.path, "cbz");
             onSelect(dir.path);
             return;
         }
-        if (dir.isMedia) {
+        if (mt === 'media') {
             folderPath = pickerCurrentPath;
             isFolderPickerOpen = false;
             onOpenFile?.(dir.path, "media");
@@ -251,11 +262,13 @@
         const isDrive = /^[A-Za-z]:[\\\/]?$/.test(dir.path);
         if (isRoot || isDrive)
             return { colorClass: "", icon: "drive", style: "color: var(--color-tertiary-500);" };
-        if (dir.isDir)
+        
+        const mt = dir.mediaType || 'unknown';
+        if (mt === 'directory')
             return { colorClass: "", icon: "folder", style: "color: var(--color-primary-500);" };
-        if (dir.isCbz)
+        if (mt === 'cbz')
             return { colorClass: "", icon: "archive", style: "color: var(--color-warning-500);" };
-        if (dir.isMedia)
+        if (mt === 'media')
             return { colorClass: "", icon: "media", style: "color: var(--color-success-500);" };
         return { colorClass: "opacity-30", icon: "file", style: "" };
     }
@@ -447,6 +460,10 @@
                                         <HardDrive class="h-4 w-4" />
                                     {:else if meta.icon === "folder"}
                                         <Folder class="h-4 w-4" />
+                                    {:else if meta.icon === "archive"}
+                                        <FileArchive class="h-4 w-4" />
+                                    {:else if meta.icon === "media"}
+                                        <Play class="h-4 w-4" />
                                     {:else}
                                         <FileText class="h-4 w-4" />
                                     {/if}
@@ -458,7 +475,7 @@
                                     {dir.name}
                                 </span>
 
-                                {#if dir.isCbz}
+                                {#if dir.mediaType === 'cbz'}
                                     <span
                                         class="badge variant-filled-warning text-[10px] font-bold px-2 py-0.5 rounded-md"
                                     >
