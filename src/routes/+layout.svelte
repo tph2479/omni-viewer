@@ -65,7 +65,7 @@
         { label: "Home", href: "/", icon: HouseIcon },
         { label: "Gallery", href: "/gallery", icon: BookIcon },
         { label: "Browser", href: "/browser", icon: FolderTree },
-        { label: "Getter", href: "/getter", icon: Link },
+        { label: "Getlink", href: "/getlink", icon: Link },
         { label: "Import", href: "/import", icon: HardDriveDownload },
         { label: "Settings", href: "/settings", icon: SettingsIcon },
     ];

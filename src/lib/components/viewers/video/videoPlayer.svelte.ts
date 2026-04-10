@@ -63,7 +63,7 @@ export function createVideoController() {
 		if (!globalThis.document.fullscreenElement) {
 			container.requestFullscreen().then(() => {
 				s.isFullscreen = true;
-				if ('orientation' in globalThis.screen) {
+				if ('orientation' in globalThis.screen && s.videoWidth > s.videoHeight) {
 					(globalThis.screen as any).orientation.lock?.('landscape').catch(() => {});
 				}
 			}).catch(() => { });

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { MediaFile } from '$lib/stores/browser/types';
-import { formatBytes, formatDateTime } from '$lib/utils/formatters';
+	import { formatBytes, formatDateTime } from '$lib/utils/formatters';
 	import { isVideoFile } from '$lib/utils/fileUtils';
 	import { onDestroy } from 'svelte';
 	import { cacheVersion } from '$lib/stores/system/cache.svelte';
@@ -25,7 +25,11 @@ import { formatBytes, formatDateTime } from '$lib/utils/formatters';
 		totalImages: number;
 		hasMore: boolean;
 		currentPage: number;
-		loadFolder: (reset: boolean, page: number, append?: boolean) => Promise<void>;
+		loadFolder: (
+			reset: boolean,
+			page: number,
+			append?: boolean,
+		) => Promise<void>;
 		isGrouped?: boolean;
 		onSwitchToPagination?: () => Promise<void>;
 		onSwitchToAudio?: () => void;
@@ -40,6 +44,30 @@ import { formatBytes, formatDateTime } from '$lib/utils/formatters';
 
 	const currentItem = $derived(loadedImages[selectedImageIndex] || null);
 	const progressPercent = $derived(s.videoDuration > 0 ? (s.videoTime / s.videoDuration) * 100 : 0);
+
+	// Dynamic masked logic
+	let textContainer: HTMLElement | null = $state(null);
+	let textElement: HTMLElement | null = $state(null);
+	let shouldMask = $derived(false);
+
+	$effect(() => {
+		if (!textContainer || !textElement) return;
+
+		const observer = new ResizeObserver(() => {
+			if (!textContainer || !textElement) return;
+			const containerWidth = textContainer.clientWidth;
+			const textWidth = textElement.scrollWidth;
+			// Nếu text rộng hơn container width * 0.8 thì masked
+			shouldMask = textWidth > containerWidth * 0.8;
+		});
+
+		observer.observe(textContainer);
+		observer.observe(textElement);
+
+		return () => {
+			observer.disconnect();
+		};
+	});
 
 	function formatVideoTime(seconds: number) {
 		if (isNaN(seconds) || seconds === Infinity || !seconds) return '0:00';
@@ -159,7 +187,8 @@ import { formatBytes, formatDateTime } from '$lib/utils/formatters';
 	$effect(() => {
 		const scrollContainer = document.querySelector('.drawer-content');
 		if (scrollContainer) {
-			const originalOverflow = (scrollContainer as HTMLElement).style.overflow;
+			const originalOverflow = (scrollContainer as HTMLElement).style
+				.overflow;
 			(scrollContainer as HTMLElement).style.overflow = 'hidden';
 			return () => {
 				(scrollContainer as HTMLElement).style.overflow = originalOverflow || 'auto';
@@ -367,9 +396,10 @@ import { formatBytes, formatDateTime } from '$lib/utils/formatters';
 							<div class="flex items-center pointer-events-auto">
 							<div 
 								class="flex-1 min-w-0 overflow-x-auto video-title-scroll text-right"
-								style="mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent);"
+								style={shouldMask ? "mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent);" : ""}
+								bind:this={textContainer}
 							>
-									<p class="select-text text-white font-bold text-xl sm:text-2xl tracking-tight whitespace-nowrap leading-tight inline-block">
+									<p class="select-text text-white font-bold text-xl sm:text-2xl tracking-tight whitespace-nowrap leading-tight inline-block" bind:this={textElement}>
 										{currentVideoIndexDisplay} / {totalImages} — {currentItem?.name}
 									</p>
 									{#if s.currentMetadata}
