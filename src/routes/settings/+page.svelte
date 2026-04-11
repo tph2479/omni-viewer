@@ -251,15 +251,20 @@
                 <Settings2Icon class="size-5 shrink-0" />
                 <div class="flex-1 min-w-0">
                     <p class="font-medium">External Tools</p>
-                    <p class="text-xs text-surface-500 dark:text-surface-400">
+                    <p class="text-sm text-surface-500 dark:text-surface-400">
                         Paths for downloading and processing media. Auto-detected from system PATH if empty.
                     </p>
-                    <div class="space-y-6">
+                    <div class="space-y-8 mt-6">
                         <!-- yt-dlp -->
-                        <div class="space-y-1.5">
-                            <label for="ytDlp" class="text-[10px] font-black uppercase tracking-widest text-surface-500 flex items-center gap-2">
-                                <TerminalIcon class="size-3" /> yt-dlp Path
-                            </label>
+                        <div class="space-y-3">
+                            <div class="flex flex-col gap-1">
+                                <label for="ytDlp" class="text-xs font-bold uppercase tracking-wider text-surface-500 flex items-center gap-2">
+                                    <TerminalIcon class="size-4" /> yt-dlp Path
+                                </label>
+                                <p class="text-sm text-surface-600 dark:text-surface-400 leading-relaxed">
+                                    Downloads videos and audio from YouTube and other platforms.
+                                </p>
+                            </div>
                             <div class="card preset-outlined flex items-center w-full overflow-hidden shadow-none h-9">
                                 <input
                                     id="ytDlp"
@@ -282,10 +287,15 @@
                         </div>
 
                         <!-- gallery-dl -->
-                        <div class="space-y-1.5">
-                            <label for="galleryDl" class="text-[10px] font-black uppercase tracking-widest text-surface-500 flex items-center gap-2">
-                                <TerminalIcon class="size-3" /> gallery-dl Path
-                            </label>
+                        <div class="space-y-3">
+                            <div class="flex flex-col gap-1">
+                                <label for="galleryDl" class="text-xs font-bold uppercase tracking-wider text-surface-500 flex items-center gap-2">
+                                    <TerminalIcon class="size-4" /> gallery-dl Path
+                                </label>
+                                <p class="text-sm text-surface-600 dark:text-surface-400 leading-relaxed">
+                                    Downloads image galleries, albums, and manga from various sites.
+                                </p>
+                            </div>
                             <div class="card preset-outlined flex items-center w-full overflow-hidden shadow-none h-9">
                                 <input
                                     id="galleryDl"
@@ -308,10 +318,15 @@
                         </div>
 
                         <!-- ffmpeg -->
-                        <div class="space-y-1.5">
-                            <label for="ffmpeg" class="text-[10px] font-black uppercase tracking-widest text-surface-500 flex items-center gap-2">
-                                <TerminalIcon class="size-3" /> ffmpeg Path
-                            </label>
+                        <div class="space-y-3">
+                            <div class="flex flex-col gap-1">
+                                <label for="ffmpeg" class="text-xs font-bold uppercase tracking-wider text-surface-500 flex items-center gap-2">
+                                    <TerminalIcon class="size-4" /> ffmpeg Path
+                                </label>
+                                <p class="text-sm text-surface-600 dark:text-surface-400 leading-relaxed">
+                                    Handles media transcoding and thumbnail generation.
+                                </p>
+                            </div>
                             <div class="card preset-outlined flex items-center w-full overflow-hidden shadow-none h-9">
                                 <input
                                     id="ffmpeg"
