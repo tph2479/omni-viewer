@@ -59,6 +59,13 @@ export const POST: RequestHandler = async ({ request }) => {
                 }
                 break;
 
+            case "thumbnail":
+                targetPath = join(basePath, "Images");
+                command = "yt-dlp";
+                args.push(url, "--skip-download", "--write-thumbnail", "--convert-thumbnails", "jpg", "-P", targetPath);
+                args.push("--no-playlist"); // Individual thumbnail by default
+                break;
+
             default:
                 return json({ error: "Invalid media type" }, { status: 400 });
         }
