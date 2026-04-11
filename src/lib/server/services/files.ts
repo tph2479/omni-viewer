@@ -17,6 +17,7 @@ import {
     isPdfFile,
     isEpubFile,
     isCbzFile,
+    isExecutableFile,
     getMediaType,
     groupItemsByMediaType,
 } from '$lib/utils/fileUtils';
@@ -106,14 +107,15 @@ export async function navigateDirectory(folderParam: string | null) {
             const isMedia = !isDir && !isCbz && (
                 isImageFile(ext) || isVideoFile(ext) || isAudioFile(ext) || isPdfFile(ext) || isEpubFile(ext)
             );
+            const isExecutable = !isDir && isExecutableFile(ext);
             if (isMedia) {
                 mediaCount++;
                 mediaTypes.add(ext.replace('.', '').toUpperCase());
             }
-            return { name: e.name, path: entryPath, isDir, isCbz, isMedia };
+            return { name: e.name, path: entryPath, isDir, isCbz, isMedia, isExecutable };
         })
         .sort((a, b) => {
-            const rank = (e: typeof a) => e.isDir ? 0 : e.isCbz ? 1 : e.isMedia ? 2 : 3;
+            const rank = (e: any) => e.isDir ? 0 : (e.isCbz || e.isMedia || e.isExecutable) ? 1 : 2;
             const diff = rank(a) - rank(b);
             return diff !== 0 ? diff : a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
         });

@@ -4,6 +4,8 @@
         PowerIcon,
         FolderOpenIcon,
         FolderIcon,
+        Settings2Icon,
+        TerminalIcon
     } from "lucide-svelte";
     import { cacheVersion } from "$lib/stores/system/cache.svelte";
     import { enhance } from "$app/forms";
@@ -13,6 +15,10 @@
     import { untrack, tick } from "svelte";
     import { goto } from "$app/navigation";
 
+    import { deserialize } from "$app/forms";
+    import { invalidateAll } from "$app/navigation";
+    import type { ActionResult } from "@sveltejs/kit";
+
     let { data } = $props();
 
     let isClearingCache = $state(false);
@@ -20,6 +26,11 @@
     let shutdownConfirm = $state<boolean>(false);
     let formEl: HTMLFormElement;
     let lastSavedPath = $state(untrack(() => data?.defaultPath ?? ""));
+    let ytDlpPath = $state(untrack(() => data?.ytDlpPath ?? ""));
+    let galleryDlPath = $state(untrack(() => data?.galleryDlPath ?? ""));
+    let ffmpegPath = $state(untrack(() => data?.ffmpegPath ?? ""));
+
+    let isSavingTools = $state(false);
 
     // --- Path bound to DB value ---
     let pickerPath = $state<string>(untrack(() => data?.defaultPath ?? ""));
@@ -30,13 +41,65 @@
             pickerPath = data.defaultPath;
             lastSavedPath = data.defaultPath;
         }
+        if (data?.ytDlpPath) ytDlpPath = data.ytDlpPath;
+        if (data?.galleryDlPath) galleryDlPath = data.galleryDlPath;
+        if (data?.ffmpegPath) ffmpegPath = data.ffmpegPath;
     });
 
     // --- Folder Picker ---
     let isFolderPickerOpen = $state(false);
-    function openPicker() {
+    let pickingFor = $state<"library" | "ytDlp" | "galleryDl" | "ffmpeg">("library");
+    let modalPath = $state("");
+
+    function getParentDir(p: string): string {
+        if (!p) return "";
+        // If it looks like a file (has an extension at the end), get its parent directory
+        if (/\.[a-z0-9]+$/i.test(p)) {
+            const lastSep = Math.max(p.lastIndexOf("/"), p.lastIndexOf("\\"));
+            return lastSep > 0 ? p.substring(0, lastSep) : p;
+        }
+        return p;
+    }
+
+    function isAbsolutePath(p: string): boolean {
+        // Windows: C:\... or \\server\...  Linux/Mac: /...
+        return /^[a-z]:[\\\/]/i.test(p) || /^[\\\/]/.test(p);
+    }
+
+    function openPicker(target: "library" | "ytDlp" | "galleryDl" | "ffmpeg" = "library") {
+        pickingFor = target;
+        let initialPath = "";
+        
+        if (target === "library") initialPath = pickerPath;
+        else if (target === "ytDlp") initialPath = ytDlpPath;
+        else if (target === "galleryDl") initialPath = galleryDlPath;
+        else if (target === "ffmpeg") initialPath = ffmpegPath;
+
+        const normPath = initialPath.trim();
+        if (normPath && isAbsolutePath(normPath)) {
+            modalPath = getParentDir(normPath);
+        } else {
+            modalPath = "";
+        }
+        
         browserStore.actions.refreshDrives();
         isFolderPickerOpen = true;
+    }
+
+    // --- Auto-save Tools ---
+    async function saveSingleTool(name: string, path: string) {
+        const formData = new FormData();
+        formData.append(name, path);
+
+        const response = await fetch("?/saveTools", {
+            method: "POST",
+            body: formData,
+        });
+
+        const result: ActionResult = deserialize(await response.text());
+        if (result.type === "success") {
+            await invalidateAll();
+        }
     }
 
     // --- Save Logic ---
@@ -181,6 +244,100 @@
         </div>
     </div>
 
+    <!-- External Tools Configuration -->
+    <div class="space-y-1 transition-all duration-300">
+        <div class="card preset-outlined p-4 flex flex-col gap-4">
+            <div class="flex items-center gap-3">
+                <Settings2Icon class="size-5 shrink-0" />
+                <div class="flex-1 min-w-0">
+                    <p class="font-medium">External Tools</p>
+                    <p class="text-xs text-surface-500 dark:text-surface-400">
+                        Paths for downloading and processing media. Auto-detected from system PATH if empty.
+                    </p>
+                    <div class="space-y-6">
+                        <!-- yt-dlp -->
+                        <div class="space-y-1.5">
+                            <label for="ytDlp" class="text-[10px] font-black uppercase tracking-widest text-surface-500 flex items-center gap-2">
+                                <TerminalIcon class="size-3" /> yt-dlp Path
+                            </label>
+                            <div class="card preset-outlined flex items-center w-full overflow-hidden shadow-none h-9">
+                                <input
+                                    id="ytDlp"
+                                    type="text"
+                                    class="flex-1 px-3 bg-transparent border-none outline-none ring-0 text-sm font-medium truncate"
+                                    bind:value={ytDlpPath}
+                                    onblur={() => saveSingleTool("ytDlp", ytDlpPath)}
+                                    placeholder="Auto-detecting..."
+                                />
+                                <div class="w-px h-5 bg-surface-200 dark:bg-surface-800/50 shrink-0 mx-1"></div>
+                                <button
+                                    type="button"
+                                    class="flex items-center justify-center w-9 h-full shrink-0 hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
+                                    onclick={() => openPicker("ytDlp")}
+                                    title="Browse folders"
+                                >
+                                    <FolderIcon size={14} />
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- gallery-dl -->
+                        <div class="space-y-1.5">
+                            <label for="galleryDl" class="text-[10px] font-black uppercase tracking-widest text-surface-500 flex items-center gap-2">
+                                <TerminalIcon class="size-3" /> gallery-dl Path
+                            </label>
+                            <div class="card preset-outlined flex items-center w-full overflow-hidden shadow-none h-9">
+                                <input
+                                    id="galleryDl"
+                                    type="text"
+                                    class="flex-1 px-3 bg-transparent border-none outline-none ring-0 text-sm font-medium truncate"
+                                    bind:value={galleryDlPath}
+                                    onblur={() => saveSingleTool("galleryDl", galleryDlPath)}
+                                    placeholder="Auto-detecting..."
+                                />
+                                <div class="w-px h-5 bg-surface-200 dark:bg-surface-800/50 shrink-0 mx-1"></div>
+                                <button
+                                    type="button"
+                                    class="flex items-center justify-center w-9 h-full shrink-0 hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
+                                    onclick={() => openPicker("galleryDl")}
+                                    title="Browse folders"
+                                >
+                                    <FolderIcon size={14} />
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- ffmpeg -->
+                        <div class="space-y-1.5">
+                            <label for="ffmpeg" class="text-[10px] font-black uppercase tracking-widest text-surface-500 flex items-center gap-2">
+                                <TerminalIcon class="size-3" /> ffmpeg Path
+                            </label>
+                            <div class="card preset-outlined flex items-center w-full overflow-hidden shadow-none h-9">
+                                <input
+                                    id="ffmpeg"
+                                    type="text"
+                                    class="flex-1 px-3 bg-transparent border-none outline-none ring-0 text-sm font-medium truncate"
+                                    bind:value={ffmpegPath}
+                                    onblur={() => saveSingleTool("ffmpeg", ffmpegPath)}
+                                    placeholder="Auto-detecting..."
+                                />
+                                <div class="w-px h-5 bg-surface-200 dark:bg-surface-800/50 shrink-0 mx-1"></div>
+                                <button
+                                    type="button"
+                                    class="flex items-center justify-center w-9 h-full shrink-0 hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
+                                    onclick={() => openPicker("ffmpeg")}
+                                    title="Browse folders"
+                                >
+                                    <FolderIcon size={14} />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Clear cache & preferences -->
     <div class="card preset-outlined p-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
@@ -232,14 +389,26 @@
 {#if isFolderPickerOpen}
     <FolderPicker
         bind:isFolderPickerOpen
-        bind:folderPath={pickerPath}
+        bind:folderPath={modalPath}
+        isFileMode={pickingFor !== "library"}
         availableDrives={browserStore.ui.availableDrives}
         isDrivesLoading={browserStore.ui.isDrivesLoading}
         onRefreshDrives={browserStore.actions.refreshDrives}
         onSelect={async (path) => {
-            pickerPath = path;
-            await tick();
-            formEl.requestSubmit();
+            if (pickingFor === "library") {
+                pickerPath = path;
+                await tick();
+                formEl.requestSubmit();
+            } else if (pickingFor === "ytDlp") {
+                ytDlpPath = path;
+                saveSingleTool("ytDlp", path);
+            } else if (pickingFor === "galleryDl") {
+                galleryDlPath = path;
+                saveSingleTool("galleryDl", path);
+            } else if (pickingFor === "ffmpeg") {
+                ffmpegPath = path;
+                saveSingleTool("ffmpeg", path);
+            }
         }}
     />
 {/if}

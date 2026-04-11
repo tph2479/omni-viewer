@@ -1,12 +1,18 @@
-import { getDefaultAppPath, setDefaultAppPath } from '$lib/server/database/db';
+import { getDefaultAppPath, setDefaultAppPath, getToolPath, saveToolPath } from '$lib/server/database/db';
 import type { Actions, PageServerLoad } from './$types';
 import { fail } from '@sveltejs/kit';
 import { statSync } from 'node:fs';
 
 export const load: PageServerLoad = async () => {
     const defaultPath = await getDefaultAppPath();
+    const ytDlpPath = await getToolPath('yt-dlp');
+    const galleryDlPath = await getToolPath('gallery-dl');
+    const ffmpegPath = await getToolPath('ffmpeg');
     return {
-        defaultPath: defaultPath || ''
+        defaultPath: defaultPath || '',
+        ytDlpPath,
+        galleryDlPath,
+        ffmpegPath
     };
 };
 
@@ -37,6 +43,29 @@ export const actions: Actions = {
         } catch (error) {
             console.error('Failed to save path:', error);
             return fail(500, { error: 'Internal server error while saving path', path: path.trim() });
+        }
+    },
+    saveTools: async ({ request }) => {
+        const formData = await request.formData();
+        const ytDlp = formData.get('ytDlp');
+        const galleryDl = formData.get('galleryDl');
+        const ffmpeg = formData.get('ffmpeg');
+        
+        try {
+            if (typeof ytDlp === 'string') await saveToolPath('yt-dlp', ytDlp.trim());
+            if (typeof galleryDl === 'string') await saveToolPath('gallery-dl', galleryDl.trim());
+            if (typeof ffmpeg === 'string') await saveToolPath('ffmpeg', ffmpeg.trim());
+            return { 
+                success: true, 
+                tools: { 
+                    ytDlp: String(ytDlp || ''), 
+                    galleryDl: String(galleryDl || ''), 
+                    ffmpeg: String(ffmpeg || '')
+                } 
+            };
+        } catch (error) {
+            console.error('Failed to save tools:', error);
+            return fail(500, { error: 'Internal server error while saving tool paths' });
         }
     }
 };

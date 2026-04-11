@@ -1,7 +1,7 @@
 import type { RequestHandler } from "./$types";
 import { json } from "@sveltejs/kit";
 import { spawn } from "child_process";
-import { getDefaultAppPath } from "$lib/server/database/db";
+import { getDefaultAppPath, getToolPath } from "$lib/server/database/db";
 import { join } from "path";
 
 export const POST: RequestHandler = async ({ request }) => {
@@ -18,14 +18,24 @@ export const POST: RequestHandler = async ({ request }) => {
             return json({ error: "Server storage path not configured" }, { status: 500 });
         }
 
+        const ytDlpPath = await getToolPath("yt-dlp");
+        const galleryDlPath = await getToolPath("gallery-dl");
+        const ffmpegPath = await getToolPath("ffmpeg");
+
         let targetPath: string;
         let command: string;
         let args: string[] = [];
 
+        // Determine tool needed based on type
+        const requiredTool = type === "image" ? galleryDlPath : ytDlpPath;
+        if (!requiredTool) {
+            return json({ error: `Tool for ${type} (yt-dlp/gallery-dl) not found in settings or system PATH` }, { status: 500 });
+        }
+
         switch (type) {
             case "image":
                 targetPath = join(basePath, "Images");
-                command = "gdl.exe";
+                command = galleryDlPath;
                 args.push(url, "-d", targetPath);
                 if (options.username && options.password) {
                     args.push("--username", options.username, "--password", options.password);
@@ -37,8 +47,11 @@ export const POST: RequestHandler = async ({ request }) => {
 
             case "video":
                 targetPath = join(basePath, "Videos");
-                command = "yt-dlp";
+                command = ytDlpPath;
                 args.push(url, "-P", targetPath);
+                if (ffmpegPath) {
+                    args.push("--ffmpeg-location", ffmpegPath);
+                }
                 args.push(options.playlist ? "--yes-playlist" : "--no-playlist");
                 if (options.resolution && options.resolution !== "best") {
                     args.push("-f", `bestvideo[height<=${options.resolution}]+bestaudio/best[height<=${options.resolution}]/best`);
@@ -50,8 +63,11 @@ export const POST: RequestHandler = async ({ request }) => {
 
             case "audio":
                 targetPath = join(basePath, "Music");
-                command = "yt-dlp";
+                command = ytDlpPath;
                 args.push(url, "-x", "-P", targetPath);
+                if (ffmpegPath) {
+                    args.push("--ffmpeg-location", ffmpegPath);
+                }
                 args.push("--audio-format", options.format || "mp3");
                 args.push(options.playlist ? "--yes-playlist" : "--no-playlist");
                 if (options.embedThumbnail) {
@@ -61,8 +77,11 @@ export const POST: RequestHandler = async ({ request }) => {
 
             case "thumbnail":
                 targetPath = join(basePath, "Images");
-                command = "yt-dlp";
+                command = ytDlpPath;
                 args.push(url, "--skip-download", "--write-thumbnail", "--convert-thumbnails", "jpg", "-P", targetPath);
+                if (ffmpegPath) {
+                    args.push("--ffmpeg-location", ffmpegPath);
+                }
                 args.push("--no-playlist"); // Individual thumbnail by default
                 break;
 

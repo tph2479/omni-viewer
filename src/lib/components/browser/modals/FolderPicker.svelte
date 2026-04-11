@@ -28,6 +28,7 @@
         onRefreshDrives,
         onSelect,
         onOpenFile,
+        isFileMode = false,
     }: {
         isFolderPickerOpen: boolean;
         folderPath: string;
@@ -36,6 +37,7 @@
         onRefreshDrives?: () => Promise<void>;
         onSelect: (path: string) => void;
         onOpenFile?: (path: string, type: "media" | "cbz") => void;
+        isFileMode?: boolean;
     } = $props();
 
     // ── OS Detection ──────────────────────────────────────────────
@@ -81,6 +83,7 @@
     let pickerCurrentPath = $state("");
     let pickerParentPath = $state<string | null>(null);
     let subdirectoryEntries: DirectoryEntry[] = $state([]);
+    let selectedFilePath = $state<string | null>(null);
     const isAtRoot = $derived(
         pickerCurrentPath === ROOT_LABEL || pickerCurrentPath === "",
     );
@@ -140,6 +143,9 @@
             if (!res.ok)
                 throw new Error(data.message || "Error fetching directories");
 
+            // Reset selection when navigating to a new folder
+            selectedFilePath = null;
+
             pickerCurrentPath = data.currentPath || "";
             pickerParentPath = data.parentPath ?? null;
             subdirectoryEntries = (data.directories as any[]).map(
@@ -147,14 +153,16 @@
                     const isDir = d.isDir;
                     const isCbz = d.isCbz;
                     const isMedia = d.isMedia;
+                    const isExecutable = d.isExecutable;
                     let mediaType: 'directory' | 'cbz' | 'media' | 'unknown' = 'unknown';
                     if (isDir) mediaType = 'directory';
                     else if (isCbz) mediaType = 'cbz';
-                    else if (isMedia) mediaType = 'media';
+                    else if (isMedia || isExecutable) mediaType = 'media';
                     return {
                         name: d.name,
                         path: normalizePath(d.path),
                         mediaType,
+                        isExecutable,
                     };
                 },
             );
@@ -226,21 +234,26 @@
     }
 
     function confirm() {
-        if (!pickerCurrentPath) return;
-        const finalPath = stripTrailingSep(pickerCurrentPath);
+        const finalPath = isFileMode && selectedFilePath ? selectedFilePath : stripTrailingSep(pickerCurrentPath);
+        if (!finalPath) return;
         folderPath = finalPath;
         isFolderPickerOpen = false;
         onSelect(finalPath);
     }
 
     function handleEntryClick(dir: DirectoryEntry) {
-        const mt = dir.mediaType || 'unknown';
-        if (mt === 'unknown') return;
-
-        if (mt === 'directory') {
+        if (dir.mediaType === 'directory') {
             loadPickerData(dir.path);
             return;
         }
+
+        if (isFileMode) {
+            selectedFilePath = (selectedFilePath === dir.path) ? null : dir.path;
+            return;
+        }
+
+        // Default behavior for non-file mode (media/cbz handling)
+        const mt = dir.mediaType || 'unknown';
         if (mt === 'cbz') {
             folderPath = dir.path;
             isFolderPickerOpen = false;
@@ -263,9 +276,13 @@
         if (isRoot || isDrive)
             return { colorClass: "", icon: "drive", style: "color: var(--color-tertiary-500);" };
         
-        const mt = dir.mediaType || 'unknown';
-        if (mt === 'directory')
+        if (dir.mediaType === 'directory')
             return { colorClass: "", icon: "folder", style: "color: var(--color-primary-500);" };
+        
+        if ((dir as any).isExecutable)
+            return { colorClass: "", icon: "media", style: "color: var(--color-warning-500); filter: hue-rotate(240deg);" };
+
+        const mt = dir.mediaType || 'unknown';
         if (mt === 'cbz')
             return { colorClass: "", icon: "archive", style: "color: var(--color-warning-500);" };
         if (mt === 'media')
@@ -274,7 +291,7 @@
     }
 
 
-    const canConfirm = $derived(!isAtRoot && !isPickerLoading && !pickerError);
+    const canConfirm = $derived((!isAtRoot || isFileMode) && !isPickerLoading && !pickerError && (!isFileMode || !!selectedFilePath || !!pickerCurrentPath));
 
     /** Drive/root label shown in the quick-nav chips.
      *  Windows → "C", "D" …   Linux → "/", "~", "/media/…" last segment */
@@ -332,7 +349,7 @@
                 <span
                     class="text-sm font-semibold text-gray-800 dark:text-white tracking-wide"
                 >
-                    File Explorer
+                    {isFileMode ? "Select Executable File" : "Select Media Folder"}
                 </span>
             </div>
             <button
@@ -449,8 +466,8 @@
                         <li>
                             <button
                                 class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left
-									transition-colors duration-100
-									hover:bg-gray-100 dark:hover:bg-surface-700
+									transition-all duration-100
+									{selectedFilePath === dir.path ? 'bg-primary-500/10 ring-1 ring-primary-500' : 'hover:bg-gray-100 dark:hover:bg-surface-700'}
 									active:scale-[0.99]
 									{isPickerLoading ? 'pointer-events-none opacity-40' : ''}"
                                 onclick={() => handleEntryClick(dir)}

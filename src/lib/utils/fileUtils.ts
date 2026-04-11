@@ -11,6 +11,7 @@ export const AUDIO_EXTENSIONS = ['.mp3', '.wav', '.ogg', '.flac', '.m4a', '.aac'
 export const ARCHIVE_EXTENSIONS = ['.cbz', '.zip'];
 export const PDF_EXTENSIONS = ['.pdf'];
 export const EPUB_EXTENSIONS = ['.epub'];
+export const EXECUTABLE_EXTENSIONS = ['.exe', '.bat', '.cmd', '.sh', '.com'];
 
 const ALL_EXTENSIONS = [
     ...IMAGE_EXTENSIONS,
@@ -69,6 +70,10 @@ export function isEpubFile(filename: string): boolean {
 
 export function isCbzFile(filename: string): boolean {
     return hasExtension(getExtension(filename), ARCHIVE_EXTENSIONS);
+}
+
+export function isExecutableFile(filename: string): boolean {
+    return hasExtension(getExtension(filename), EXECUTABLE_EXTENSIONS);
 }
 
 export function isZipFile(filename: string): boolean {

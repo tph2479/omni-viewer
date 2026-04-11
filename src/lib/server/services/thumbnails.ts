@@ -12,6 +12,7 @@ import {
 import { globalTaskSemaphore } from "$lib/server/utils/semaphore";
 import { isVideoFile, isAudioFile, isImageFile, isPdfFile } from "$lib/utils/fileUtils";
 import { renderPdfFirstPage } from "$lib/server/pdf/pdfRenderer";
+import { getToolPath } from "$lib/server/database/db";
 
 const ongoingGenerations = new Map<string, Promise<boolean>>();
 function ensureThumbDir() {
@@ -39,6 +40,9 @@ export async function generateThumbnail(
         try {
           const res = await globalTaskSemaphore.run(async () => {
             if (signal?.aborted) throw new Error("Aborted");
+            const resolvedFfmpeg = await getToolPath("ffmpeg");
+            const ffmpegPath = resolvedFfmpeg || "ffmpeg";
+
             const ffmpegArgs = [
               "-hide_banner",
               "-loglevel",
@@ -63,7 +67,7 @@ export async function generateThumbnail(
             if (globalThis.Bun) {
               // Use Bun.spawn for better efficiency on Windows when using Bun
               // @ts-ignore
-              const proc = Bun.spawn(["ffmpeg", ...ffmpegArgs], {
+              const proc = Bun.spawn([ffmpegPath, ...ffmpegArgs], {
                 stdout: "pipe",
                 stderr: "pipe",
                 onExit: (proc: any) => {
@@ -107,7 +111,7 @@ export async function generateThumbnail(
             } else {
               // Fallback for non-Bun environments (Node.js)
               const { spawn } = await import("node:child_process");
-              const ffmpeg = spawn("ffmpeg", ffmpegArgs, {
+              const ffmpeg = spawn(ffmpegPath, ffmpegArgs, {
                 stdio: ["ignore", "pipe", "pipe"],
               });
               const chunks: Buffer[] = [];

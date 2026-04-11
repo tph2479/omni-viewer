@@ -1,6 +1,7 @@
 import type { RequestHandler } from "./$types";
 import { json } from "@sveltejs/kit";
 import { spawn } from "child_process";
+import { getToolPath } from "$lib/server/database/db";
 
 export const GET: RequestHandler = async ({ url }) => {
     const targetUrl = url.searchParams.get("url");
@@ -10,6 +11,10 @@ export const GET: RequestHandler = async ({ url }) => {
     if (!targetUrl) {
         return json({ error: "Missing url parameter" }, { status: 400 });
     }
+
+    const ytDlpPath = await getToolPath("yt-dlp");
+    const galleryDlPath = await getToolPath("gallery-dl");
+    const ffmpegPath = await getToolPath("ffmpeg");
 
     const fetchYtdlp = () => new Promise((resolve) => {
         const args = [
@@ -21,13 +26,17 @@ export const GET: RequestHandler = async ({ url }) => {
             targetUrl!,
         ];
 
+        if (ffmpegPath) {
+            args.push("--ffmpeg-location", ffmpegPath);
+        }
+
         if (isPlaylist) {
             args.push("--flat-playlist", "--yes-playlist");
         } else {
             args.push("--no-playlist");
         }
 
-        const proc = spawn("yt-dlp", args);
+        const proc = spawn(ytDlpPath, args);
 
         let stdout = "";
         let stderr = "";
@@ -109,7 +118,7 @@ export const GET: RequestHandler = async ({ url }) => {
     });
 
     const fetchGalleryDl = () => new Promise((resolve) => {
-        const proc = spawn("gdl.exe", [
+        const proc = spawn(galleryDlPath, [
             "-j",
             targetUrl,
         ]);
@@ -161,11 +170,12 @@ export const GET: RequestHandler = async ({ url }) => {
     });
 
     // Try yt-dlp first for most things, then gdl for images
-    let meta: any = await fetchYtdlp();
-    if (!meta && mediaType === "image") {
-        meta = await fetchGalleryDl();
-    } else if (!meta) {
-        // Even if type isn't image, try gdl as fallback
+    let meta: any = null;
+    if (ytDlpPath) {
+        meta = await fetchYtdlp();
+    }
+    
+    if (!meta && galleryDlPath && (mediaType === "image" || !ytDlpPath)) {
         meta = await fetchGalleryDl();
     }
 
