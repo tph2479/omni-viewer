@@ -332,8 +332,8 @@
                     </button>
                 </div>
 
-                <!-- Source Overview Card - Compact -->
-                {#if meta && (meta.thumbnail || meta.title)}
+                <!-- Source Overview Card - Compact (Only for Single File Mode) -->
+                {#if meta && (meta.thumbnail || meta.title) && !options.playlist}
                     <div class="relative bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-xl p-4 shadow-sm overflow-hidden" transition:slide={{ duration: 300 }}>
                         
                         {#if metaLoading}
@@ -351,7 +351,9 @@
                                     <img
                                         src={meta.thumbnail}
                                         alt="thumbnail"
-                                        class="h-20 w-36 object-cover rounded-lg bg-black shadow-sm"
+                                        loading="lazy"
+                                        decoding="async"
+                                        class="h-20 w-36 object-cover rounded-lg bg-surface-100 dark:bg-surface-800 shadow-sm"
                                     />
                                 {:else}
                                     <div class="h-20 w-36 bg-surface-100 dark:bg-surface-800 rounded-lg flex items-center justify-center border border-surface-200 dark:border-surface-700">
@@ -395,15 +397,41 @@
                         {#if metaLoading}
                              <div class="absolute inset-0 z-10 bg-white/10 dark:bg-black/10 backdrop-blur-[1px] pointer-events-none"></div>
                         {/if}
-                        <div class="flex items-center justify-between px-1">
-                            <h2 class="text-[10px] font-bold uppercase tracking-[0.2em] text-surface-400">Batch Content <span class="text-primary-500 ml-1">[{meta.entries.length}]</span></h2>
-                        </div>
+                        {#if options.playlist && meta}
+                            <div class="px-1 py-1 space-y-1">
+                                <div class="flex items-center justify-between gap-4">
+                                    <h2 class="text-lg font-bold text-surface-900 dark:text-white truncate">{meta.title}</h2>
+                                    <div class="flex items-center gap-3 shrink-0">
+                                        <span class="text-[10px] font-bold text-primary-500 bg-primary-500/10 px-2 py-0.5 rounded-full uppercase tracking-wider">{meta.entries.length}{meta.entries.length >= 50 ? '+' : ''} Items</span>
+                                        <button 
+                                            class="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-surface-100 dark:bg-surface-800 hover:bg-primary-600 hover:text-white transition-all text-[9px] font-bold uppercase tracking-wider text-surface-500"
+                                            onclick={() => handleSubmit(url, "thumbnail")}
+                                            title="Save Playlist Thumbnail"
+                                            disabled={isLoading || metaLoading}
+                                        >
+                                            <Image class="size-3" />
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="h-px w-full bg-gradient-to-r from-surface-200/50 via-surface-200/50 to-transparent dark:from-surface-800/50 dark:via-surface-800/50 mt-2"></div>
+                            </div>
+                        {:else}
+                            <div class="flex items-center justify-between px-1">
+                                <h2 class="text-[10px] font-bold uppercase tracking-[0.2em] text-surface-400">Batch Content <span class="text-primary-500 ml-1">[{meta.entries.length}]</span></h2>
+                            </div>
+                        {/if}
                         <div class="grid grid-cols-1 gap-2 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                             {#each meta.entries as entry, i}
                                 <div class="group flex items-center gap-3 p-2 bg-white dark:bg-surface-900 border border-surface-100 dark:border-surface-800 rounded-xl hover:border-primary-500/30 hover:shadow-sm transition-all duration-200">
                                     <div class="relative shrink-0">
                                         {#if entry.thumbnail}
-                                            <img src={entry.thumbnail} alt="" class="size-14 object-cover rounded-lg bg-black" />
+                                            <img 
+                                                src={entry.thumbnail} 
+                                                alt="" 
+                                                loading="lazy" 
+                                                decoding="async"
+                                                class="size-14 object-cover rounded-lg bg-surface-100 dark:bg-surface-800" 
+                                            />
                                         {:else}
                                             <div class="size-14 bg-surface-100 dark:bg-surface-800 rounded-lg flex items-center justify-center border border-white/5">
                                                 <span class="text-xs font-bold opacity-20">{i+1}</span>

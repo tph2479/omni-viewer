@@ -17,6 +17,7 @@ export const GET: RequestHandler = async ({ url }) => {
             "--no-download",
             "--ignore-config",
             "--no-warnings",
+            "--playlist-end", "51",
             targetUrl!,
         ];
 
@@ -68,7 +69,9 @@ export const GET: RequestHandler = async ({ url }) => {
                         meta = withEntries;
                     } else if (objects.length > 1) {
                         // Virtual playlist from sequential objects (YouTube Mix/Radio style)
-                        virtualEntries = objects.map(o => ({
+                        meta = objects[0];
+                        // Skip the first object in the entries list as it's used for the main header
+                        virtualEntries = objects.slice(1).map(o => ({
                             title: o.title || "No Title",
                             thumbnail: o.thumbnail || (o.thumbnails?.[0]?.url) || null,
                             url: o.url || o.webpage_url || (o.id ? `https://www.youtube.com/watch?v=${o.id}` : null),
@@ -80,7 +83,7 @@ export const GET: RequestHandler = async ({ url }) => {
                 if (!meta) return resolve(null);
 
                 const result = {
-                    title: meta.title || "Unknown Title",
+                    title: (isPlaylist ? (meta.playlist_title || meta.playlist || meta.title) : meta.title) || "Unknown Title",
                     thumbnail: meta.thumbnail || (meta.thumbnails?.[0]?.url) || null,
                     uploader: meta.uploader || meta.channel || null,
                     duration: meta.duration || null,
