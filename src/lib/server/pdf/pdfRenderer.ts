@@ -44,8 +44,15 @@ export async function renderPdfFirstPage(pdfPath: string, targetWidth: number = 
     }
 
     async function run() {
-      const data = new Uint8Array(await fs.readFile(process.env.PDF_PATH));
-      const loadingTask = pdfjs.getDocument({ data, verbosity: 0, stopAtErrors: false });
+      // Use url loading to prevent reading the entire file into memory at once
+      const loadingTask = pdfjs.getDocument({ 
+        url: process.env.PDF_PATH, 
+        verbosity: 0, 
+        stopAtErrors: false,
+        disableAutoFetch: true,
+        disableStream: false,
+        disableFontFace: true
+      });
       const pdf = await loadingTask.promise;
       const page = await pdf.getPage(1);
       
@@ -55,7 +62,13 @@ export async function renderPdfFirstPage(pdfPath: string, targetWidth: number = 
       
       const canvas = createCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
       const context = canvas.getContext('2d');
-      await page.render({ canvasContext: context, viewport }).promise;
+      // Disable rendering annotations and interactive forms for speed
+      await page.render({ 
+        canvasContext: context, 
+        viewport: viewport, 
+        annotationMode: 0, 
+        renderInteractiveForms: false 
+      }).promise;
       
       const buffer = await canvas.encode('png');
       process.stdout.write(buffer);

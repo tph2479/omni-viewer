@@ -148,7 +148,7 @@ export async function generateThumbnail(
         try {
           const res = await globalTaskSemaphore.run(async () => {
             if (signal?.aborted) throw new Error("Aborted");
-            const buf = await renderPdfFirstPage(inputPath, 400);
+            const buf = await renderPdfFirstPage(inputPath, 250);
             ensureThumbDir();
             await sharp(buf)
                 .rotate()
