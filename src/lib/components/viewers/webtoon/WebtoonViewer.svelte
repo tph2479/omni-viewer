@@ -251,7 +251,8 @@
 						onload={(e) => {
 							const el = e.currentTarget as HTMLImageElement;
 							if (el.naturalWidth && el.naturalHeight) {
-								s.aspectRatios[i] = el.naturalWidth / el.naturalHeight;
+								const newRatio = el.naturalWidth / el.naturalHeight;
+								ctrl.updateAspectRatio(i, newRatio, document.getElementById(`webtoon-image-${i}`));
 							}
 						}}
 					/>

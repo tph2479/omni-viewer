@@ -172,6 +172,12 @@ export function createWebtoonController(folderPath: string, contextPath: string 
 
 	function scrollToIndex(index: number, behavior: ScrollBehavior = 'smooth') {
 		if (!s.webtoonScrollContainer) return;
+
+		// Pre-emptively lock our anchoring state to the target index so any images 
+		// loading concurrently use this target to adjust offsets perfectly.
+		s.currentImageIndex = index;
+		s.anchorPercentInImage = 0;
+
 		const target = document.getElementById(`webtoon-image-${index}`);
 		if (target) {
 			target.scrollIntoView({ behavior, block: 'start' });
@@ -182,17 +188,7 @@ export function createWebtoonController(folderPath: string, contextPath: string 
 		const pageNum = parseInt(val);
 		if (!isNaN(pageNum) && pageNum > 0 && pageNum <= s.loadedImages.length) {
 			const targetIdx = pageNum - 1;
-			const el = document.getElementById(`webtoon-image-${targetIdx}`);
-			if (el && s.webtoonScrollContainer) {
-				// Manually set index to prevent observer race conditions
-				s.currentImageIndex = targetIdx;
-				el.scrollIntoView({ behavior: 'auto', block: 'start' });
-				// Fallback offset for extra safety
-				await tick();
-				if (s.webtoonScrollContainer) {
-					s.webtoonScrollContainer.scrollTop = el.offsetTop + 16;
-				}
-			}
+			scrollToIndex(targetIdx, 'instant');
 		}
 	}
 
@@ -257,6 +253,34 @@ export function createWebtoonController(folderPath: string, contextPath: string 
 	function cleanupOldSizes() {
 		// Deactivated to ensure layout stability during window resize and jumps.
 		// Aspect ratios are tiny and should be kept for the duration of the folder view.
+	}
+
+	function updateAspectRatio(index: number, newRatio: number, imgElement: HTMLElement | null) {
+		const oldRatio = s.aspectRatios[index] ?? 0.7;
+		if (Math.abs(oldRatio - newRatio) < 0.001) return;
+
+		if (!s.webtoonScrollContainer || !imgElement) {
+			s.aspectRatios[index] = newRatio;
+			return;
+		}
+
+		const oldHeight = imgElement.offsetHeight;
+		s.aspectRatios[index] = newRatio;
+
+		tick().then(() => {
+			if (!s.webtoonScrollContainer || !imgElement) return;
+			const newHeight = imgElement.offsetHeight;
+			const heightDiff = newHeight - oldHeight;
+
+			if (heightDiff !== 0) {
+				// Core stabilization logic to prevent jumps/shifts from loading images
+				if (index < s.currentImageIndex) {
+					s.webtoonScrollContainer.scrollTop += heightDiff;
+				} else if (index === s.currentImageIndex) {
+					s.webtoonScrollContainer.scrollTop += heightDiff * s.anchorPercentInImage;
+				}
+			}
+		});
 	}
 
 	function handleSeekBarMouseDown(e: MouseEvent) {
@@ -345,6 +369,7 @@ export function createWebtoonController(folderPath: string, contextPath: string 
 		handleWindowMouseUp,
 		handleMouseMove,
 		refreshCurrentIndex,
+		updateAspectRatio,
 		destroy
 	};
 }
