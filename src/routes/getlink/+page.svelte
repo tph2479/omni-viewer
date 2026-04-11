@@ -111,9 +111,14 @@
         return p.replace(/\\/g, "/").split("/").pop() ?? p;
     }
 
+    function isIntermediate(path: string): boolean {
+        return /\.f\d+\.[^.]+$/.test(basename(path));
+    }
+
     // Fire a toast for a completed file
     function notifyFileComplete(filePath: string) {
         const name = basename(filePath);
+        if (downloadedFiles.includes(name)) return;
         downloadedFiles = [...downloadedFiles, name];
         toaster.create({
             type: "success",
@@ -129,6 +134,7 @@
         if (extractMatch) {
             notifyFileComplete(extractMatch[1].trim());
             progressStatus = `Extracted: ${basename(extractMatch[1].trim())}`;
+            lastWasAudio = true;
             return;
         }
 
@@ -137,6 +143,7 @@
         if (mergeMatch) {
             notifyFileComplete(mergeMatch[1].trim());
             progressStatus = `Merged: ${basename(mergeMatch[1].trim())}`;
+            lastWasAudio = true;
             return;
         }
 
@@ -154,7 +161,7 @@
         const done100Match = line.match(/^\[download\]\s+100%\s+of\s+.+in\s+\d/);
         if (done100Match && (mediaType === "video" || mediaType === "image")) {
             // For video without merge (e.g. already in one stream), attempt to get dest from last [download] Destination line
-            if (currentDownloadDest && !lastWasAudio) {
+            if (currentDownloadDest && !lastWasAudio && !isIntermediate(currentDownloadDest)) {
                 notifyFileComplete(currentDownloadDest);
                 currentDownloadDest = "";
             }
