@@ -6,75 +6,119 @@ import { join } from "path";
 
 export const POST: RequestHandler = async ({ request }) => {
     try {
-        const { url, type } = await request.json();
+        const body = await request.json();
+        const { url, type, options = {} } = body;
 
         if (!url || !type) {
-            return json({ error: "Thiếu thông tin yêu cầu" }, { status: 400 });
+            return json({ error: "Missing request information" }, { status: 400 });
         }
 
-        // Lấy đường dẫn mặc định
         const basePath = await getDefaultAppPath();
+        if (!basePath) {
+            return json({ error: "Server storage path not configured" }, { status: 500 });
+        }
+
         let targetPath: string;
         let command: string;
-        let args: string[];
+        let args: string[] = [];
 
         switch (type) {
             case "image":
                 targetPath = join(basePath, "Images");
                 command = "gdl.exe";
-                args = [url, "-d", targetPath];
+                args.push(url, "-d", targetPath);
+                if (options.username && options.password) {
+                    args.push("--username", options.username, "--password", options.password);
+                }
+                if (options.chapterRange) {
+                    args.push("--chapter-filter", options.chapterRange);
+                }
                 break;
+
             case "video":
                 targetPath = join(basePath, "Videos");
                 command = "yt-dlp";
-                args = [url, "-P", targetPath];
+                args.push(url, "-P", targetPath);
+                args.push(options.playlist ? "--yes-playlist" : "--no-playlist");
+                if (options.resolution && options.resolution !== "best") {
+                    args.push("-f", `bestvideo[height<=${options.resolution}]+bestaudio/best[height<=${options.resolution}]/best`);
+                }
+                if (options.subtitles) {
+                    args.push("--write-subs", "--write-auto-subs", "--embed-subs");
+                }
                 break;
+
             case "audio":
                 targetPath = join(basePath, "Music");
                 command = "yt-dlp";
-                args = [url, "-x", "--audio-format", "mp3", "-P", targetPath];
+                args.push(url, "-x", "-P", targetPath);
+                args.push("--audio-format", options.format || "mp3");
+                args.push(options.playlist ? "--yes-playlist" : "--no-playlist");
+                if (options.embedThumbnail) {
+                    args.push("--embed-thumbnail");
+                }
                 break;
+
             default:
-                return json({ error: "Loại media không hợp lệ" }, { status: 400 });
+                return json({ error: "Invalid media type" }, { status: 400 });
         }
 
-        // Thực thi lệnh
-        return new Promise((resolve) => {
-            const process = spawn(command, args);
+        if (options.extraArgs) {
+            const extraArgsArray = options.extraArgs
+                .split(" ")
+                .map((arg: string) => arg.trim())
+                .filter((arg: string) => arg.length > 0);
+            args.push(...extraArgsArray);
+        }
 
-            let output = "";
-            let errorOutput = "";
+        // SSE Streaming response
+        const stream = new ReadableStream({
+            start(controller) {
+                const enc = new TextEncoder();
+                const send = (data: object) => {
+                    controller.enqueue(enc.encode(`data: ${JSON.stringify(data)}\n\n`));
+                };
 
-            process.stdout.on("data", (data) => {
-                output += data.toString();
-            });
+                const proc = spawn(command, args);
 
-            process.stderr.on("data", (data) => {
-                errorOutput += data.toString();
-            });
+                proc.stdout.on("data", (chunk: Buffer) => {
+                    const lines = chunk.toString().split("\n");
+                    for (const line of lines) {
+                        const trimmed = line.trim();
+                        if (trimmed) send({ type: "output", line: trimmed });
+                    }
+                });
 
-            process.on("close", (code) => {
-                if (code === 0) {
-                    resolve(json({
-                        success: true,
-                        message: "Tải xuống thành công",
-                        filePath: targetPath,
-                        output: output
-                    }));
-                } else {
-                    resolve(json({
-                        error: `Lỗi khi tải xuống (code: ${code})`,
-                        details: errorOutput || output
-                    }, { status: 500 }));
-                }
-            });
+                proc.stderr.on("data", (chunk: Buffer) => {
+                    const lines = chunk.toString().split("\n");
+                    for (const line of lines) {
+                        const trimmed = line.trim();
+                        if (trimmed) send({ type: "output", line: trimmed });
+                    }
+                });
 
-            process.on("error", (err) => {
-                resolve(json({
-                    error: `Không thể thực thi lỗi: ${err.message}`,
-                    command: command
-                }, { status: 500 }));
-            });
+                proc.on("close", (code) => {
+                    if (code === 0) {
+                        send({ type: "done", success: true, message: "Download successful", filePath: targetPath });
+                    } else {
+                        send({ type: "done", success: false, message: `Download failed (exit code ${code})` });
+                    }
+                    controller.close();
+                });
+
+                proc.on("error", (err) => {
+                    send({ type: "done", success: false, message: `Failed to execute command: ${err.message}` });
+                    controller.close();
+                });
+            }
+        });
+
+        return new Response(stream, {
+            headers: {
+                "Content-Type": "text/event-stream",
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+            },
         });
 
     } catch (e) {

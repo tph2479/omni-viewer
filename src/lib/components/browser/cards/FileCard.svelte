@@ -52,7 +52,7 @@
         return `/api/media?path=${encodeURIComponent(item.path)}&thumbnail=true&v=${cacheVersion.value}`;
     });
     
-    let fetchPriority = $derived(index < 12 ? "high" : "auto");
+    let fetchPriority = $derived((index < 12 ? "high" : "auto") as "high" | "auto");
     let highlightedBg = $derived(
         highlighted ? "rgba(59, 130, 246, 0.5)" : undefined,
     );
