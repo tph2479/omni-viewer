@@ -14,6 +14,7 @@
     import { toaster } from "$lib/stores/ui/toaster";
     import { untrack, tick } from "svelte";
     import { goto } from "$app/navigation";
+    import { fade } from "svelte/transition";
 
     import { deserialize } from "$app/forms";
     import { invalidateAll } from "$app/navigation";
@@ -156,249 +157,263 @@
     }
 </script>
 
-<div class="p-4 md:p-8 max-w-2xl mx-auto space-y-3">
-    <h1 class="h2 mb-6">Settings</h1>
+<div class="p-6 md:p-12 max-w-4xl mx-auto" in:fade={{ duration: 400 }}>
+    <div class="grid gap-8">
+        <!-- Section: Library -->
+        <section class="space-y-4">
+            <div class="flex items-center gap-3 px-2">
+                <FolderOpenIcon class="size-6 text-[var(--color-primary-500)]" />
+                <h2 class="text-xl font-semibold">Library</h2>
+            </div>
+            
+            <div class="card bg-surface-50/50 dark:bg-surface-900/40 backdrop-blur-xl border border-surface-200/50 dark:border-surface-800/50 p-6 shadow-xl ring-1 ring-surface-950/5">
+                <div class="flex flex-col gap-4">
+                    <div>
+                        <p class="font-medium text-lg">Media Library Path</p>
+                        <p class="text-sm text-surface-500 dark:text-surface-400 mb-4">
+                            The root directory where your Manga, Videos, and Ebooks are stored.
+                        </p>
 
-    <!-- Media Directory Path Configuration -->
-    <div class="space-y-1">
-        <div class="card preset-outlined p-4 flex flex-col gap-4">
-            <div class="flex items-center gap-3">
-                <FolderOpenIcon class="size-5 shrink-0" />
-                <div class="flex-1 min-w-0">
-                    <p class="font-medium">Media Library</p>
-                    <p class="text-sm text-surface-500 dark:text-surface-400">
-                        Root directory path for Manga, Videos and Ebooks.
-                    </p>
-
-                    <form
-                        bind:this={formEl}
-                        method="POST"
-                        action="?/savePath"
-                        use:enhance={() => {
-                            return async ({ result, update }) => {
-                                if (result.type === 'success' && result.data) {
-                                    const actionData = result.data as { path?: string };
-                                    isSaving = false;
-                                    toaster.create({
-                                        type: "success",
-                                        title: "Path saved",
-                                        description: `Media library path updated: ${actionData.path ?? ""}`,
-                                    });
-                                    if (actionData.path) {
-                                        pickerPath = actionData.path;
-                                        lastSavedPath = actionData.path;
-                                        setTimeout(() => {
-                                            goto(`/browser?path=${encodeURIComponent(String(actionData.path))}`);
-                                        }, 1000);
+                        <form
+                            bind:this={formEl}
+                            method="POST"
+                            action="?/savePath"
+                            use:enhance={() => {
+                                return async ({ result, update }) => {
+                                    if (result.type === 'success' && result.data) {
+                                        const actionData = result.data as { path?: string };
+                                        isSaving = false;
+                                        toaster.create({
+                                            type: "success",
+                                            title: "Path saved",
+                                            description: `Media library path updated: ${actionData.path ?? ""}`,
+                                        });
+                                        if (actionData.path) {
+                                            pickerPath = actionData.path;
+                                            lastSavedPath = actionData.path;
+                                            setTimeout(() => {
+                                                goto(`/browser?path=${encodeURIComponent(String(actionData.path))}`);
+                                            }, 1000);
+                                        }
+                                    } else if (result.type === 'failure' && result.data) {
+                                        const actionData = result.data as { error?: string };
+                                        isSaving = false;
+                                        toaster.create({
+                                            type: "error",
+                                            title: "Save failed",
+                                            description: String(actionData.error ?? "Unknown error"),
+                                        });
                                     }
-                                } else if (result.type === 'failure' && result.data) {
-                                    const actionData = result.data as { error?: string };
-                                    isSaving = false;
-                                    toaster.create({
-                                        type: "error",
-                                        title: "Save failed",
-                                        description: String(actionData.error ?? "Unknown error"),
-                                    });
-                                }
-                                await update({ reset: false });
-                            };
-                        }}
-                        class="w-full mt-4"
-                    >
-                        <!-- Path Input with Browse Button on Right -->
-                        <div
-                            class="card preset-outlined flex items-center w-full overflow-hidden shadow-none"
+                                    await update({ reset: false });
+                                };
+                            }}
+                            class="w-full"
                         >
-                            <input
-                                name="path"
-                                type="text"
-                                class="flex-1 h-10 px-4 bg-transparent border-none outline-none ring-0
-                                       text-sm font-medium tracking-tight truncate
-                                       text-surface-700 dark:text-surface-200"
-                                bind:value={pickerPath}
-                                onkeydown={(e) => {
-                                    if (e.key === "Enter") {
-                                        e.preventDefault();
-                                        handleSave();
-                                        (e.target as HTMLInputElement).blur();
-                                    }
-                                }}
-                                placeholder="Type or browse to select folder…"
-                                onclick={() => !pickerPath && openPicker()}
-                            />
-                            <div
-                                class="w-px h-6 bg-surface-200 dark:bg-surface-800/10 shrink-0 mx-1"
-                            ></div>
-                            <button
-                                type="button"
-                                class="flex items-center justify-center w-10 h-10 shrink-0 hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
-                                onclick={openPicker}
-                                title="Browse folders"
-                            >
-                                <FolderIcon size={18}  />
-                            </button>
-                        </div>
-                    </form>
+                            <div class="group relative flex items-center w-full bg-surface-100 dark:bg-surface-950/50 border border-surface-300 dark:border-surface-700/50 rounded-xl overflow-hidden transition-all focus-within:ring-2 focus-within:ring-primary-500/50 focus-within:border-primary-500">
+                                <input
+                                    name="path"
+                                    type="text"
+                                    class="flex-1 h-12 px-4 bg-transparent border-none outline-none ring-0 text-sm font-medium tracking-tight truncate"
+                                    bind:value={pickerPath}
+                                    onkeydown={(e) => {
+                                        if (e.key === "Enter") {
+                                            e.preventDefault();
+                                            handleSave();
+                                            (e.target as HTMLInputElement).blur();
+                                        }
+                                    }}
+                                    placeholder="Select a folder..."
+                                    onclick={() => !pickerPath && openPicker()}
+                                />
+                                <div class="w-px h-6 bg-surface-300 dark:bg-surface-700/50 mx-1"></div>
+                                <button
+                                    type="button"
+                                    class="flex items-center justify-center w-12 h-12 hover:bg-surface-200 dark:hover:bg-surface-800 transition-colors text-surface-600 dark:text-surface-400"
+                                    onclick={openPicker}
+                                    title="Browse folders"
+                                >
+                                    <FolderIcon size={20} />
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
+        </section>
 
-    <!-- External Tools Configuration -->
-    <div class="space-y-1 transition-all duration-300">
-        <div class="card preset-outlined p-4 flex flex-col gap-4">
-            <div class="flex items-center gap-3">
-                <Settings2Icon class="size-5 shrink-0" />
-                <div class="flex-1 min-w-0">
-                    <p class="font-medium">External Tools</p>
-                    <p class="text-sm text-surface-500 dark:text-surface-400">
-                        Paths for downloading and processing media. Auto-detected from system PATH if empty.
-                    </p>
-                    <div class="space-y-8 mt-6">
-                        <!-- yt-dlp -->
-                        <div class="space-y-3">
-                            <div class="flex flex-col gap-1">
-                                <label for="ytDlp" class="text-xs font-bold uppercase tracking-wider text-surface-500 flex items-center gap-2">
-                                    <TerminalIcon class="size-4" /> yt-dlp Path
-                                </label>
-                                <p class="text-sm text-surface-600 dark:text-surface-400 leading-relaxed">
-                                    Downloads videos and audio from YouTube and other platforms.
-                                </p>
-                            </div>
-                            <div class="card preset-outlined flex items-center w-full overflow-hidden shadow-none h-9">
-                                <input
-                                    id="ytDlp"
-                                    type="text"
-                                    class="flex-1 px-3 bg-transparent border-none outline-none ring-0 text-sm font-medium truncate"
-                                    bind:value={ytDlpPath}
-                                    onblur={() => saveSingleTool("ytDlp", ytDlpPath)}
-                                    placeholder="Auto-detecting..."
-                                />
-                                <div class="w-px h-5 bg-surface-200 dark:bg-surface-800/50 shrink-0 mx-1"></div>
-                                <button
-                                    type="button"
-                                    class="flex items-center justify-center w-9 h-full shrink-0 hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
-                                    onclick={() => openPicker("ytDlp")}
-                                    title="Browse folders"
-                                >
-                                    <FolderIcon size={14} />
-                                </button>
-                            </div>
+        <!-- Section: External Tools -->
+        <section class="space-y-4">
+            <div class="flex items-center gap-3 px-2">
+                <Settings2Icon class="size-6 text-[var(--color-primary-500)]" />
+                <h2 class="text-xl font-semibold">External Tools</h2>
+            </div>
+
+            <div class="card bg-surface-50/50 dark:bg-surface-900/40 backdrop-blur-xl border border-surface-200/50 dark:border-surface-800/50 p-6 shadow-xl ring-1 ring-surface-950/5">
+                <p class="text-sm text-surface-500 dark:text-surface-400 mb-8">
+                    Paths for core media processing tools. These are automatically detected if left empty.
+                </p>
+
+                <div class="grid gap-10 md:gap-8">
+                    <!-- yt-dlp -->
+                    <div class="space-y-3">
+                        <div class="flex flex-col">
+                            <label for="ytDlp" class="text-xs font-bold uppercase tracking-widest text-surface-400 flex items-center gap-2 mb-1">
+                                <TerminalIcon class="size-4" /> yt-dlp
+                            </label>
+                            <p class="text-sm text-surface-600 dark:text-surface-400 font-normal">
+                                Downloads video and audio.
+                            </p>
                         </div>
-
-                        <!-- gallery-dl -->
-                        <div class="space-y-3">
-                            <div class="flex flex-col gap-1">
-                                <label for="galleryDl" class="text-xs font-bold uppercase tracking-wider text-surface-500 flex items-center gap-2">
-                                    <TerminalIcon class="size-4" /> gallery-dl Path
-                                </label>
-                                <p class="text-sm text-surface-600 dark:text-surface-400 leading-relaxed">
-                                    Downloads image galleries, albums, and manga from various sites.
-                                </p>
-                            </div>
-                            <div class="card preset-outlined flex items-center w-full overflow-hidden shadow-none h-9">
-                                <input
-                                    id="galleryDl"
-                                    type="text"
-                                    class="flex-1 px-3 bg-transparent border-none outline-none ring-0 text-sm font-medium truncate"
-                                    bind:value={galleryDlPath}
-                                    onblur={() => saveSingleTool("galleryDl", galleryDlPath)}
-                                    placeholder="Auto-detecting..."
-                                />
-                                <div class="w-px h-5 bg-surface-200 dark:bg-surface-800/50 shrink-0 mx-1"></div>
-                                <button
-                                    type="button"
-                                    class="flex items-center justify-center w-9 h-full shrink-0 hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
-                                    onclick={() => openPicker("galleryDl")}
-                                    title="Browse folders"
-                                >
-                                    <FolderIcon size={14} />
-                                </button>
-                            </div>
+                        <div class="group relative flex items-center w-full bg-surface-100 dark:bg-surface-950/50 border border-surface-300 dark:border-surface-700/50 rounded-xl overflow-hidden transition-all focus-within:ring-2 focus-within:ring-primary-500/50 focus-within:border-primary-500 h-10">
+                            <input
+                                id="ytDlp"
+                                type="text"
+                                class="flex-1 px-4 bg-transparent border-none outline-none ring-0 text-sm font-medium truncate"
+                                bind:value={ytDlpPath}
+                                onblur={() => saveSingleTool("ytDlp", ytDlpPath)}
+                                placeholder="Automatically detecting..."
+                            />
+                            <div class="w-px h-5 bg-surface-300 dark:bg-surface-700/50 mx-1"></div>
+                            <button
+                                type="button"
+                                class="flex items-center justify-center w-10 h-full hover:bg-surface-200 dark:hover:bg-surface-800 transition-colors text-surface-600 dark:text-surface-400"
+                                onclick={() => openPicker("ytDlp")}
+                                title="Browse folders"
+                            >
+                                <FolderIcon size={16} />
+                            </button>
                         </div>
+                    </div>
 
-                        <!-- ffmpeg -->
-                        <div class="space-y-3">
-                            <div class="flex flex-col gap-1">
-                                <label for="ffmpeg" class="text-xs font-bold uppercase tracking-wider text-surface-500 flex items-center gap-2">
-                                    <TerminalIcon class="size-4" /> ffmpeg Path
-                                </label>
-                                <p class="text-sm text-surface-600 dark:text-surface-400 leading-relaxed">
-                                    Handles media transcoding and thumbnail generation.
-                                </p>
-                            </div>
-                            <div class="card preset-outlined flex items-center w-full overflow-hidden shadow-none h-9">
-                                <input
-                                    id="ffmpeg"
-                                    type="text"
-                                    class="flex-1 px-3 bg-transparent border-none outline-none ring-0 text-sm font-medium truncate"
-                                    bind:value={ffmpegPath}
-                                    onblur={() => saveSingleTool("ffmpeg", ffmpegPath)}
-                                    placeholder="Auto-detecting..."
-                                />
-                                <div class="w-px h-5 bg-surface-200 dark:bg-surface-800/50 shrink-0 mx-1"></div>
-                                <button
-                                    type="button"
-                                    class="flex items-center justify-center w-9 h-full shrink-0 hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
-                                    onclick={() => openPicker("ffmpeg")}
-                                    title="Browse folders"
-                                >
-                                    <FolderIcon size={14} />
-                                </button>
-                            </div>
+                    <!-- gallery-dl -->
+                    <div class="space-y-3">
+                        <div class="flex flex-col">
+                            <label for="galleryDl" class="text-xs font-bold uppercase tracking-widest text-surface-400 flex items-center gap-2 mb-1">
+                                <TerminalIcon class="size-4" /> gallery-dl
+                            </label>
+                            <p class="text-sm text-surface-600 dark:text-surface-400 font-normal">
+                                Downloads image galleries.
+                            </p>
+                        </div>
+                        <div class="group relative flex items-center w-full bg-surface-100 dark:bg-surface-950/50 border border-surface-300 dark:border-surface-700/50 rounded-xl overflow-hidden transition-all focus-within:ring-2 focus-within:ring-primary-500/50 focus-within:border-primary-500 h-10">
+                            <input
+                                id="galleryDl"
+                                type="text"
+                                class="flex-1 px-4 bg-transparent border-none outline-none ring-0 text-sm font-medium truncate"
+                                bind:value={galleryDlPath}
+                                onblur={() => saveSingleTool("galleryDl", galleryDlPath)}
+                                placeholder="Automatically detecting..."
+                            />
+                            <div class="w-px h-5 bg-surface-300 dark:bg-surface-700/50 mx-1"></div>
+                            <button
+                                type="button"
+                                class="flex items-center justify-center w-10 h-full hover:bg-surface-200 dark:hover:bg-surface-800 transition-colors text-surface-600 dark:text-surface-400"
+                                onclick={() => openPicker("galleryDl")}
+                                title="Browse folders"
+                            >
+                                <FolderIcon size={16} />
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ffmpeg -->
+                    <div class="space-y-3">
+                        <div class="flex flex-col">
+                            <label for="ffmpeg" class="text-xs font-bold uppercase tracking-widest text-surface-400 flex items-center gap-2 mb-1">
+                                <TerminalIcon class="size-4" /> ffmpeg
+                            </label>
+                            <p class="text-sm text-surface-600 dark:text-surface-400 font-normal">
+                                Media transcoding and thumbnails.
+                            </p>
+                        </div>
+                        <div class="group relative flex items-center w-full bg-surface-100 dark:bg-surface-950/50 border border-surface-300 dark:border-surface-700/50 rounded-xl overflow-hidden transition-all focus-within:ring-2 focus-within:ring-primary-500/50 focus-within:border-primary-500 h-10">
+                            <input
+                                id="ffmpeg"
+                                type="text"
+                                class="flex-1 px-4 bg-transparent border-none outline-none ring-0 text-sm font-medium truncate"
+                                bind:value={ffmpegPath}
+                                onblur={() => saveSingleTool("ffmpeg", ffmpegPath)}
+                                placeholder="Automatically detecting..."
+                            />
+                            <div class="w-px h-5 bg-surface-300 dark:bg-surface-700/50 mx-1"></div>
+                            <button
+                                type="button"
+                                class="flex items-center justify-center w-10 h-full hover:bg-surface-200 dark:hover:bg-surface-800 transition-colors text-surface-600 dark:text-surface-400"
+                                onclick={() => openPicker("ffmpeg")}
+                                title="Browse folders"
+                            >
+                                <FolderIcon size={16} />
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
+        </section>
 
-    <!-- Clear cache & preferences -->
-    <div class="card preset-outlined p-4 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-            <Trash2Icon class="size-5" />
-            <div>
-                <p class="font-medium">Clear cache &amp; preferences</p>
-                <p class="text-sm text-surface-500 dark:text-surface-400">
-                    Clear thumbnail cache, localStorage and sessionStorage.
-                </p>
+        <!-- Section: System -->
+        <section class="space-y-4">
+            <div class="flex items-center gap-3 px-2">
+                <PowerIcon class="size-6 text-[var(--color-primary-500)]" />
+                <h2 class="text-xl font-semibold">System Maintenance</h2>
             </div>
-        </div>
-        <button
-            onclick={handleClear}
-            disabled={isClearingCache}
-            class="btn shrink-0 transition-all preset-tonal-surface disabled:opacity-50"
-        >
-            {isClearingCache ? "Clearing…" : "Clear"}
-        </button>
-    </div>
 
-    <!-- Shutdown -->
-    <div class="card preset-outlined p-4 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-            <PowerIcon
-                class="size-5"
-                style="color: {shutdownConfirm ? 'var(--color-error-400)' : 'var(--color-surface-400)'};"
-            />
-            <div>
-                <p class="font-medium">Shutdown</p>
-                <p class="text-sm text-surface-500 dark:text-surface-400">
-                    Shutdown the server and close the application.
-                </p>
+            <div class="grid md:grid-cols-2 gap-4">
+                <!-- Clear Cache -->
+                <div class="card bg-surface-50/50 dark:bg-surface-900/40 backdrop-blur-xl border border-surface-200/50 dark:border-surface-800/50 p-5 shadow-lg flex flex-col justify-between gap-4">
+                    <div>
+                        <div class="flex items-center gap-3 mb-2">
+                            <Trash2Icon class="size-5 text-surface-400" />
+                            <p class="font-semibold">Reset Storage</p>
+                        </div>
+                        <p class="text-sm text-surface-500 dark:text-surface-400">
+                            Wipe thumbnail cache, local settings, and active sessions.
+                        </p>
+                    </div>
+                    <button
+                        onclick={handleClear}
+                        disabled={isClearingCache}
+                        class="btn transition-all font-medium py-2.5 rounded-xl
+                               {isClearingCache ? 'bg-surface-300 dark:bg-surface-700' : 'bg-surface-200 hover:bg-surface-300 dark:bg-surface-800 dark:hover:bg-surface-700 text-surface-800 dark:text-surface-200'}"
+                    >
+                        {isClearingCache ? "Clearing..." : "Clear System Data"}
+                    </button>
+                </div>
+
+                <!-- Shutdown -->
+                <div class="card bg-surface-50/50 dark:bg-surface-900/40 backdrop-blur-xl border border-surface-200/50 dark:border-surface-800/50 p-5 shadow-lg flex flex-col justify-between gap-4 transition-all duration-300 {shutdownConfirm ? 'ring-2 ring-error-500/50 border-error-500/30 bg-error-500/5' : ''}">
+                    <div>
+                        <div class="flex items-center gap-3 mb-2">
+                            <PowerIcon
+                                class="size-5 transition-colors duration-300"
+                                style="color: {shutdownConfirm ? 'var(--color-error-500)' : 'var(--color-surface-400)'};"
+                            />
+                            <p class="font-semibold">Shutdown Server</p>
+                        </div>
+                        <p class="text-sm text-surface-500 dark:text-surface-400">
+                            Stop all background processes and terminate the application server.
+                        </p>
+                    </div>
+                    <button
+                        onclick={handleShutdown}
+                        class="btn transition-all font-bold py-2.5 rounded-xl flex items-center justify-center gap-2
+                            {shutdownConfirm
+                            ? 'bg-error-500 hover:bg-error-600 text-white shadow-lg shadow-error-500/20 px-8'
+                            : 'bg-surface-200 hover:bg-surface-300 dark:bg-surface-800 dark:hover:bg-surface-700 text-surface-800 dark:text-surface-200'}"
+                    >
+                        {#if shutdownConfirm}
+                            <PowerIcon class="size-4 animate-pulse" />
+                            Confirm Shutdown
+                        {:else}
+                            <PowerIcon class="size-4" />
+                            Shutdown
+                        {/if}
+                    </button>
+                </div>
             </div>
-        </div>
-        <button
-            onclick={handleShutdown}
-            class="btn shrink-0 transition-all
-                {shutdownConfirm
-                ? 'preset-filled-error-300'
-                : 'preset-tonal-surface'}"
-        >
-            <PowerIcon class="size-4" />
-            {shutdownConfirm ? "Pull the plug ?" : "Shutdown"}
-        </button>
+        </section>
     </div>
 </div>
+
 
 <!-- Folder Picker Modal -->
 {#if isFolderPickerOpen}
