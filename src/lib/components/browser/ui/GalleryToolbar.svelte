@@ -179,15 +179,15 @@
 <div class="relative flex items-center w-full sm:w-3/5 mx-auto h-14 gap-2">
     <!-- Left buttons -->
     <div
-        class="flex items-center 
-               bg-surface-100/40 dark:bg-surface-900/40 backdrop-blur-md
-               border border-surface-200/40 dark:border-white/10 shadow-sm rounded-xl shrink-0"
+        class="island shrink-0 premium-shadow
+               bg-surface-100/60 dark:bg-surface-900/60 backdrop-blur-xl
+               border border-surface-200/50 dark:border-white/10 rounded-xl"
     >
         <button
-            class="hidden sm:flex items-center justify-center w-10 h-10 shrink-0
+            class="island-button hidden sm:flex items-center justify-center w-10 shrink-0
                    rounded-xl text-sm font-medium
                    text-surface-600 dark:text-surface-400 hover:text-primary-500 dark:hover:text-primary-400 
-                   hover:bg-primary-500/10 transition-all duration-200"
+                   hover:bg-primary-500/15 transition-colors duration-150"
             onclick={actions.onOpenPicker}
             onmousedown={(e) => e.preventDefault()}
             title="Select folder"
@@ -196,9 +196,10 @@
         </button>
 
         <button
-            class="flex items-center justify-center w-10 h-10 shrink-0
+            type="button"
+            class="island-button flex items-center justify-center w-10 shrink-0
                    rounded-xl text-surface-600 dark:text-surface-400 hover:text-primary-500 dark:hover:text-primary-400 
-                   hover:bg-primary-500/10 transition-all duration-200
+                   hover:bg-primary-500/15 transition-colors duration-150
                    disabled:opacity-30"
             onclick={() => parentPath && actions.onGoUp(parentPath)}
             disabled={!parentPath || isLoading}
@@ -211,9 +212,9 @@
 
     <!-- Input -->
     <div
-        class="flex items-center flex-1 min-w-0 h-10 
-               bg-surface-100/40 dark:bg-surface-900/40 backdrop-blur-md
-               border border-surface-200/40 dark:border-white/10 shadow-sm rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-primary-500/30 transition-all"
+        class="island flex-1 min-w-0 premium-shadow
+               bg-surface-100/60 dark:bg-surface-900/60 backdrop-blur-xl
+               border border-surface-200/50 dark:border-white/10 rounded-xl focus-within:ring-2 focus-within:ring-primary-500/30"
     >
         {#if isMobile}
             <div
@@ -252,8 +253,8 @@
         {/if}
 
         {#if exclusiveType}
-            <div class="flex items-center gap-1.5 shrink-0 ml-1 mr-2">
-                <div class="w-px bg-surface-500/20 mx-0.5"></div>
+            <div class="flex items-center gap-1.5 shrink-0 ml-1 mr-2 h-full">
+                <div class="w-px bg-surface-500/20 mx-0.5 h-3/5"></div>
                 <div
                     class="flex items-center py-1 px-2.5 rounded-xl border border-primary-500/30"
                     style="background-color: color-mix(in srgb, var(--color-primary-500) 15%, transparent); color: var(--color-primary-400);"
@@ -270,14 +271,14 @@
 
     <!-- Right buttons -->
     <div
-        class="flex items-center 
-               bg-surface-100/40 dark:bg-surface-900/40 backdrop-blur-md
-               border border-surface-200/40 dark:border-white/10 shadow-sm rounded-xl shrink-0"
+        class="island shrink-0 premium-shadow
+               bg-surface-100/60 dark:bg-surface-900/60 backdrop-blur-xl
+               border border-surface-200/50 dark:border-white/10 rounded-xl"
     >
         <button
-            class="flex items-center justify-center w-10 h-10 shrink-0
+            class="island-button flex items-center justify-center w-10 shrink-0
                    rounded-xl text-surface-600 dark:text-surface-400 hover:text-primary-500 dark:hover:text-primary-400 
-                   hover:bg-primary-500/10 transition-all duration-200
+                   hover:bg-primary-500/15 transition-colors duration-150
                    disabled:opacity-30"
             onclick={actions.onLoad}
             disabled={isLoading}
@@ -293,9 +294,9 @@
 
         <button
             type="button"
-            class="flex items-center justify-center w-10 h-10 shrink-0
+            class="island-button flex items-center justify-center w-10 shrink-0
                    rounded-xl text-surface-600 dark:text-surface-400 hover:text-primary-500 dark:hover:text-primary-400 
-                   hover:bg-primary-500/10 transition-all duration-200
+                   hover:bg-primary-500/15 transition-colors duration-150
                    disabled:opacity-30"
             onclick={actions.onOpenWebtoon}
             title="Webtoon view"
@@ -305,12 +306,12 @@
 
         <button
             type="button"
-            class="flex items-center justify-center w-10 h-10 shrink-0
-                   rounded-xl transition-all duration-200
+            class="island-button flex items-center justify-center w-10 shrink-0
+                   rounded-xl transition-colors duration-150
                    disabled:opacity-30 
                    {folder.isCoverMode
-                ? 'bg-primary-500/20 text-primary-600 dark:text-primary-400 ring-1 ring-primary-500/50 shadow-lg shadow-primary-500/10'
-                : 'text-surface-600 dark:text-surface-400 hover:text-primary-500 dark:hover:text-primary-400 hover:bg-primary-500/10'}"
+                ? 'bg-primary-500/25 text-primary-600 dark:text-primary-400 ring-1 ring-primary-500/50 shadow-lg shadow-primary-500/20'
+                : 'text-surface-600 dark:text-surface-400 hover:text-primary-500 dark:hover:text-primary-400 hover:bg-primary-500/15'}"
             onclick={actions.onToggleCoverMode}
             title="Toggle Folder Thumbnails"
         >
@@ -319,9 +320,9 @@
 
         <button
             type="button"
-            class="flex items-center justify-center w-10 h-10 shrink-0
+            class="island-button flex items-center justify-center w-10 shrink-0
                    rounded-xl text-surface-600 dark:text-surface-400 hover:text-primary-500 dark:hover:text-primary-400 
-                   hover:bg-primary-500/10 transition-all duration-200
+                   hover:bg-primary-500/15 transition-colors duration-150
                    disabled:opacity-30"
             onclick={() => {
                 if (!document.fullscreenElement) {
@@ -342,13 +343,13 @@
         </button>
 
         {#if isFolderSelected}
-            <div class="relative flex items-center" bind:this={menuRef}>
+            <div class="relative flex items-center h-full" bind:this={menuRef}>
                 <button
-                    class="flex items-center justify-center w-10 h-10 shrink-0
-                           rounded-xl transition-all duration-200
+                    class="island-button flex items-center justify-center w-10 shrink-0
+                           rounded-xl transition-colors duration-150
                            {menuOpen
-                        ? 'bg-primary-500/20 text-primary-600 dark:text-primary-400 ring-1 ring-primary-500/50 shadow-lg shadow-primary-500/10'
-                        : 'text-surface-600 dark:text-surface-400 hover:bg-primary-500/10 hover:text-primary-500 dark:hover:text-primary-400'}"
+                        ? 'bg-primary-500/25 text-primary-600 dark:text-primary-400 ring-1 ring-primary-500/50 shadow-lg shadow-primary-500/20'
+                        : 'text-surface-600 dark:text-surface-400 hover:bg-primary-500/15 hover:text-primary-500 dark:hover:text-primary-400'}"
                     onclick={(e) => { e.stopPropagation(); menuOpen = !menuOpen; }}
                     title="View options"
                     aria-expanded={menuOpen}
@@ -361,10 +362,9 @@
                     <div
                         class="popup absolute right-0 top-[calc(100%+8px)]
                                 w-64 p-4 space-y-4 z-[200]
-                                rounded-xl
-                                bg-surface-50/90 dark:bg-surface-900/90 backdrop-blur-xl
+                                rounded-xl premium-shadow-popup
+                                bg-surface-50 dark:bg-surface-900/98 backdrop-blur-2xl
                                 border border-surface-200/50 dark:border-surface-800/50
-                                shadow-2xl dark:shadow-[0_25px_70px_-15px_rgba(0,0,0,0.4)]
                                 pointer-events-auto"
                     >
                         <!-- Media type -->
@@ -378,10 +378,10 @@
                                 {#each mediaOptions as opt}
                                     <button
                                         class="flex flex-col items-center gap-1.5 py-2.5 px-1
-                                               rounded-xl text-xs transition-all duration-200
+                                               rounded-xl text-xs transition-colors duration-200
                                                border border-surface-200/50 dark:border-white/5
                                                {mediaType === opt.value
-                                            ? 'bg-primary-500/20 text-primary-600 dark:text-primary-400 ring-1 ring-primary-500/50 shadow-md shadow-primary-500/10 scale-105 z-10'
+                                            ? 'bg-primary-500/25 text-primary-600 dark:text-primary-400 ring-1 ring-primary-500/50 shadow-md shadow-primary-500/10 scale-105 z-10'
                                             : 'bg-surface-100/50 dark:bg-white/5 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-white/10 hover:text-primary-500 dark:hover:text-primary-400'}"
                                         onclick={() => selectMedia(opt.value)}
                                         disabled={opt.value !== "all" &&
@@ -409,10 +409,10 @@
                             <div class="grid grid-cols-2 gap-2">
                                 {#each sortOptions as opt}
                                     <button
-                                        class="py-2 text-[10px] font-bold rounded-xl transition-all duration-200
+                                        class="py-2 text-[10px] font-bold rounded-xl transition-colors duration-200
                                                border border-surface-200/50 dark:border-white/5 uppercase tracking-tighter
                                                {currentSort === opt.value
-                                            ? 'bg-primary-500/20 text-primary-600 dark:text-primary-400 ring-1 ring-primary-500/50 shadow-md shadow-primary-500/10'
+                                            ? 'bg-primary-500/25 text-primary-600 dark:text-primary-400 ring-1 ring-primary-500/50 shadow-md shadow-primary-500/10'
                                             : 'bg-surface-100/50 dark:bg-white/5 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-white/10 hover:text-primary-500 dark:hover:text-primary-400'}"
                                         onclick={() => selectSort(opt.value)}
                                     >
@@ -429,11 +429,48 @@
 </div>
 
 <style>
+    .island {
+        height: 40px !important;
+        box-sizing: border-box !important;
+        /* overflow: hidden !important; */
+        display: flex !important;
+        align-items: stretch !important;
+    }
+    .island-button {
+        height: 100% !important;
+        transform: none !important;
+        transition: background-color 0.15s ease, color 0.15s ease !important;
+    }
     .hide-scrollbar {
         -ms-overflow-style: none; /* IE and Edge */
         scrollbar-width: none; /* Firefox */
     }
     .hide-scrollbar::-webkit-scrollbar {
         display: none; /* Chrome, Safari and Opera */
+    }
+
+    .premium-shadow {
+        box-shadow: 
+            0 0 0 1px rgba(0,0,0,0.05),
+            0 0 10px rgba(0,0,0,0.05),
+            0 0 25px rgba(0,0,0,0.03) !important;
+    }
+    :global([data-mode="dark"]) .premium-shadow {
+        box-shadow: 
+            0 0 0 1px rgba(255,255,255,0.08),
+            0 0 15px rgba(0,0,0,0.5),
+            0 0 40px rgba(0,0,0,0.6) !important;
+    }
+    .premium-shadow-popup {
+        box-shadow: 
+            0 0 0 1px rgba(0,0,0,0.1),
+            0 0 20px rgba(0,0,0,0.1),
+            0 0 50px rgba(0,0,0,0.1) !important;
+    }
+    :global([data-mode="dark"]) .premium-shadow-popup {
+        box-shadow: 
+            0 0 0 1px rgba(255,255,255,0.12),
+            0 0 30px rgba(0,0,0,0.6),
+            0 0 80px rgba(0,0,0,0.8) !important;
     }
 </style>

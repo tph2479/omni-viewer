@@ -14,7 +14,7 @@
 </script>
 
 <div class="absolute top-2 left-2 z-10 {className}">
-    <div class="bg-black/60 p-1.5 {rounded} border border-white/20 shadow-lg">
+    <div class="bg-black/70 p-1.5 {rounded} border border-white/10">
         <Icon class="w-4 h-4 text-white" />
     </div>
 </div>

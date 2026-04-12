@@ -49,9 +49,9 @@
         >
             <div
                 class="flex items-center gap-1.5 py-1 px-2.5
-                    bg-black/60 hover:bg-primary-500/80 backdrop-blur-md
-                    text-white rounded-lg border border-white/20 shadow-lg
-                    transition-all duration-200 scale-90 hover:scale-100 shadow-xl"
+                    bg-black/70 hover:bg-primary-600
+                    text-white rounded-lg border border-white/10
+                    transition-all duration-200 scale-95 hover:scale-100 shadow-lg"
                 title={item.entryPath ? "Open first CBZ" : "Open images"}
             >
                 <BookOpen size={14} strokeWidth={2} />

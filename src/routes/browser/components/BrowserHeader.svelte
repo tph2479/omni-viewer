@@ -25,9 +25,9 @@
 </script>
 
 <header
-    class="sticky top-0 z-100 bg-surface-50/80 dark:bg-surface-900/80 backdrop-blur-xl border-b border-surface-200/50 dark:border-surface-800/50 shadow-sm h-14 w-full"
+    class="sticky top-0 z-[100] bg-transparent h-14 w-full pointer-events-none"
 >
-    <div class="flex flex-row items-center min-h-full overflow-visible">
+    <div class="flex flex-row items-center min-h-full overflow-visible px-4 pointer-events-auto">
         <GalleryToolbar
             folder={{
                 path: s.folder.path,
