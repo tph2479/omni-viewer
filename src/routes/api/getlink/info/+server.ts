@@ -1,5 +1,4 @@
 import type { RequestHandler } from "./$types";
-import { json } from "@sveltejs/kit";
 import { spawn } from "node:child_process";
 import { getToolPath } from "$lib/server/database/db";
 
@@ -9,182 +8,189 @@ export const GET: RequestHandler = async ({ url }) => {
     const isPlaylist = url.searchParams.get("playlist") === "true";
 
     if (!targetUrl) {
-        return json({ error: "Missing url parameter" }, { status: 400 });
+        return new Response(JSON.stringify({ error: "Missing url parameter" }), { status: 400 });
     }
 
     const ytDlpPath = await getToolPath("yt-dlp");
     const galleryDlPath = await getToolPath("gallery-dl");
     const ffmpegPath = await getToolPath("ffmpeg");
 
-    const fetchYtdlp = () => new Promise((resolve) => {
-        const args = [
-            "--dump-json",
-            "--no-download",
-            "--ignore-config",
-            "--no-warnings",
-            "--playlist-end", "51",
-            targetUrl!,
-        ];
-
-        if (ffmpegPath) {
-            args.push("--ffmpeg-location", ffmpegPath);
-        }
-
-        if (isPlaylist) {
-            args.push("--flat-playlist", "--yes-playlist");
-        } else {
-            args.push("--no-playlist");
-        }
-
-        const proc = spawn(ytDlpPath, args);
-
-        let stdout = "";
-        let stderr = "";
-        const timeout = setTimeout(() => { proc.kill(); resolve(null); }, 60000);
-
-        proc.stdout.on("data", (c) => stdout += c.toString());
-        proc.stderr.on("data", (c) => stderr += c.toString());
-
-        proc.on("close", (code) => {
-            clearTimeout(timeout);
-            if (!stdout) {
-                console.error("yt-dlp failed or returned no output. stderr:", stderr);
-                return resolve(null);
-            }
-            try {
-                // Find all valid JSON objects in the output
-                const cleanedStdout = stdout.replace(/^\uFEFF/, "");
-                const lines = cleanedStdout.trim().split("\n");
-                const objects: any[] = [];
-                
-                for (const line of lines) {
-                    try {
-                        const parsed = JSON.parse(line.trim());
-                        if (parsed && typeof parsed === 'object') {
-                            objects.push(parsed);
-                        }
-                    } catch { continue; }
+    const stream = new ReadableStream({
+        async start(controller) {
+            const enc = new TextEncoder();
+            const send = (data: object) => {
+                try {
+                    controller.enqueue(enc.encode(`data: ${JSON.stringify(data)}\n\n`));
+                } catch {
+                    // Controller might be closed
                 }
+            };
 
-                if (objects.length === 0) return resolve(null);
+            function getSmallestThumbnail(metaObj: any) {
+                if (metaObj.thumbnails && Array.isArray(metaObj.thumbnails) && metaObj.thumbnails.length > 0) {
+                    const sorted = [...metaObj.thumbnails].sort((a, b) => {
+                        const areaA = (a.width || 0) * (a.height || 0);
+                        const areaB = (b.width || 0) * (b.height || 0);
+                        return areaA - areaB;
+                    });
+                    return sorted[0].url || sorted[0].filepath || null;
+                }
+                return metaObj.thumbnail || null;
+            }
 
-                // Prioritize the object with entries if we are in playlist mode
-                let meta = objects[0];
-                let virtualEntries: any[] = [];
-                
-                if (isPlaylist) {
-                    const withEntries = objects.find(o => o.entries && Array.isArray(o.entries));
-                    if (withEntries) {
-                        meta = withEntries;
-                    } else if (objects.length > 1) {
-                        // Virtual playlist from sequential objects (YouTube Mix/Radio style)
-                        meta = objects[0];
-                        // Skip the first object in the entries list as it's used for the main header
-                        virtualEntries = objects.slice(1).map(o => ({
-                            title: o.title || "No Title",
-                            thumbnail: o.thumbnail || (o.thumbnails?.[0]?.url) || null,
-                            url: o.url || o.webpage_url || (o.id ? `https://www.youtube.com/watch?v=${o.id}` : null),
-                            duration: o.duration || null,
-                        })).filter(e => e.url);
+            const sentEntries = new Set<string>();
+
+            function getCanonicalKey(e: any): string | null {
+                if (e._type === "thumbnail" || e._type === "comment" || e._type === "subtitle") return null;
+                let id = e.id;
+                let url = e.url || e.webpage_url;
+                let extractor = (e.extractor_key || e.extractor || "generic").toLowerCase();
+
+                if (extractor.includes("youtube") || (url && /youtube\.com|youtu\.be/.test(url))) {
+                    if (url) {
+                        const match = url.match(/(?:v=|\/)([a-zA-Z0-9_-]{11})(?:[&?]|$)/);
+                        if (match) id = match[1];
                     }
                 }
+                if (!id && !url) return e.title || null;
+                return `${extractor}:${id || url}`;
+            }
 
-                if (!meta) return resolve(null);
-
-                const result = {
-                    title: (isPlaylist ? (meta.playlist_title || meta.playlist || meta.title) : meta.title) || "Unknown Title",
-                    thumbnail: meta.thumbnail || (meta.thumbnails?.[0]?.url) || null,
-                    uploader: meta.uploader || meta.channel || null,
-                    duration: meta.duration || null,
-                    extractor: meta.extractor_key || meta.extractor || null,
-                    entries: virtualEntries
-                };
-
-                if (meta.entries && Array.isArray(meta.entries) && virtualEntries.length === 0) {
-                    result.entries = meta.entries.map((e: any) => ({
+            function sendEntry(e: any) {
+                const key = getCanonicalKey(e);
+                if (!key || sentEntries.has(key)) return;
+                sentEntries.add(key);
+                send({
+                    type: "entry",
+                    data: {
                         title: e.title || "No Title",
-                        thumbnail: e.thumbnail || (e.thumbnails?.[0]?.url) || null,
-                        url: e.url || e.webpage_url || (e.id ? `https://www.youtube.com/watch?v=${e.id}` : null),
+                        thumbnail: getSmallestThumbnail(e),
+                        url: (e.url || e.webpage_url || (e.id ? `https://www.youtube.com/watch?v=${e.id}` : null)),
                         duration: e.duration || null,
-                    })).filter((e: any) => e.url);
-                }
-
-                resolve(result);
-            } catch (err) {
-                console.error("Error parsing yt-dlp output:", err);
-                resolve(null);
-            }
-        });
-    });
-
-    const fetchGalleryDl = () => new Promise((resolve) => {
-        const proc = spawn(galleryDlPath, [
-            "-j",
-            targetUrl,
-        ]);
-
-        let stdout = "";
-        let stderr = "";
-        const timeout = setTimeout(() => { proc.kill(); resolve(null); }, 20000);
-
-        proc.stdout.on("data", (c) => stdout += c.toString());
-        proc.stderr.on("data", (c) => stderr += c.toString());
-
-        proc.on("close", (code) => {
-            clearTimeout(timeout);
-            if (!stdout) {
-                console.error("gallery-dl failed or returned no output. stderr:", stderr);
-                return resolve(null);
-            }
-            try {
-                // Find all type 3 records (URL + metadata)
-                const lines = stdout.trim().split("\n");
-                const entries: any[] = [];
-                for (const line of lines) {
-                    try {
-                        const item = JSON.parse(line);
-                        // gallery-dl -j outputs each item as a JSON list [type, url, metadata]
-                        if (Array.isArray(item) && item[0] === 3) {
-                            entries.push({
-                                title: item[2]?.filename || "Image",
-                                thumbnail: item[1],
-                                url: item[1],
-                            });
-                        }
-                    } catch { continue; }
-                }
-
-                if (entries.length === 0) return resolve(null);
-
-                resolve({
-                    title: entries[0].title || "Gallery",
-                    thumbnail: entries[0].thumbnail,
-                    extractor: "gallery-dl",
-                    entries: isPlaylist && entries.length > 1 ? entries : []
+                    }
                 });
-            } catch (err) {
-                console.error("Error parsing gallery-dl output:", err);
-                resolve(null);
             }
-        });
+
+            let toolToUse = ytDlpPath;
+            let args: string[] = [];
+            if (ytDlpPath) {
+                args = ["--dump-json", "--no-download", "--ignore-config", "--no-warnings", "--flat-playlist", targetUrl!];
+                if (ffmpegPath) args.push("--ffmpeg-location", ffmpegPath);
+                if (isPlaylist) {
+                    args.push("--yes-playlist");
+                } else {
+                    args.push("--no-playlist");
+                }
+            } else if (galleryDlPath && (mediaType === "image")) {
+                toolToUse = galleryDlPath;
+                args = ["-j", targetUrl!];
+            } else {
+                send({ type: "error", message: "No tool found" });
+                controller.close();
+                return;
+            }
+
+            const proc = spawn(toolToUse, args);
+            
+            let watchdog: ReturnType<typeof setTimeout>;
+            function resetWatchdog() {
+                if (watchdog) clearTimeout(watchdog);
+                watchdog = setTimeout(() => {
+                    try { proc.kill(); } catch {}
+                    send({ type: "error", message: "Scanner timed out (No data received)" });
+                    controller.close();
+                }, 60000); 
+            }
+            resetWatchdog();
+
+            let buffer = "";
+            let errBuffer = "";
+            let metaSent = false;
+
+            proc.stdout.on("data", (chunk) => {
+                resetWatchdog();
+                buffer += chunk.toString().replace(/^\uFEFF/g, "");
+                const lines = buffer.split("\n");
+                buffer = lines.pop() ?? "";
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (!trimmed) continue;
+                    try {
+                        const parsed = JSON.parse(trimmed);
+                        if (!parsed) continue;
+
+                        if (parsed._type === "playlist") {
+                            send({
+                                type: "meta",
+                                data: {
+                                    title: (parsed.playlist_title || parsed.playlist || parsed.title) || "Unknown Playlist",
+                                    thumbnail: getSmallestThumbnail(parsed),
+                                    uploader: parsed.uploader || parsed.channel || null,
+                                    duration: parsed.duration || null,
+                                    extractor: parsed.extractor_key || parsed.extractor || null,
+                                    total: parsed.playlist_count || parsed.n_entries || null
+                                }
+                            });
+                            metaSent = true;
+                            // Re-enable safety: process initial entries but rely on Set for de-duplication
+                            if (parsed.entries && Array.isArray(parsed.entries)) {
+                                for (const e of parsed.entries) { if (e) sendEntry(e); }
+                            }
+                        } 
+                        else if (parsed._type === "url" || parsed._type === "url_transparent" || (!isPlaylist && (parsed.id || parsed.title))) {
+                            if (!metaSent) {
+                                send({
+                                    type: "meta",
+                                    data: {
+                                        title: (isPlaylist ? (parsed.playlist_title || parsed.playlist) : parsed.title) || parsed.title || "Loading...",
+                                        thumbnail: getSmallestThumbnail(parsed),
+                                        uploader: parsed.uploader || parsed.channel || null,
+                                        duration: parsed.duration || null,
+                                        extractor: parsed.extractor_key || parsed.extractor || null,
+                                        total: isPlaylist ? (parsed.playlist_count || parsed.n_entries || null) : 1
+                                    }
+                                });
+                                metaSent = true;
+                            }
+                            sendEntry(parsed);
+                        }
+                    } catch { /* junk */ }
+                }
+            });
+
+            proc.stderr.on("data", (chunk) => {
+                resetWatchdog();
+                errBuffer += chunk.toString();
+            });
+
+            proc.on("close", (code) => {
+                clearTimeout(watchdog);
+                if (code !== 0) {
+                    const cleanErr = errBuffer.trim();
+                    if (cleanErr) {
+                        send({ type: "error", message: cleanErr.split('\n').pop() || "yt-dlp error" });
+                    } else if (!metaSent) {
+                        send({ type: "error", message: `Process exited with code ${code}` });
+                    }
+                }
+                send({ type: "done" });
+                controller.close();
+            });
+
+            proc.on("error", (err) => {
+                clearTimeout(watchdog);
+                send({ type: "error", message: err.message });
+                controller.close();
+            });
+        }
     });
 
-    // Try yt-dlp first for most things, then gdl for images
-    let meta: any = null;
-    if (ytDlpPath) {
-        meta = await fetchYtdlp();
-    }
-    
-    if (!meta && galleryDlPath && (mediaType === "image" || !ytDlpPath)) {
-        meta = await fetchGalleryDl();
-    }
-
-    if (meta) {
-        return json(meta);
-    }
-
-    return json({ 
-        error: "Could not fetch metadata. The URL might be unsupported or restricted.",
-        details: "Ensure the URL is valid and publicly accessible."
-    }, { status: 422 });
+    return new Response(stream, {
+        headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    });
 };

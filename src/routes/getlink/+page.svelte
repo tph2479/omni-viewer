@@ -3,6 +3,7 @@
         Link, Image, Video, Music, Loader2, Settings2, Download,
         ChevronDown, ChevronRight, Command, Clock
     } from "lucide-svelte";
+    import LazyImage from "$lib/components/LazyImage.svelte";
     import { toaster } from "$lib/stores/ui/toaster";
     import { slide, fade } from "svelte/transition";
 
@@ -36,6 +37,7 @@
     let meta = $state<Meta | null>(null);
     let metaLoading = $state(false);
     let metaDebounce: ReturnType<typeof setTimeout> | null = null;
+    let metaAbortController: AbortController | null = null;
 
     function formatDuration(sec: number): string {
         const h = Math.floor(sec / 3600);
@@ -51,27 +53,84 @@
         const isPlaylist = forcePlaylist !== undefined ? forcePlaylist : options.playlist;
         try { new URL(targetUrl); } catch { meta = null; return; }
 
+        if (metaAbortController) metaAbortController.abort();
+        metaAbortController = new AbortController();
+        const signal = metaAbortController.signal;
+
         metaLoading = true;
+        
         try {
-            const res = await fetch(`/api/getlink/info?url=${encodeURIComponent(targetUrl)}&type=${mediaType}&playlist=${isPlaylist}`);
-            const data = await res.json();
+            const res = await fetch(`/api/getlink/info?url=${encodeURIComponent(targetUrl)}&type=${mediaType}&playlist=${isPlaylist}`, { signal });
             
-            if (res.ok) {
-                meta = data;
-            } else {
+            if (!res.ok || !res.body) {
                 meta = null;
-                if (res.status === 422) {
-                    toaster.create({
-                        type: "error",
-                        title: "Fetch Error",
-                        description: data.error || "Could not fetch metadata"
-                    });
+                metaLoading = false;
+                return;
+            }
+
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = "";
+
+            // Initialize meta for the NEW stream
+            meta = { thumbnail: null, title: null, uploader: null, duration: null, extractor: null, entries: [] };
+
+            let entryBuffer: any[] = [];
+            let flushTimeout: ReturnType<typeof setTimeout> | null = null;
+
+            const flushBuffer = () => {
+                if (entryBuffer.length > 0 && meta) {
+                    meta.entries = [...(meta.entries || []), ...entryBuffer];
+                    entryBuffer = [];
+                }
+                flushTimeout = null;
+            };
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) {
+                    if (flushTimeout) clearTimeout(flushTimeout);
+                    flushBuffer();
+                    break;
+                }
+
+                buffer += decoder.decode(value, { stream: true });
+                const parts = buffer.split("\n\n");
+                buffer = parts.pop() ?? "";
+
+                for (const part of parts) {
+                    const dataLine = part.trim();
+                    if (!dataLine.startsWith("data:")) continue;
+                    try {
+                        const payload = JSON.parse(dataLine.slice(5).trim());
+                        if (payload.type === "meta") {
+                            meta = { ...payload.data, entries: meta?.entries || [] };
+                        } else if (payload.type === "entry") {
+                            if (meta) {
+                                entryBuffer.push(payload.data);
+                                // Schedule a flush if not already scheduled
+                                if (!flushTimeout) {
+                                    flushTimeout = setTimeout(flushBuffer, 300);
+                                }
+                                // If buffer is large, flush immediately
+                                if (entryBuffer.length >= 50) {
+                                    if (flushTimeout) clearTimeout(flushTimeout);
+                                    flushBuffer();
+                                }
+                            }
+                        } else if (payload.type === "error") {
+                             toaster.create({ type: "error", title: "Fetch Error", description: payload.message });
+                        }
+                    } catch { /* ignore parsing errors */ }
                 }
             }
-        } catch (err) {
+        } catch (err: any) {
+            if (err.name === 'AbortError') return;
             meta = null;
         } finally {
-            metaLoading = false;
+            if (!signal.aborted) {
+                metaLoading = false;
+            }
         }
     }
 
@@ -355,12 +414,11 @@
                         <div class="flex flex-col md:flex-row gap-4 items-start {metaLoading ? 'opacity-40 grayscale blur-[1px]' : ''} transition-all duration-300">
                             <div class="shrink-0">
                                 {#if meta.thumbnail}
-                                    <img
+                                    <LazyImage
                                         src={meta.thumbnail}
                                         alt="thumbnail"
-                                        loading="lazy"
-                                        decoding="async"
-                                        class="h-20 w-36 object-cover rounded-lg bg-surface-100 dark:bg-surface-800 shadow-sm"
+                                        class="h-20 w-36 rounded-lg shadow-sm"
+                                        delay={300}
                                     />
                                 {:else}
                                     <div class="h-20 w-36 bg-surface-100 dark:bg-surface-800 rounded-lg flex items-center justify-center border border-surface-200 dark:border-surface-700">
@@ -369,7 +427,11 @@
                                 {/if}
                             </div>
                             <div class="flex-1 min-w-0 space-y-2">
-                                <p class="font-bold text-lg leading-snug line-clamp-2 text-surface-900 dark:text-white">{meta.title}</p>
+                                <p class="font-bold text-lg leading-snug line-clamp-2 text-surface-900 dark:text-white" title={meta.title}>
+                                    <a href={url} target="_blank" rel="noopener noreferrer" class="hover:text-primary-500 transition-colors">
+                                        {meta.title}
+                                    </a>
+                                </p>
                                 <div class="flex flex-wrap items-center gap-3 text-[10px] font-bold uppercase tracking-wider text-surface-500">
                                     {#if meta.uploader}
                                         <span class="flex items-center gap-1.5"><Command class="size-3" /> {meta.uploader}</span>
@@ -404,12 +466,28 @@
                         {#if metaLoading}
                              <div class="absolute inset-0 z-10 bg-white/10 dark:bg-black/10 backdrop-blur-[1px] pointer-events-none"></div>
                         {/if}
-                        {#if options.playlist && meta}
+                        {#if metaLoading && !meta}
+                            <div class="flex flex-col items-center justify-center py-12 gap-4">
+                                <Loader2 class="size-8 text-primary-500 animate-spin" />
+                                <p class="text-xs font-bold uppercase tracking-widest text-surface-500 animate-pulse">Initializing Scanner...</p>
+                            </div>
+                        {:else if meta}
+                            {#if options.playlist}
                             <div class="px-1 py-1 space-y-1">
                                 <div class="flex items-center justify-between gap-4">
-                                    <h2 class="text-lg font-bold text-surface-900 dark:text-white truncate">{meta.title}</h2>
+                                    <h2 class="text-lg font-bold text-surface-900 dark:text-white truncate" title={meta.title}>
+                                        <a href={url} target="_blank" rel="noopener noreferrer" class="hover:text-primary-500 transition-colors">
+                                            {meta.title || "Loading Playlist..."}
+                                        </a>
+                                    </h2>
                                     <div class="flex items-center gap-3 shrink-0">
-                                        <span class="text-[10px] font-bold text-primary-500 bg-primary-500/10 px-2 py-0.5 rounded-full uppercase tracking-wider">{meta.entries.length}{meta.entries.length >= 50 ? '+' : ''} Items</span>
+                                        <span class="text-[10px] font-bold text-primary-500 bg-primary-500/10 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                            {meta.entries?.length || 0}
+                                            {#if (meta as any).total}
+                                                / {(meta as any).total}
+                                            {/if}
+                                            {((meta as any).total && meta.entries?.length && meta.entries.length >= (meta as any).total) ? '' : '...'} Items
+                                        </span>
                                         <button 
                                             class="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-surface-100 dark:bg-surface-800 hover:bg-primary-600 hover:text-white transition-all text-[9px] font-bold uppercase tracking-wider text-surface-500"
                                             onclick={() => handleSubmit(url, "thumbnail")}
@@ -432,12 +510,11 @@
                                 <div class="group flex items-center gap-3 p-2 bg-white dark:bg-surface-900 border border-surface-100 dark:border-surface-800 rounded-xl hover:border-primary-500/30 hover:shadow-sm transition-all duration-200">
                                     <div class="relative shrink-0">
                                         {#if entry.thumbnail}
-                                            <img 
+                                            <LazyImage 
                                                 src={entry.thumbnail} 
                                                 alt="" 
-                                                loading="lazy" 
-                                                decoding="async"
-                                                class="size-14 object-cover rounded-lg bg-surface-100 dark:bg-surface-800" 
+                                                class="size-14 rounded-lg" 
+                                                delay={200 + (Math.min(i, 10) * 50)} 
                                             />
                                         {:else}
                                             <div class="size-14 bg-surface-100 dark:bg-surface-800 rounded-lg flex items-center justify-center border border-white/5">
@@ -451,8 +528,23 @@
                                         {/if}
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-bold truncate text-surface-900 dark:text-surface-100">{entry.title}</p>
-                                        <p class="text-[9px] font-mono text-surface-500 truncate mt-0.5 opacity-60">{entry.url}</p>
+                                        <a 
+                                            href={entry.url} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer" 
+                                            class="text-sm font-bold truncate text-surface-900 dark:text-surface-100 block hover:text-primary-500 transition-colors" 
+                                            title={entry.title}
+                                        >
+                                            {entry.title}
+                                        </a>
+                                        <a 
+                                            href={entry.url} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer" 
+                                            class="text-[9px] font-mono text-surface-500 hover:text-primary-500 truncate mt-0.5 opacity-60 block transition-colors"
+                                        >
+                                            {entry.url}
+                                        </a>
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <button
@@ -475,8 +567,9 @@
                                 </div>
                             {/each}
                         </div>
-                    </div>
-                {/if}
+                    {/if}
+                </div>
+            {/if}
 
                 <!-- Progress Section - Professional -->
                 {#if isLoading || (result && progressLines.length > 0)}

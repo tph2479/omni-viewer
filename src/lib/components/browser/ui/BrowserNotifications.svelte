@@ -1,6 +1,40 @@
 <script lang="ts">
     import { toaster } from "$lib/stores/ui/toaster";
     import { Portal, Toast } from "@skeletonlabs/skeleton-svelte";
+    import { CheckCircle2, AlertCircle, AlertTriangle, Info, X } from "lucide-svelte";
+
+    const getToastConfig = (type: string | undefined) => {
+        switch (type) {
+            case 'success':
+                return {
+                    icon: CheckCircle2,
+                    color: 'text-primary-400',
+                    accent: 'bg-primary-500',
+                    border: 'border-primary-500/20'
+                };
+            case 'error':
+                return {
+                    icon: AlertCircle,
+                    color: 'text-error-400',
+                    accent: 'bg-error-500',
+                    border: 'border-error-500/20'
+                };
+            case 'warning':
+                return {
+                    icon: AlertTriangle,
+                    color: 'text-warning-400',
+                    accent: 'bg-warning-500',
+                    border: 'border-warning-500/20'
+                };
+            default:
+                return {
+                    icon: Info,
+                    color: 'text-surface-400',
+                    accent: 'bg-surface-500',
+                    border: 'border-white/10'
+                };
+        }
+    };
 </script>
 
 <Portal>
@@ -9,38 +43,42 @@
         class="fixed bottom-6 right-6 z-[9999] flex flex-col-reverse gap-3 items-end pointer-events-none"
     >
         {#snippet children(toast)}
+            {@const config = getToastConfig(toast.type)}
             <Toast
                 {toast}
                 class="pointer-events-auto flex items-center gap-4 w-96 px-4 py-4
-                    bg-surface-50 dark:bg-surface-900
-                    border border-surface-200 dark:border-surface-700
-                    rounded-xl shadow-lg"
+                    bg-surface-900/90 backdrop-blur-xl border {config.border}
+                    rounded-2xl shadow-2xl shadow-black/50 transition-all duration-300
+                    overflow-hidden relative group"
             >
-                <!-- Type color bar -->
-                <span
-                    class="w-1 self-stretch rounded-full shrink-0"
-                    style="background-color: {toast.type === 'success'
-                        ? 'var(--color-success-500)'
-                        : toast.type === 'error'
-                        ? 'var(--color-error-500)'
-                        : toast.type === 'warning'
-                        ? 'var(--color-warning-500)'
-                        : 'var(--color-primary-500)'};"
-                ></span>
+                <!-- Left accent border -->
+                <div class="absolute left-0 top-0 bottom-0 w-1.5 {config.accent} opacity-80"></div>
+                
+                <!-- Background glow -->
+                <div class="absolute -left-4 -top-4 w-24 h-24 {config.accent} opacity-[0.03] blur-3xl pointer-events-none"></div>
+
+                <!-- Icon -->
+                <div class="shrink-0 {config.color} bg-white/5 p-2 rounded-xl border border-white/5">
+                    <svelte:component this={config.icon} size={20} />
+                </div>
+
+                <!-- Content -->
                 <div class="flex flex-col flex-1 min-w-0 gap-1">
                     {#if toast.title}
-                        <div class="text-base font-semibold text-surface-900 dark:text-surface-50 leading-tight">
+                        <div class="text-[13px] font-bold text-white leading-tight tracking-tight">
                             {toast.title}
                         </div>
                     {/if}
                     {#if toast.description}
-                        <div class="text-sm text-surface-500 dark:text-surface-400 leading-snug">
+                        <div class="text-xs text-surface-200 leading-snug font-medium opacity-90">
                             {toast.description}
                         </div>
                     {/if}
                 </div>
-                <Toast.CloseTrigger class="btn-icon shrink-0 size-7 rounded-lg text-surface-400 hover:text-surface-700 dark:hover:text-surface-200 hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors text-sm">
-                    ✕
+
+                <!-- Close Button -->
+                <Toast.CloseTrigger class="btn-icon shrink-0 size-8 rounded-xl text-white/30 hover:text-white hover:bg-white/10 transition-all duration-200">
+                    <X size={14} />
                 </Toast.CloseTrigger>
             </Toast>
         {/snippet}
