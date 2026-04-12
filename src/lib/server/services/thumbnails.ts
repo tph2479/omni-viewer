@@ -66,6 +66,14 @@ async function saveThumbWebp(input: Buffer | string, outputPath: string): Promis
  *                        color primaries / transfer characteristics
  */
 function buildFfmpegArgs(inputPath: string, isVideo: boolean): string[] {
+  // Color normalization filter string:
+  // 1. setparams — Forces interpretation as BT.709 (standard HD) to bypass 'reserved' metadata errors (swscaler -129).
+  // 2. scale — Downscales for performance.
+  // 3. format — Ensures output pixel format is compatible with MJPEG encoder.
+  const videoFilters = isVideo 
+    ? "setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale=300:-2:sws_flags=bilinear,format=yuv420p"
+    : "scale=300:-2:sws_flags=bilinear,format=yuv420p";
+
   return [
     "-hide_banner", "-loglevel", "error",
     "-skip_frame", "noref",
@@ -75,8 +83,7 @@ function buildFfmpegArgs(inputPath: string, isVideo: boolean): string[] {
     ...(isVideo ? ["-ss", "00:00:02"] : []),
     "-i", inputPath,
     "-map", "0:v:0",
-    "-vf", "scale=300:-2:sws_flags=bilinear",
-    "-pix_fmt", "yuv420p",
+    "-vf", videoFilters,
     "-frames:v", "1",
     "-q:v", "5",
     "-f", "image2",
