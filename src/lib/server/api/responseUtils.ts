@@ -18,7 +18,7 @@ export async function serveFileResponse(
     if ((globalThis as any).Bun) {
         return new Response((globalThis as any).Bun.file(filePath), { headers });
     }
-    return new Response(await fsp.readFile(filePath), { headers });
+    return new Response(new Uint8Array(await fsp.readFile(filePath)), { headers });
 }
 
 const IMMUTABLE_CACHE = 'public, max-age=31536000, immutable';

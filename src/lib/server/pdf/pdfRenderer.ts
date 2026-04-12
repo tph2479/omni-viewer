@@ -1,7 +1,6 @@
 import { createCanvas, Path2D, ImageData, Image } from '@napi-rs/canvas';
 
 // Robust 2D DOMMatrix polyfill for pdfjs-dist in Node environment
-// We check for preMultiplySelf specifically to handle cases where a partial DOMMatrix might exist
 if (!(globalThis as any).DOMMatrix || !(globalThis as any).DOMMatrix.prototype.preMultiplySelf) {
     (globalThis as any).DOMMatrix = class DOMMatrix {
         a: number; b: number; c: number; d: number; e: number; f: number;
@@ -41,24 +40,21 @@ if (!(globalThis as any).DOMMatrix || !(globalThis as any).DOMMatrix.prototype.p
     };
 }
 
-// Ensure other standard canvas globals are available for pdfjs-dist
 (globalThis as any).Path2D = Path2D;
 (globalThis as any).ImageData = ImageData;
 (globalThis as any).Image = Image;
 
 /**
- * Renders the first page of a PDF to a PNG buffer with optimal scaling.
- * Optimized to run in-process for better performance on single-page thumb extraction.
+ * Renders a specific page of a PDF to a PNG buffer.
  * 
  * @param pdfPath Absolute path to the PDF file.
+ * @param pageNumber 1-indexed page number.
  * @param targetWidth The desired width for the thumbnail (to optimize CPU/Memory usage).
  */
-export async function renderPdfFirstPage(pdfPath: string, targetWidth: number = 400): Promise<Buffer> {
+export async function renderPdfPage(pdfPath: string, pageNumber: number = 1, targetWidth: number = 400): Promise<Buffer> {
     try {
-        // Dynamic import to ensure pdfjs-dist scales its features based on our polyfills
         const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
 
-        // Use file loading configurations to minimize memory impact
         const loadingTask = pdfjs.getDocument({
             url: pdfPath,
             verbosity: 0,
@@ -69,7 +65,10 @@ export async function renderPdfFirstPage(pdfPath: string, targetWidth: number = 
         });
 
         const pdf = await loadingTask.promise;
-        const page = await pdf.getPage(1);
+        
+        // Ensure pageNumber is within bounds
+        const safePageNum = Math.max(1, Math.min(pageNumber, pdf.numPages));
+        const page = await pdf.getPage(safePageNum);
 
         const unscaledViewport = page.getViewport({ scale: 1.0 });
         const scale = targetWidth / unscaledViewport.width;
@@ -78,7 +77,6 @@ export async function renderPdfFirstPage(pdfPath: string, targetWidth: number = 
         const canvas = createCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
         const context = canvas.getContext('2d');
 
-        // Disable rendering annotations and interactive forms for speed
         await page.render({
             canvasContext: context as any,
             viewport: viewport,
@@ -88,12 +86,32 @@ export async function renderPdfFirstPage(pdfPath: string, targetWidth: number = 
 
         const buffer = await canvas.encode('png');
         
-        // Cleanup to release memory
         await pdf.destroy();
-        
         return buffer;
     } catch (error) {
-        console.error(`[PDF Render Error] ${pdfPath}:`, error);
+        console.error(`[PDF Render Error] ${pdfPath} (page ${pageNumber}):`, error);
         throw new Error(`Failed to render PDF page: ${error instanceof Error ? error.message : String(error)}`);
+    }
+}
+
+/**
+ * Returns the page count of a PDF file.
+ */
+export async function getPdfPageCount(pdfPath: string): Promise<number> {
+    try {
+        const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+        const loadingTask = pdfjs.getDocument({
+            url: pdfPath,
+            verbosity: 0,
+            disableAutoFetch: true,
+            disableStream: true,
+        });
+        const pdf = await loadingTask.promise;
+        const numPages = pdf.numPages;
+        await pdf.destroy();
+        return numPages;
+    } catch (e) {
+        console.error(`[PDF Meta Error] ${pdfPath}:`, e);
+        return 0;
     }
 }

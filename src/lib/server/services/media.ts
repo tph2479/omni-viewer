@@ -2,7 +2,6 @@
  * Media service — serves images, audio, and video files.
  * Handles metadata extraction, HEIC conversion, and byte-range streaming.
  */
-import { json } from '@sveltejs/kit';
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
@@ -11,14 +10,14 @@ import sharp from 'sharp';
 
 import { isImageFile } from '$lib/utils/fileUtils';
 import { ensureHeicConverted } from '$lib/server/services/imageUtils';
-import { rangeStreamResponse } from '../../../routes/api/_shared/responseUtils';
+import { rangeStreamResponse } from '$lib/server/api/responseUtils';
 
 import type { Stats } from 'node:fs';
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 
 /**
- * Return image dimensions and basic file info as JSON.
+ * Return image dimensions and basic file info.
  * Width/height are only populated for image files (including HEIC after conversion).
  */
 export async function getMediaMetadata(
@@ -46,20 +45,20 @@ export async function getMediaMetadata(
         } catch { /* non-fatal */ }
     }
 
-    return json({
+    return {
         name: path.basename(absolutePath),
         path: normalizedPath,
         size: stat.size,
         lastModified: stat.mtimeMs,
         width,
         height,
-    });
+    };
 }
 
 // ─── Image ────────────────────────────────────────────────────────────────────
 
 /**
- * Stream a single image file to the client.
+ * Stream a single image file.
  * Transparently converts HEIC/HEIF to WebP on the fly.
  */
 export async function serveMediaImage(
@@ -96,7 +95,6 @@ export async function serveMediaImage(
 
 /**
  * Stream a video or audio file with full RFC 7233 byte-range support.
- * Videos get ETag + no-cache headers for accurate seeking; audio gets a short cache.
  */
 export function streamMedia(
     absolutePath: string,
@@ -120,3 +118,4 @@ export function streamMedia(
     };
     return rangeStreamResponse(absolutePath, stat, range, baseHeaders, signal);
 }
+

@@ -1,6 +1,7 @@
 import { tick } from "svelte";
 import { pushState } from "$app/navigation";
 import { toaster } from "$lib/stores/ui/toaster";
+import { api } from "$lib/api/client";
 import type { MediaFile, SortType, FilterType } from "./types";
 import type { BrowserStore } from "./index.svelte.js";
 
@@ -11,11 +12,8 @@ export function createActions(store: BrowserStore) {
     if (!force && ui.availableDrives.length > 0) return;
     ui.isDrivesLoading = true;
     try {
-      const res = await fetch("/api/file?action=directories&path=");
-      if (res.ok) {
-        const data = await res.json();
-        ui.availableDrives = data.directories;
-      }
+      const data = await api.getNavigation();
+      ui.availableDrives = data.directories;
     } catch (e) {
       console.error("Failed to load drives:", e);
     } finally {
@@ -70,16 +68,14 @@ export function createActions(store: BrowserStore) {
           scrollContainer.scrollTo({ top: 0, behavior: "instant" });
       }
 
-      const exclusiveParam = ui.exclusiveType
-        ? `&exclusiveType=${ui.exclusiveType}`
-        : "";
-      const res = await fetch(
-        `/api/file?action=gallery&folder=${encodeURIComponent(targetPath)}&page=${pagination.currentPage}&limit=${pagination.pageSize}&sort=${pagination.sort}&type=${pagination.mediaType}&isCover=${cover.enabled}${exclusiveParam}`,
-      );
-      const data = await res.json();
-
-      if (!res.ok)
-        throw new Error(data.message || "Error fetching data from server.");
+      const data = await api.getGallery(targetPath, {
+        page: pagination.currentPage,
+        limit: pagination.pageSize,
+        sort: pagination.sort,
+        type: pagination.mediaType,
+        isCover: cover.enabled,
+        exclusiveType: ui.exclusiveType,
+      });
 
       content.isGrouped = data.isGrouped || false;
       if (content.isGrouped) {
@@ -88,8 +84,8 @@ export function createActions(store: BrowserStore) {
       } else {
         content.groupedData = null;
         content.items = append
-          ? [...content.items, ...data.images]
-          : data.images;
+          ? [...content.items, ...data.items]
+          : data.items;
       }
 
       if (reset) {
@@ -112,20 +108,20 @@ export function createActions(store: BrowserStore) {
         JSON.stringify(folder.pageHistory),
       );
 
-if (targetId) {
-  tick().then(() => {
-    const el = document.getElementById(targetId);
-    if (el) {
-      el.scrollIntoView({ behavior: "instant", block: "center" });
-      el.classList.add("ring-[1.5px]", "ring-primary-300", "z-10");
-      setTimeout(
-        () => el.classList.remove("ring-[1.5px]", "ring-primary-300", "z-10"),
-        2500,
-      );
-    }
-    ui.lastOpenedFolder = null;
-  });
-}
+      if (targetId) {
+        tick().then(() => {
+          const el = document.getElementById(targetId);
+          if (el) {
+            el.scrollIntoView({ behavior: "instant", block: "center" });
+            el.classList.add("ring-[1.5px]", "ring-primary-300", "z-10");
+            setTimeout(
+              () => el.classList.remove("ring-[1.5px]", "ring-primary-300", "z-10"),
+              2500,
+            );
+          }
+          ui.lastOpenedFolder = null;
+        });
+      }
 
       if (ui.pendingFile) {
         ui.lastOpenedFile = ui.pendingFile.path;
@@ -212,10 +208,11 @@ if (targetId) {
 
     ui.isLoading = true;
     try {
-      const imgRes = await fetch(
-        `/api/file?action=gallery&folder=${encodeURIComponent(folder.path)}&page=0&limit=1&imagesOnly=true`,
-      );
-      const imgData = await imgRes.json();
+      const imgData = await api.getGallery(folder.path, {
+        page: 0,
+        limit: 1,
+        imagesOnly: true
+      });
       if (imgData.total > 0) {
         modal.webtoon.open = true;
         return;

@@ -2,24 +2,27 @@
  * Ebook service — serves EPUB, CBZ, and PDF files.
  * Handles metadata, cover extraction, archive entry extraction, and raw file serving.
  */
-import { error, json } from '@sveltejs/kit';
 import fs from 'node:fs';
-import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { Readable } from 'node:stream';
+import yauzl from 'yauzl-promise';
+import sharp from 'sharp';
 
 import { isPdfFile, isEpubFile, isCbzFile, getContentType, isImageFile } from '$lib/utils/fileUtils';
 import type { MediaType } from '$lib/stores/browser/types';
-import { serveFileResponse, rangeStreamResponse, CACHE_IMMUTABLE, CACHE_SHORT } from '../../../routes/api/_shared/responseUtils';
-import yauzl from 'yauzl-promise';
-import sharp from 'sharp';
+import { serveFileResponse, rangeStreamResponse, CACHE_IMMUTABLE, CACHE_SHORT } from '$lib/server/api/responseUtils';
 import { globalTaskSemaphore } from '../utils/semaphore';
 import { isHeicBuffer, ensureThumbDir, getThumbnailPath } from './imageUtils';
+import { renderPdfPage, getPdfPageCount } from '../pdf/pdfRenderer';
+import { generateThumbnail } from './thumbnails';
 
 import type { Stats } from 'node:fs';
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 
+/**
+ * Returns metadata for an ebook file.
+ */
 export async function getEbookMetadata(
     absolutePath: string,
     normalizedPath: string,
@@ -28,78 +31,108 @@ export async function getEbookMetadata(
     const ext = path.extname(absolutePath).toLowerCase();
     
     let mediaType: MediaType = 'unknown';
-    if (isPdfFile(ext)) mediaType = 'pdf';
+    let totalPages = 0;
+
+    if (isPdfFile(ext)) {
+        mediaType = 'pdf';
+        totalPages = await getPdfPageCount(absolutePath);
+    }
     else if (isEpubFile(ext)) mediaType = 'epub';
     else if (isCbzFile(ext)) mediaType = 'cbz';
     
-    return json({
+    return {
         name: path.basename(absolutePath),
         path: normalizedPath,
         size: stat.size,
         lastModified: stat.mtimeMs,
         mediaType,
-    });
+        totalPages, // Important for PDFs
+    };
 }
 
 // ─── Cover ────────────────────────────────────────────────────────────────────
 
 /**
- * Extract and serve the cover image for a CBZ or EPUB file.
- * Returns `null` for unsupported types (e.g. PDF) so the caller can send a 204.
+ * Extract and provide the cover image response for a CBZ, EPUB, or PDF file.
  */
-export async function getEbookCover(
+export async function buildEbookCoverResponse(
     absolutePath: string,
     stat: Stats,
     signal: AbortSignal,
 ): Promise<Response | null> {
     const ext = path.extname(absolutePath).toLowerCase();
 
-    if (!isCbzFile(ext) && !isEpubFile(ext)) return null;
+    // 1. Handle PDF covers (First page rendering)
+    if (isPdfFile(ext)) {
+        const thumbPath = getThumbnailPath(absolutePath, stat.mtimeMs);
+        if (!fs.existsSync(thumbPath)) {
+            const ok = await generateThumbnail(absolutePath, thumbPath, stat.mtimeMs, signal);
+            if (!ok) return null;
+        }
+        return serveFileResponse(thumbPath, {
+            'Content-Type': 'image/webp',
+            ...CACHE_IMMUTABLE,
+        });
+    }
 
-    const thumbPath = await getArchiveCover(absolutePath, stat.mtimeMs, signal);
-    if (!thumbPath) throw error(404, 'Cover could not be generated');
+    // 2. Handle Archive covers (CBZ, EPUB)
+    if (isCbzFile(ext) || isEpubFile(ext)) {
+        const thumbPath = await getArchiveCover(absolutePath, stat.mtimeMs, signal);
+        if (!thumbPath) return null;
 
-    return serveFileResponse(thumbPath, {
-        'Content-Type': 'image/webp',
-        ...CACHE_IMMUTABLE,
-    });
+        return serveFileResponse(thumbPath, {
+            'Content-Type': 'image/webp',
+            ...CACHE_IMMUTABLE,
+        });
+    }
+
+    return null;
 }
 
-// ─── Archive entry ─────────────────────────────────────────────────────────────
+// ─── Archive / Virtual Entry ──────────────────────────────────────────────────
 
 /**
- * Stream a single file from inside an archive (CBZ/ZIP) to the client.
+ * Builds a response for a single file inside an archive (CBZ/ZIP)
+ * OR a virtual page inside a PDF.
  */
-export async function serveArchiveEntry(
+export async function buildArchiveEntryResponse(
     absolutePath: string,
     internalPath: string,
 ): Promise<Response> {
-    try {
-        const stream = await extractFileFromArchive(absolutePath, internalPath);
-        const contentType = getContentType(path.extname(internalPath).toLowerCase());
-        // @ts-ignore — Node stream → Web stream
-        return new Response(Readable.toWeb(stream) as any, {
+    const ext = path.extname(absolutePath).toLowerCase();
+
+    // 1. Handle PDF Virtual Page Extraction
+    if (isPdfFile(ext)) {
+        const pageNum = parseInt(internalPath, 10);
+        if (isNaN(pageNum)) throw new Error('Invalid PDF page number');
+        
+        const buffer = await renderPdfPage(absolutePath, pageNum, 1200); // Higher res for viewing
+        return new Response(new Uint8Array(buffer), {
             headers: {
-                'Content-Type': contentType,
-                'Cache-Control': 'public, max-age=86400',
+                'Content-Type': 'image/png',
+                ...CACHE_SHORT,
             },
         });
-    } catch (err: any) {
-        if (err.message?.includes('encrypted')) {
-            console.warn(`[Ebook] Skipping encrypted entry: ${internalPath}`);
-        } else {
-            console.error(`[Ebook] Error extracting ${internalPath}:`, err);
-        }
-        throw error(404, `Internal file not found: ${err.message}`);
     }
+
+    // 2. Handle Real Archive Extraction (CBZ/EPUB)
+    const stream = await extractFileFromArchive(absolutePath, internalPath);
+    const contentType = getContentType(path.extname(internalPath).toLowerCase());
+    // @ts-ignore — Node stream → Web stream
+    return new Response(Readable.toWeb(stream) as any, {
+        headers: {
+            'Content-Type': contentType,
+            'Cache-Control': 'public, max-age=86400',
+        },
+    });
 }
 
 // ─── Raw file serve ────────────────────────────────────────────────────────────
 
 /**
- * Stream a raw ebook file with optional byte-range support (for PDF.js paging).
+ * Builds a range-supporting response for a raw ebook file.
  */
-export function serveEbookFile(
+export function buildEbookFileResponse(
     absolutePath: string,
     stat: Stats,
     range: string | null,

@@ -13,12 +13,7 @@
         FileArchive,
         Play,
     } from "lucide-svelte";
-
-    type DirectoryEntry = {
-        name: string;
-        path: string;
-        mediaType?: 'directory' | 'cbz' | 'media' | 'unknown';
-    };
+    import { api } from "$lib/api/client";
 
     let {
         isFolderPickerOpen = $bindable(),
@@ -136,12 +131,7 @@
 
         try {
             const query = normalizePath(pathQuery);
-            const res = await fetch(
-                `/api/file?action=directories&path=${encodeURIComponent(query)}`,
-            );
-            const data = await res.json();
-            if (!res.ok)
-                throw new Error(data.message || "Error fetching directories");
+            const data = await api.getNavigation(query);
 
             // Reset selection when navigating to a new folder
             selectedFilePath = null;

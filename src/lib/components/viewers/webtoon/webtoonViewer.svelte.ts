@@ -1,5 +1,7 @@
 import { tick } from 'svelte';
 import type { MediaFile } from '$lib/stores/browser/types';
+import { api } from '$lib/api/client';
+
 export const WEBTOON_CONTEXT_KEY = Symbol('webtoon-context');
 export type WebtoonViewerContext = ReturnType<typeof createWebtoonController>;
 
@@ -76,12 +78,17 @@ export function createWebtoonController(folderPath: string, contextPath: string 
 			const normalizedContext = s.contextPath.replace(/\\/g, '/');
 			// Use noGroup=true to get a flat list even if folders and CBZs are mixed
 			// isToc=true to get entryPath/containsImages for TOC
-			const res = await fetch(`/api/file?action=gallery&folder=${encodeURIComponent(normalizedContext)}&sort=name_asc&type=all&limit=10000&noGroup=true&isToc=true`);
-			const data = await res.json();
+			const data = await api.getGallery(normalizedContext, {
+				sort: 'name_asc',
+				type: 'all',
+				limit: 10000,
+				noGroup: true,
+				isToc: true
+			});
 			
-			if (data.images) {
+			if (data.items) {
 				// Filter for books/chapters (both CBZ files and folders with images)
-				s.siblings = (data.images as MediaFile[]).filter(item => 
+				s.siblings = (data.items as MediaFile[]).filter(item => 
 					item.mediaType === 'cbz' || 
 					item.name.toLowerCase().endsWith('.cbz') || 
 					item.name.toLowerCase().endsWith('.zip') ||
@@ -143,16 +150,19 @@ export function createWebtoonController(folderPath: string, contextPath: string 
 			let hasMorePages = true;
 
 			while (hasMorePages) {
-				const res = await fetch(`/api/file?action=gallery&folder=${encodeURIComponent(s.folderPath)}&page=${page}&limit=${WEBTOON_PAGE_SIZE}&sort=name_asc&imagesOnly=true`);
-				const data = await res.json();
-				if (!res.ok) throw new Error(data.message || "Error loading webtoon data");
+				const data = await api.getGallery(s.folderPath, {
+					page,
+					limit: WEBTOON_PAGE_SIZE,
+					sort: 'name_asc',
+					imagesOnly: true
+				});
 
-				allImages = allImages.concat(data.images);
+				allImages = allImages.concat(data.items);
 				s.totalImages = data.totalImages;
 				hasMorePages = data.hasMore;
 				page++;
 
-				if (!hasMorePages || allImages.length >= data.total) {
+				if (!hasMorePages || allImages.length >= (data.total || data.totalImages)) {
 					hasMorePages = false;
 				}
 			}

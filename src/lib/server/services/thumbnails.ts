@@ -9,8 +9,8 @@ import {
   THUMB_CACHE_DIR,
 } from "./imageUtils";
 import { globalTaskSemaphore } from "$lib/server/utils/semaphore";
-import { isVideoFile, isAudioFile, isImageFile, isPdfFile } from "$lib/utils/fileUtils";
-import { renderPdfFirstPage } from "$lib/server/pdf/pdfRenderer";
+import { isVideoFile, isAudioFile, isImageFile, isPdfFile, isCbzFile, isEpubFile } from "$lib/utils/fileUtils";
+import { renderPdfPage } from "$lib/server/pdf/pdfRenderer";
 import { getToolPath } from "$lib/server/database/db";
 
 // ---------------------------------------------------------------------------
@@ -214,7 +214,7 @@ async function extractAudioCover(
 
 /** Render the first page of a PDF as a WebP thumbnail. */
 async function renderPdfThumb(inputPath: string, outputPath: string): Promise<boolean> {
-  const buf = await renderPdfFirstPage(inputPath, 250);
+  const buf = await renderPdfPage(inputPath, 1, 250);
   await saveThumbWebp(buf, outputPath);
   return true;
 }
@@ -318,6 +318,16 @@ async function _generate(
         if (signal?.aborted) return false;
         return renderPdfThumb(inputPath, outputPath);
       });
+    } else if (isCbzFile(ext) || isEpubFile(ext)) {
+      // For archive-based ebooks, we extract the cover as a thumbnail
+      const { getArchiveCover } = await import("./ebook");
+      const coverPath = await getArchiveCover(inputPath, mtimeMs, signal);
+      if (coverPath && fs.existsSync(coverPath)) {
+        await fsp.copyFile(coverPath, outputPath);
+        ok = true;
+      } else {
+        ok = false;
+      }
     } else {
       ok = await renderImageThumb(inputPath, outputPath, mtimeMs, signal);
     }
