@@ -25,7 +25,7 @@
 </script>
 
 <header
-    class="sticky top-0 z-100 bg-surface-100 dark:bg-surface-900 px-0 py-0 shadow-md h-14 w-full"
+    class="sticky top-0 z-100 bg-surface-50/80 dark:bg-surface-900/80 backdrop-blur-xl border-b border-surface-200/50 dark:border-surface-800/50 shadow-sm h-14 w-full"
 >
     <div class="flex flex-row items-center min-h-full overflow-visible">
         <GalleryToolbar

@@ -180,13 +180,14 @@
     <!-- Left buttons -->
     <div
         class="flex items-center 
-               bg-surface-100/70 dark:bg-surface-800/70 backdrop-blur-md
-               border border-surface-200/50 dark:border-surface-800/50 shadow-lg rounded-xl shrink-0"
+               bg-surface-100/40 dark:bg-surface-900/40 backdrop-blur-md
+               border border-surface-200/40 dark:border-white/10 shadow-sm rounded-xl shrink-0"
     >
         <button
             class="hidden sm:flex items-center justify-center w-10 h-10 shrink-0
                    rounded-xl text-sm font-medium
-                   hover:preset-tonal-surface transition-colors"
+                   text-surface-600 dark:text-surface-400 hover:text-primary-500 dark:hover:text-primary-400 
+                   hover:bg-primary-500/10 transition-all duration-200"
             onclick={actions.onOpenPicker}
             onmousedown={(e) => e.preventDefault()}
             title="Select folder"
@@ -196,7 +197,8 @@
 
         <button
             class="flex items-center justify-center w-10 h-10 shrink-0
-                   rounded-xl hover:preset-tonal-surface transition-colors
+                   rounded-xl text-surface-600 dark:text-surface-400 hover:text-primary-500 dark:hover:text-primary-400 
+                   hover:bg-primary-500/10 transition-all duration-200
                    disabled:opacity-30"
             onclick={() => parentPath && actions.onGoUp(parentPath)}
             disabled={!parentPath || isLoading}
@@ -210,8 +212,8 @@
     <!-- Input -->
     <div
         class="flex items-center flex-1 min-w-0 h-10 
-               bg-surface-100/70 dark:bg-surface-800/70 backdrop-blur-md
-               border border-surface-200/50 dark:border-surface-800/50 shadow-lg rounded-xl"
+               bg-surface-100/40 dark:bg-surface-900/40 backdrop-blur-md
+               border border-surface-200/40 dark:border-white/10 shadow-sm rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-primary-500/30 transition-all"
     >
         {#if isMobile}
             <div
@@ -253,8 +255,8 @@
             <div class="flex items-center gap-1.5 shrink-0 ml-1 mr-2">
                 <div class="w-px bg-surface-500/20 mx-0.5"></div>
                 <div
-                    class="flex items-center py-1 px-2.5 rounded-xl shadow-sm"
-                    style="background-color: color-mix(in srgb, var(--color-primary-500) 10%, transparent); color: var(--color-primary-500);"
+                    class="flex items-center py-1 px-2.5 rounded-xl border border-primary-500/30"
+                    style="background-color: color-mix(in srgb, var(--color-primary-500) 15%, transparent); color: var(--color-primary-400);"
                 >
                     <span
                         class="text-[10px] font-black uppercase tracking-wider whitespace-nowrap"
@@ -269,12 +271,13 @@
     <!-- Right buttons -->
     <div
         class="flex items-center 
-               bg-surface-100 dark:bg-surface-800
-               border border-surface-200 dark:border-surface-800 shadow-lg rounded-xl shrink-0"
+               bg-surface-100/40 dark:bg-surface-900/40 backdrop-blur-md
+               border border-surface-200/40 dark:border-white/10 shadow-sm rounded-xl shrink-0"
     >
         <button
             class="flex items-center justify-center w-10 h-10 shrink-0
-                   rounded-xl hover:preset-tonal-surface transition-colors
+                   rounded-xl text-surface-600 dark:text-surface-400 hover:text-primary-500 dark:hover:text-primary-400 
+                   hover:bg-primary-500/10 transition-all duration-200
                    disabled:opacity-30"
             onclick={actions.onLoad}
             disabled={isLoading}
@@ -291,7 +294,8 @@
         <button
             type="button"
             class="flex items-center justify-center w-10 h-10 shrink-0
-                   rounded-xl hover:preset-tonal-surface transition-colors
+                   rounded-xl text-surface-600 dark:text-surface-400 hover:text-primary-500 dark:hover:text-primary-400 
+                   hover:bg-primary-500/10 transition-all duration-200
                    disabled:opacity-30"
             onclick={actions.onOpenWebtoon}
             title="Webtoon view"
@@ -302,10 +306,11 @@
         <button
             type="button"
             class="flex items-center justify-center w-10 h-10 shrink-0
-                   rounded-xl hover:preset-tonal-surface transition-colors
-                   disabled:opacity-30 {folder.isCoverMode
-                ? 'preset-filled-primary-500'
-                : ''}"
+                   rounded-xl transition-all duration-200
+                   disabled:opacity-30 
+                   {folder.isCoverMode
+                ? 'bg-primary-500/20 text-primary-600 dark:text-primary-400 ring-1 ring-primary-500/50 shadow-lg shadow-primary-500/10'
+                : 'text-surface-600 dark:text-surface-400 hover:text-primary-500 dark:hover:text-primary-400 hover:bg-primary-500/10'}"
             onclick={actions.onToggleCoverMode}
             title="Toggle Folder Thumbnails"
         >
@@ -315,7 +320,8 @@
         <button
             type="button"
             class="flex items-center justify-center w-10 h-10 shrink-0
-                   rounded-xl hover:preset-tonal-surface transition-colors
+                   rounded-xl text-surface-600 dark:text-surface-400 hover:text-primary-500 dark:hover:text-primary-400 
+                   hover:bg-primary-500/10 transition-all duration-200
                    disabled:opacity-30"
             onclick={() => {
                 if (!document.fullscreenElement) {
@@ -339,12 +345,11 @@
             <div class="relative flex items-center" bind:this={menuRef}>
                 <button
                     class="flex items-center justify-center w-10 h-10 shrink-0
-                           rounded-xl transition-colors
+                           rounded-xl transition-all duration-200
                            {menuOpen
-                        ? 'preset-filled-primary-500'
-                        : 'hover:preset-tonal-surface'}"
-                    onclick={toggleMenu}
-                    onmousedown={(e) => e.preventDefault()}
+                        ? 'bg-primary-500/20 text-primary-600 dark:text-primary-400 ring-1 ring-primary-500/50 shadow-lg shadow-primary-500/10'
+                        : 'text-surface-600 dark:text-surface-400 hover:bg-primary-500/10 hover:text-primary-500 dark:hover:text-primary-400'}"
+                    onclick={(e) => { e.stopPropagation(); menuOpen = !menuOpen; }}
                     title="View options"
                     aria-expanded={menuOpen}
                 >
@@ -357,9 +362,9 @@
                         class="popup absolute right-0 top-[calc(100%+8px)]
                                 w-64 p-4 space-y-4 z-[200]
                                 rounded-xl
-                                bg-surface-100 dark:bg-surface-900/95 backdrop-blur-xl
-                                border border-surface-200/50 dark:border-white/10
-                                shadow-[0_25px_70px_-15px_rgba(0,0,0,0.3)] dark:shadow-[0_25px_70px_-15px_rgba(0,0,0,0.8)]
+                                bg-surface-50/90 dark:bg-surface-900/90 backdrop-blur-xl
+                                border border-surface-200/50 dark:border-surface-800/50
+                                shadow-2xl dark:shadow-[0_25px_70px_-15px_rgba(0,0,0,0.4)]
                                 pointer-events-auto"
                     >
                         <!-- Media type -->
@@ -374,10 +379,10 @@
                                     <button
                                         class="flex flex-col items-center gap-1.5 py-2.5 px-1
                                                rounded-xl text-xs transition-all duration-200
-                                               border border-surface-200 dark:border-white/5
+                                               border border-surface-200/50 dark:border-white/5
                                                {mediaType === opt.value
-                                            ? 'preset-filled-primary-500 shadow-lg shadow-primary-500/20 scale-105 z-10'
-                                            : 'hover:bg-surface-200 dark:hover:bg-white/5'}"
+                                            ? 'bg-primary-500/20 text-primary-600 dark:text-primary-400 ring-1 ring-primary-500/50 shadow-md shadow-primary-500/10 scale-105 z-10'
+                                            : 'bg-surface-100/50 dark:bg-white/5 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-white/10 hover:text-primary-500 dark:hover:text-primary-400'}"
                                         onclick={() => selectMedia(opt.value)}
                                         disabled={opt.value !== "all" &&
                                             !isGrouped &&
@@ -405,10 +410,10 @@
                                 {#each sortOptions as opt}
                                     <button
                                         class="py-2 text-[10px] font-bold rounded-xl transition-all duration-200
-                                               border border-surface-200 dark:border-white/5 uppercase tracking-tighter
+                                               border border-surface-200/50 dark:border-white/5 uppercase tracking-tighter
                                                {currentSort === opt.value
-                                            ? 'preset-filled-primary-500 shadow-md shadow-primary-500/10'
-                                            : 'hover:bg-surface-200 dark:hover:bg-white/5'}"
+                                            ? 'bg-primary-500/20 text-primary-600 dark:text-primary-400 ring-1 ring-primary-500/50 shadow-md shadow-primary-500/10'
+                                            : 'bg-surface-100/50 dark:bg-white/5 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-white/10 hover:text-primary-500 dark:hover:text-primary-400'}"
                                         onclick={() => selectSort(opt.value)}
                                     >
                                         {opt.label}

@@ -348,181 +348,169 @@
     }
 </script>
 
-<div class="relative min-h-screen w-full flex items-start justify-center p-4 md:p-8 overflow-x-hidden selection:bg-primary-500/30">
-    
-    <!-- Muted Atmosphere Background -->
-    <div class="fixed inset-0 -z-10 bg-surface-50 dark:bg-surface-950">
-        <div class="absolute top-0 left-1/4 size-[400px] rounded-full bg-primary-500/5 blur-[100px]"></div>
-        <div class="absolute bottom-0 right-1/4 size-[400px] rounded-full bg-secondary-500/5 blur-[100px]"></div>
-    </div>
+<div class="p-6 md:p-12 max-w-6xl mx-auto" in:fade={{ duration: 400 }}>
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:items-start">
+            
+            <!-- ===== LEFT COLUMN: Primary Interaction & Results (Lg: 8 cols) ===== -->
+            <div class="lg:col-span-8 space-y-6">
 
-    <div class="w-full max-w-6xl relative z-10">
-        
+                <!-- URL Input Card - High Polished -->
+                <div class="card bg-surface-50/50 dark:bg-surface-900/40 backdrop-blur-xl border border-surface-200/50 dark:border-surface-800/50 p-1.5 shadow-md ring-1 ring-surface-950/5 rounded-2xl transition-all focus-within:ring-2 focus-within:ring-primary-500/30">
+                    <div class="relative flex flex-row items-stretch gap-2">
+                        <div class="flex-1 flex items-center gap-3 px-3 h-12">
+                            <Link class="size-6 text-[var(--color-primary-500)] shrink-0" />
+                            <input
+                                type="text"
+                                class="w-full bg-transparent border-none outline-none ring-0 text-base placeholder:text-surface-400 text-surface-900 dark:text-surface-50 font-medium tracking-tight"
+                                value={url}
+                                placeholder="Paste your link to analyze or download..."
+                                oninput={(e) => onUrlChange((e.target as HTMLInputElement).value)}
+                                onkeydown={(e) => e.key === "Enter" && handleSubmit()}
+                                disabled={isLoading}
+                            />
+                            {#if metaLoading}
+                                <Loader2 class="size-5 text-primary-500 shrink-0 animate-spin" />
+                            {/if}
+                        </div>
 
-
-        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:items-start">
-            <!-- ===== LEFT COLUMN: Primary Interaction ===== -->
-            <div class="lg:col-span-3 space-y-4">
-
-                <!-- URL Input Section - Compact -->
-                <div class="relative flex flex-row items-stretch gap-2 bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-xl p-1.5 shadow-sm transition-all focus-within:border-primary-500/50">
-                    <div class="flex-1 flex items-center gap-3 px-3 h-11">
-                        <Link class="size-5 text-surface-400 shrink-0" />
-                        <input
-                            type="text"
-                            class="w-full bg-transparent border-none outline-none ring-0 text-sm placeholder:text-surface-400 text-surface-900 dark:text-surface-50 font-medium"
-                            value={url}
-                            placeholder="Paste your link here..."
-                            oninput={(e) => onUrlChange((e.target as HTMLInputElement).value)}
-                            onkeydown={(e) => e.key === "Enter" && handleSubmit()}
-                            disabled={isLoading}
-                        />
-                        {#if metaLoading}
-                            <Loader2 class="size-4 text-primary-500 shrink-0 animate-spin" />
-                        {/if}
+                        <button
+                            type="button"
+                            class="flex items-center justify-center px-5 shrink-0 rounded-xl transition-all duration-300
+                                   bg-primary-600 hover:bg-primary-500 text-white shadow-lg shadow-primary-500/20 
+                                   disabled:opacity-40 disabled:shadow-none active:scale-95"
+                            onclick={() => handleSubmit()}
+                            disabled={isLoading || !url.trim()}
+                            title={meta?.entries && meta.entries.length > 1 ? `Download All (${meta.entries.length})` : 'Start Extraction'}
+                        >
+                            {#if isLoading}
+                                <div class="flex items-center gap-2">
+                                    <Loader2 class="size-5 animate-spin" />
+                                    <span class="text-xs font-bold uppercase tracking-widest hidden md:inline">Processing</span>
+                                </div>
+                            {:else}
+                                <div class="flex items-center gap-2">
+                                    <Download class="size-5" />
+                                    <span class="text-xs font-bold uppercase tracking-widest hidden md:inline">Get Link</span>
+                                </div>
+                            {/if}
+                        </button>
                     </div>
-
-                    <button
-                        type="button"
-                        class="flex items-center justify-center size-11 shrink-0 rounded-lg transition-all
-                               bg-primary-600 hover:bg-primary-500 text-white disabled:opacity-50 active:scale-95"
-                        onclick={() => handleSubmit()}
-                        disabled={isLoading || !url.trim()}
-                        title={meta?.entries && meta.entries.length > 1 ? `Download All (${meta.entries.length})` : 'Download'}
-                    >
-                        {#if isLoading}
-                            <Loader2 class="size-5 animate-spin" />
-                        {:else}
-                            <Download class="size-5" />
-                        {/if}
-                    </button>
                 </div>
 
-                <!-- Source Overview Card - Compact (Only for Single File Mode) -->
+                <!-- Source Overview Card - Glassmorphic Hero -->
                 {#if meta && (meta.thumbnail || meta.title) && !options.playlist}
-                    <div class="relative bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-xl p-4 shadow-sm overflow-hidden" transition:slide={{ duration: 300 }}>
-                        
-                        {#if metaLoading}
-                            <div class="absolute inset-0 z-20 flex items-center justify-center bg-white/60 dark:bg-surface-900/60 backdrop-blur-[2px]" in:fade={{ duration: 200 }}>
-                                <div class="flex flex-col items-center gap-2">
-                                    <Loader2 class="size-6 text-primary-500 animate-spin" />
-                                    <span class="text-[9px] font-bold uppercase tracking-widest text-surface-500">Updating Details...</span>
-                                </div>
-                            </div>
-                        {/if}
-
-                        <div class="flex flex-col md:flex-row gap-4 items-start {metaLoading ? 'opacity-40 grayscale blur-[1px]' : ''} transition-all duration-300">
-                            <div class="shrink-0">
+                    <div class="card bg-surface-50/60 dark:bg-surface-900/40 backdrop-blur-2xl border border-surface-200/50 dark:border-surface-800/50 p-4 shadow-md overflow-hidden rounded-2xl" transition:slide={{ duration: 400 }}>
+                        <div class="flex flex-col md:flex-row gap-5 items-start {metaLoading ? 'opacity-40 grayscale blur-[2px]' : ''} transition-all duration-500">
+                            <div class="shrink-0 group relative">
                                 {#if meta.thumbnail}
-                                    <LazyImage
-                                        src={meta.thumbnail}
-                                        alt="thumbnail"
-                                        class="h-20 w-36 rounded-lg shadow-sm"
-                                        delay={300}
-                                    />
+                                    <div class="overflow-hidden rounded-xl shadow-lg ring-1 ring-black/5">
+                                        <LazyImage
+                                            src={meta.thumbnail}
+                                            alt="thumbnail"
+                                            class="h-28 w-48 object-cover transition-transform duration-700 group-hover:scale-110"
+                                            delay={300}
+                                        />
+                                    </div>
                                 {:else}
-                                    <div class="h-20 w-36 bg-surface-100 dark:bg-surface-800 rounded-lg flex items-center justify-center border border-surface-200 dark:border-surface-700">
-                                        <Video class="size-6 text-surface-400" />
+                                    <div class="h-28 w-48 bg-surface-100 dark:bg-surface-950 rounded-xl flex items-center justify-center border border-surface-200 dark:border-surface-800 shadow-inner">
+                                        <Video class="size-8 text-surface-300 dark:text-surface-700 font-thin" />
                                     </div>
                                 {/if}
                             </div>
-                            <div class="flex-1 min-w-0 space-y-2">
-                                <p class="font-bold text-lg leading-snug line-clamp-2 text-surface-900 dark:text-white" title={meta.title}>
-                                    <a href={url} target="_blank" rel="noopener noreferrer" class="hover:text-primary-500 transition-colors">
-                                        {meta.title}
-                                    </a>
-                                </p>
-                                <div class="flex flex-wrap items-center gap-3 text-[10px] font-bold uppercase tracking-wider text-surface-500">
+                            <div class="flex-1 min-w-0 space-y-4">
+                                <div class="space-y-1">
+                                    <p class="text-xs font-black uppercase tracking-[0.2em] text-primary-500">{meta.extractor || 'Source Detected'}</p>
+                                    <h2 class="font-bold text-2xl leading-tight line-clamp-2 text-surface-900 dark:text-white group-hover:text-primary-500 transition-colors" title={meta.title}>
+                                        <a href={url} target="_blank" rel="noopener noreferrer">
+                                            {meta.title}
+                                        </a>
+                                    </h2>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-4 text-[11px] font-bold uppercase tracking-widest">
                                     {#if meta.uploader}
-                                        <span class="flex items-center gap-1.5"><Command class="size-3" /> {meta.uploader}</span>
-                                    {/if}
-                                    {#if meta.duration}
-                                        <span class="flex items-center gap-1.5 bg-surface-100 dark:bg-surface-800 px-2 py-0.5 rounded-md">
-                                            <Clock class="size-3" />{formatDuration(meta.duration)}
+                                        <span class="flex items-center gap-2 text-surface-600 dark:text-surface-400 bg-surface-100 dark:bg-surface-800/80 px-3 py-1.5 rounded-full border border-surface-200/50 dark:border-surface-700/30">
+                                            <Command class="size-3.5 text-primary-500" /> {meta.uploader}
                                         </span>
                                     {/if}
-                                    {#if meta.extractor}
-                                        <span class="text-primary-500 font-black">{meta.extractor}</span>
+                                    {#if meta.duration}
+                                        <span class="flex items-center gap-2 text-surface-600 dark:text-surface-400 bg-surface-100 dark:bg-surface-800/80 px-3 py-1.5 rounded-full border border-surface-200/50 dark:border-surface-700/30">
+                                            <Clock class="size-3.5 text-secondary-500" />{formatDuration(meta.duration)}
+                                        </span>
                                     {/if}
 
-                                    <!-- Download Thumbnail only -->
                                     <button 
-                                        class="flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface-100 dark:bg-surface-800 hover:bg-primary-600 hover:text-white transition-all text-primary-500"
+                                        class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary-600/10 hover:bg-primary-600 text-primary-600 hover:text-white border border-primary-600/20 transition-all active:scale-95"
                                         onclick={() => handleSubmit(url, "thumbnail")}
-                                        title="Download Thumbnail Only"
+                                        title="Download Artwork"
                                         disabled={isLoading}
                                     >
-                                        <Image class="size-3" /> THUMBNAIL
+                                        <Image class="size-3.5" /> 
+                                        <span>Full Artwork</span>
                                     </button>
+
+                                    {#if meta.entries && meta.entries.length === 1}
+                                        <button 
+                                            class="flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-600 hover:bg-primary-500 text-white shadow-lg shadow-primary-500/20 transition-all active:scale-95"
+                                            onclick={() => handleSubmit(meta.entries ? meta.entries[0].url : url)}
+                                            disabled={isLoading}
+                                        >
+                                            <Download class="size-3.5" /> 
+                                            <span>Grab {mediaType === 'video' ? 'Video' : mediaType === 'audio' ? 'Audio' : 'Image'}</span>
+                                        </button>
+                                    {/if}
                                 </div>
                             </div>
                         </div>
                     </div>
                 {/if}
 
-                <!-- Entry List Section - Compact -->
-                {#if meta?.entries && meta.entries.length > 0}
-                    <div class="relative space-y-3" transition:slide={{ duration: 400 }}>
-                        {#if metaLoading}
-                             <div class="absolute inset-0 z-10 bg-white/10 dark:bg-black/10 backdrop-blur-[1px] pointer-events-none"></div>
-                        {/if}
-                        {#if metaLoading && !meta}
-                            <div class="flex flex-col items-center justify-center py-12 gap-4">
-                                <Loader2 class="size-8 text-primary-500 animate-spin" />
-                                <p class="text-xs font-bold uppercase tracking-widest text-surface-500 animate-pulse">Initializing Scanner...</p>
+                <!-- Entry List Section - High-Density Glass -->
+                {#if meta?.entries && (meta.entries.length > 1 || options.playlist)}
+                    <section class="space-y-4" transition:slide={{ duration: 400 }}>
+                        <div class="flex items-center justify-between px-2">
+                            <div class="flex items-center gap-3">
+                                <div class="size-2 rounded-full bg-primary-500 animate-pulse"></div>
+                                <h2 class="text-xs font-black uppercase tracking-[0.2em] text-surface-500">
+                                    Scanned Content <span class="text-primary-600 ml-1">[{meta.entries.length}]</span>
+                                </h2>
                             </div>
-                        {:else if meta}
-                            {#if options.playlist}
-                            <div class="px-1 py-1 space-y-1">
-                                <div class="flex items-center justify-between gap-4">
-                                    <h2 class="text-lg font-bold text-surface-900 dark:text-white truncate" title={meta.title}>
-                                        <a href={url} target="_blank" rel="noopener noreferrer" class="hover:text-primary-500 transition-colors">
-                                            {meta.title || "Loading Playlist..."}
-                                        </a>
-                                    </h2>
-                                    <div class="flex items-center gap-3 shrink-0">
-                                        <span class="text-[10px] font-bold text-primary-500 bg-primary-500/10 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                                            {meta.entries?.length || 0}
-                                            {#if (meta as any).total}
-                                                / {(meta as any).total}
-                                            {/if}
-                                            {((meta as any).total && meta.entries?.length && meta.entries.length >= (meta as any).total) ? '' : '...'} Items
-                                        </span>
-                                        <button 
-                                            class="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-surface-100 dark:bg-surface-800 hover:bg-primary-600 hover:text-white transition-all text-[9px] font-bold uppercase tracking-wider text-surface-500"
-                                            onclick={() => handleSubmit(url, "thumbnail")}
-                                            title="Save Playlist Thumbnail"
-                                            disabled={isLoading || metaLoading}
-                                        >
-                                            <Image class="size-3" />
-                                        </button>
-                                    </div>
+                            
+                            {#if options.playlist && meta.title}
+                                <div class="flex items-center gap-4 bg-surface-50/50 dark:bg-surface-900/50 px-4 py-2 rounded-2xl border border-surface-200/50 dark:border-surface-800/50 shadow-sm backdrop-blur-md">
+                                    <span class="text-[10px] font-bold text-surface-700 dark:text-surface-300 uppercase tracking-widest line-clamp-1 max-w-[200px]">
+                                        {meta.title}
+                                    </span>
+                                    <div class="w-px h-4 bg-surface-300 dark:bg-surface-700"></div>
+                                    <button 
+                                        class="text-primary-500 hover:text-primary-600 transition-colors"
+                                        onclick={() => handleSubmit(url, "thumbnail")}
+                                        title="Playlist Art"
+                                        disabled={isLoading || metaLoading}
+                                    >
+                                        <Image class="size-4" />
+                                    </button>
                                 </div>
-                                <div class="h-px w-full bg-gradient-to-r from-surface-200/50 via-surface-200/50 to-transparent dark:from-surface-800/50 dark:via-surface-800/50 mt-2"></div>
-                            </div>
-                        {:else}
-                            <div class="flex items-center justify-between px-1">
-                                <h2 class="text-[10px] font-bold uppercase tracking-[0.2em] text-surface-400">Batch Content <span class="text-primary-500 ml-1">[{meta.entries.length}]</span></h2>
-                            </div>
-                        {/if}
+                            {/if}
+                        </div>
+
                         <div class="grid grid-cols-1 gap-2 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                             {#each meta.entries as entry, i}
-                                <div class="group flex items-center gap-3 p-2 bg-white dark:bg-surface-900 border border-surface-100 dark:border-surface-800 rounded-xl hover:border-primary-500/30 hover:shadow-sm transition-all duration-200">
-                                    <div class="relative shrink-0">
+                                <div class="group relative flex items-center gap-3 p-2 bg-surface-50/50 dark:bg-surface-900/20 backdrop-blur-md border border-surface-200/40 dark:border-surface-800/30 rounded-2xl hover:bg-surface-100/50 dark:hover:bg-surface-800/40 hover:border-primary-500/40 transition-all duration-300 shadow-sm">
+                                    <div class="relative shrink-0 overflow-hidden rounded-xl shadow-md ring-1 ring-black/5">
                                         {#if entry.thumbnail}
                                             <LazyImage 
                                                 src={entry.thumbnail} 
                                                 alt="" 
-                                                class="size-14 rounded-lg" 
+                                                class="size-14 object-cover transition-transform duration-700 group-hover:scale-110" 
                                                 delay={200 + (Math.min(i, 10) * 50)} 
                                             />
                                         {:else}
-                                            <div class="size-14 bg-surface-100 dark:bg-surface-800 rounded-lg flex items-center justify-center border border-white/5">
-                                                <span class="text-xs font-bold opacity-20">{i+1}</span>
+                                            <div class="size-14 bg-surface-100 dark:bg-surface-950 flex items-center justify-center">
+                                                <span class="text-[10px] font-black opacity-20">{String(i+1).padStart(2, '0')}</span>
                                             </div>
                                         {/if}
                                         {#if entry.duration}
-                                            <span class="absolute bottom-1 right-1 bg-black/70 text-[9px] text-white px-1 rounded font-bold">
+                                            <span class="absolute bottom-1 right-1 bg-black/80 text-[9px] text-white px-1.5 py-0.5 rounded-md font-bold backdrop-blur-sm">
                                                 {formatDuration(entry.duration)}
                                             </span>
                                         {/if}
@@ -532,231 +520,258 @@
                                             href={entry.url} 
                                             target="_blank" 
                                             rel="noopener noreferrer" 
-                                            class="text-sm font-bold truncate text-surface-900 dark:text-surface-100 block hover:text-primary-500 transition-colors" 
+                                            class="text-sm font-bold truncate text-surface-900 dark:text-white block hover:text-primary-500 transition-colors mb-0.5" 
                                             title={entry.title}
                                         >
                                             {entry.title}
                                         </a>
-                                        <a 
-                                            href={entry.url} 
-                                            target="_blank" 
-                                            rel="noopener noreferrer" 
-                                            class="text-[9px] font-mono text-surface-500 hover:text-primary-500 truncate mt-0.5 opacity-60 block transition-colors"
-                                        >
-                                            {entry.url}
-                                        </a>
+                                        <p class="text-[10px] uppercase font-bold tracking-widest text-surface-400 opacity-60">
+                                            {new URL(entry.url).hostname.replace('www.', '')}
+                                        </p>
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <button
                                             title="Download Thumbnail"
-                                            class="size-8 flex items-center justify-center rounded-lg bg-surface-100 dark:bg-surface-800 text-surface-500 hover:bg-primary-600 hover:text-white transition-all"
+                                            class="size-9 flex items-center justify-center rounded-xl bg-surface-500/10 dark:bg-white/10 border border-surface-200/50 dark:border-surface-700/50 text-surface-600 dark:text-white transition-all shadow-sm active:scale-95"
                                             onclick={() => handleSubmit(entry.url, "thumbnail")}
                                             disabled={isLoading}
                                         >
                                             <Image class="size-4" />
                                         </button>
                                         <button
-                                            class="h-8 px-3 rounded-lg font-bold text-[10px] uppercase tracking-wider transition-all
-                                                   bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300 hover:bg-primary-600 hover:text-white"
+                                            class="h-9 px-4 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all
+                                                   bg-primary-500/15 dark:bg-primary-500/30 text-primary-600 dark:text-white hover:bg-primary-500 hover:text-white border border-primary-500/20 shadow-sm active:scale-95"
                                             onclick={() => handleSubmit(entry.url)}
                                             disabled={isLoading}
                                         >
-                                            Download
+                                            Grab
                                         </button>
                                     </div>
                                 </div>
                             {/each}
                         </div>
-                    {/if}
-                </div>
-            {/if}
+                    </section>
+                {/if}
 
-                <!-- Progress Section - Professional -->
+                <!-- Progress Section - Professional Dashboard Style -->
                 {#if isLoading || (result && progressLines.length > 0)}
-                    <div transition:slide={{ duration: 300 }} class="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-xl p-5 space-y-4 shadow-sm">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <span class="size-1.5 rounded-full bg-primary-500"></span>
-                                <span class="text-[10px] font-bold uppercase tracking-widest text-primary-500">{progressStatus}</span>
+                    <div transition:slide={{ duration: 400 }} class="card bg-surface-50/80 dark:bg-surface-900/60 backdrop-blur-xl border border-surface-200 dark:border-surface-800 p-6 space-y-5 shadow-md rounded-2xl relative overflow-hidden">
+                        <!-- Background Glow for Terminal -->
+                        <div class="absolute -top-12 -right-12 size-48 bg-primary-500/10 blur-[60px] pointer-events-none"></div>
+
+                        <div class="flex items-center justify-between relative z-10">
+                            <div class="flex items-center gap-3">
+                                <div class="size-2 rounded-full bg-primary-500 animate-ping"></div>
+                                <span class="text-[11px] font-black uppercase tracking-[0.2em] text-primary-400 font-mono">{progressStatus}</span>
                             </div>
                             {#if progressPercent !== null}
-                                <span class="text-sm font-bold text-surface-900 dark:text-white tabular-nums">{progressPercent.toFixed(0)}%</span>
+                                <span class="text-lg font-black text-white tabular-nums tracking-tighter">{progressPercent.toFixed(1)}%</span>
                             {/if}
                         </div>
                         
-                        <div class="h-1.5 w-full bg-surface-100 dark:bg-surface-800 rounded-full overflow-hidden">
+                        <div class="h-2 w-full bg-white/5 rounded-full overflow-hidden shadow-inner ring-1 ring-white/10 p-0.5">
                             {#if progressPercent !== null}
-                                <div class="h-full bg-primary-600 transition-all duration-300" style="width: {progressPercent}%"></div>
+                                <div class="h-full bg-gradient-to-r from-primary-600 to-primary-400 rounded-full transition-all duration-300 shadow-[0_0_10px_rgba(var(--color-primary-500),0.5)]" style="width: {progressPercent}%"></div>
                             {:else}
-                                <div class="h-full w-1/3 bg-primary-600 animate-[indeterminate_1.5s_ease-in-out_infinite]"></div>
+                                <div class="h-full w-1/3 bg-primary-600 rounded-full animate-[indeterminate_1.5s_ease-in-out_infinite] shadow-[0_0_10px_rgba(var(--color-primary-500),0.3)]"></div>
                             {/if}
                         </div>
 
-                        <button
-                            type="button"
-                            class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-surface-400 hover:text-primary-500 transition-colors"
-                            onclick={() => showConsole = !showConsole}
-                        >
-                            <ChevronRight class="size-3.5 transition-transform {showConsole ? 'rotate-90' : ''}" />
-                            Engine Logs
-                        </button>
+                        <div class="flex items-center justify-between pt-2">
+                            <button
+                                type="button"
+                                class="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.1em] text-surface-500 hover:text-primary-400 transition-colors"
+                                onclick={() => showConsole = !showConsole}
+                            >
+                                <ChevronRight class="size-4 transition-transform duration-300 {showConsole ? 'rotate-90' : ''}" />
+                                Processing Logs
+                            </button>
+                            
+                            {#if downloadedFiles.length > 0}
+                                <div class="flex items-center gap-2 text-[10px] font-black uppercase text-success-500 bg-success-500/10 px-3 py-1 rounded-full border border-success-500/20">
+                                    <Download class="size-3" /> {downloadedFiles.length} Captured
+                                </div>
+                            {/if}
+                        </div>
 
                         {#if showConsole}
-                            <div transition:slide={{ duration: 200 }}>
+                            <div transition:slide={{ duration: 300 }}>
                                 <div
                                     bind:this={logEl}
-                                    class="mt-2 bg-surface-50 dark:bg-black rounded-lg p-4 h-48 overflow-y-auto custom-scrollbar border border-surface-100 dark:border-surface-800 font-mono text-[11px] text-surface-600 dark:text-surface-400"
+                                    class="mt-3 bg-black/50 backdrop-blur-sm rounded-xl p-4 h-64 overflow-y-auto custom-scrollbar border border-white/5 font-mono text-[11px] text-surface-400/80 leading-relaxed shadow-inner"
                                 >
                                     {#each progressLines as line}
-                                        <div class="mb-0.5 opacity-80">{line}</div>
+                                        <div class="mb-1.5 border-l-2 border-white/5 pl-3 py-0.5 hover:bg-white/5 hover:text-white transition-colors">
+                                            <span class="text-surface-600 mr-3 text-[9px]">{new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                                            {line}
+                                        </div>
                                     {/each}
                                 </div>
                             </div>
                         {/if}
                     </div>
                 {/if}
-
-                <!-- Success Summary -->
-                {#if downloadedFiles.length > 0 && !isLoading}
-                    <div transition:slide={{ duration: 200 }} class="bg-success-500/5 border border-success-500/20 rounded-xl p-4 flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="size-8 rounded-lg bg-success-500 flex items-center justify-center">
-                                <Download class="size-4 text-white" />
-                            </div>
-                            <p class="text-xs font-bold text-success-700 dark:text-success-400 uppercase tracking-widest">{downloadedFiles.length} file(s) saved</p>
-                        </div>
-                    </div>
-                {/if}
-
             </div>
 
-            <!-- ===== RIGHT COLUMN: Settings Panel ===== -->
-            <div class="lg:col-span-2 space-y-6" in:fade={{ delay: 400 }}>
+            <!-- ===== RIGHT COLUMN: Settings Panel (Lg: 4 cols) ===== -->
+            <aside class="lg:col-span-4 space-y-6" in:fade={{ delay: 400 }}>
 
-                <!-- Media Type Picker - Compact -->
-                <div class="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-xl p-1 flex gap-1 shadow-sm">
+                <!-- Media Type Control - High Fidelity -->
+                <nav class="card bg-surface-50/50 dark:bg-surface-900/40 backdrop-blur-xl border border-surface-200/50 dark:border-surface-800/50 p-1.5 flex gap-1.5 shadow-md rounded-2xl ring-1 ring-surface-950/5">
                     {#each mediaOptions as option}
                         {@const Icon = option.icon}
+                        {@const active = mediaType === option.value}
                         <button
                             type="button"
-                            class="flex-1 flex flex-col items-center gap-1.5 py-3 rounded-lg transition-all
-                                {mediaType === option.value 
-                                    ? 'bg-primary-600 text-white shadow-md' 
-                                    : 'text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800'}"
+                            class="flex-1 flex flex-col items-center gap-2 py-4 rounded-xl transition-all duration-300
+                                {active 
+                                    ? 'bg-primary-600 text-white shadow-xl shadow-primary-500/20 ring-1 ring-white/10' 
+                                    : 'text-surface-500 hover:bg-surface-200/50 dark:hover:bg-surface-800/50'}"
                             onclick={() => (mediaType = option.value as any)}
                         >
-                            <Icon class="size-5" />
-                            <span class="text-[9px] uppercase font-bold tracking-widest">{option.label}</span>
+                            <Icon class="size-6 transition-transform group-active:scale-90" />
+                            <span class="text-[10px] uppercase font-black tracking-widest">{option.label}</span>
                         </button>
                     {/each}
-                </div>
+                </nav>
 
-                <!-- Parameters Panel - Simplified -->
-                <div class="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-xl p-5 space-y-5 shadow-sm">
-                    <div class="flex items-center gap-2 pb-2 border-b border-surface-100 dark:border-surface-800">
-                        <Settings2 class="size-4 text-surface-400" />
-                        <h3 class="text-[10px] font-bold uppercase tracking-widest text-surface-400">Settings</h3>
+                <!-- Dynamic Configuration Panel -->
+                <div class="card bg-surface-50/50 dark:bg-surface-900/40 backdrop-blur-xl border border-surface-200/50 dark:border-surface-800/50 p-6 space-y-6 shadow-md rounded-2xl ring-1 ring-surface-950/5">
+                    <div class="flex items-center justify-between pb-4 border-b border-surface-200/50 dark:border-surface-800/50">
+                        <div class="flex items-center gap-3">
+                            <Settings2 class="size-5 text-primary-500" />
+                            <h3 class="text-xs font-black uppercase tracking-[0.2em] text-surface-500">Parameters</h3>
+                        </div>
                     </div>
 
-                    <div class="space-y-4">
+                    <div class="space-y-6">
                         {#if mediaType === 'image'}
-                            <div class="space-y-1.5">
-                                <label for="username" class="text-[9px] font-bold uppercase tracking-widest text-surface-400">Username</label>
-                                <input id="username" type="text" class="w-full bg-surface-50 dark:bg-black border border-surface-200 dark:border-surface-800 rounded-lg h-9 px-3 text-sm font-medium" bind:value={options.username} placeholder="Username..." />
+                            <div class="space-y-2">
+                                <label for="username" class="text-[10px] font-black uppercase tracking-widest text-surface-400 px-1">Source Account</label>
+                                <div class="relative">
+                                    <input id="username" type="text" class="w-full bg-surface-100 dark:bg-black border border-surface-300 dark:border-surface-800/50 rounded-xl h-11 px-4 text-sm font-medium transition-all focus:ring-2 focus:ring-primary-500/30" bind:value={options.username} placeholder="Username or Login..." />
+                                </div>
                             </div>
-                            <div class="space-y-1.5">
-                                <label for="chapters" class="text-[9px] font-bold uppercase tracking-widest text-surface-400">Chapters</label>
-                                <input id="chapters" type="text" class="w-full bg-surface-50 dark:bg-black border border-surface-200 dark:border-surface-800 rounded-lg h-9 px-3 font-mono text-xs font-bold" bind:value={options.chapterRange} placeholder="e.g. >=10" />
+                            <div class="space-y-2">
+                                <label for="chapters" class="text-[10px] font-black uppercase tracking-widest text-surface-400 px-1">Selection Filter</label>
+                                <input id="chapters" type="text" class="w-full bg-surface-100 dark:bg-black border border-surface-300 dark:border-surface-800/50 rounded-xl h-11 px-4 font-mono text-xs font-bold transition-all focus:ring-2 focus:ring-primary-500/30" bind:value={options.chapterRange} placeholder="e.g. 15-30, >50" />
+                                <p class="text-[9px] text-surface-400 px-1 italic">Filter by number or range</p>
                             </div>
                         {:else if mediaType === 'video'}
-                            <div class="space-y-1.5">
-                                <label for="resolution" class="text-[9px] font-bold uppercase tracking-widest text-surface-400">Max Resolution</label>
-                                <select id="resolution" class="w-full bg-surface-50 dark:bg-black border border-surface-200 dark:border-surface-800 rounded-lg h-9 px-3 text-xs font-bold appearance-none cursor-pointer" bind:value={options.resolution}>
-                                    <option value="best">Best Available</option>
-                                    <option value="2160">4K Ultra HD</option>
-                                    <option value="1080">1080p Full HD</option>
-                                    <option value="720">720p HD</option>
-                                </select>
+                            <div class="space-y-2">
+                                <label for="resolution" class="text-[10px] font-black uppercase tracking-widest text-surface-400 px-1">Max Fidelity</label>
+                                <div class="relative">
+                                    <select id="resolution" class="w-full bg-surface-100 dark:bg-black border border-surface-300 dark:border-surface-800/50 rounded-xl h-11 px-4 text-xs font-bold appearance-none cursor-pointer pr-10 hover:border-primary-500/50 transition-colors" bind:value={options.resolution}>
+                                        <option value="best">Best Dynamic Quality</option>
+                                        <option value="2160">4K Ultra High Definition</option>
+                                        <option value="1080">1080p Full HD Elite</option>
+                                        <option value="720">720p Optimized HD</option>
+                                    </select>
+                                    <ChevronDown class="absolute right-4 top-1/2 -translate-y-1/2 size-4 text-surface-400 pointer-events-none" />
+                                </div>
                             </div>
-                            <div class="space-y-3 pt-1">
-                                <label class="flex items-center gap-3 cursor-pointer group">
+                            <div class="grid grid-cols-2 gap-3 pt-2">
+                                <label class="flex items-center gap-3 p-3 bg-surface-100 dark:bg-black/40 border border-surface-200/50 dark:border-surface-800/50 rounded-xl cursor-pointer group hover:border-primary-500/30 transition-all active:scale-95">
                                     <input 
                                         type="checkbox" 
-                                        class="checkbox" 
+                                        class="checkbox size-4 accent-primary-600" 
                                         bind:checked={options.playlist} 
                                         onchange={(e) => { if (url.trim()) fetchMeta(url, e.currentTarget.checked); }}
                                     />
-                                    <span class="text-[10px] font-bold uppercase tracking-widest text-surface-500">Playlist</span>
+                                    <span class="text-[10px] font-black uppercase tracking-widest text-surface-500 group-hover:text-primary-500">Playlist</span>
                                 </label>
-                                <label class="flex items-center gap-3 cursor-pointer group">
-                                    <input type="checkbox" class="checkbox" bind:checked={options.subtitles} />
-                                    <span class="text-[10px] font-bold uppercase tracking-widest text-surface-500">Subtitles</span>
+                                <label class="flex items-center gap-3 p-3 bg-surface-100 dark:bg-black/40 border border-surface-200/50 dark:border-surface-800/50 rounded-xl cursor-pointer group hover:border-primary-500/30 transition-all active:scale-95">
+                                    <input type="checkbox" class="checkbox size-4 accent-primary-600" bind:checked={options.subtitles} />
+                                    <span class="text-[10px] font-black uppercase tracking-widest text-surface-500 group-hover:text-primary-500">Captions</span>
                                 </label>
                             </div>
                         {:else if mediaType === 'audio'}
-                            <div class="space-y-1.5">
-                                <label for="format" class="text-[9px] font-bold uppercase tracking-widest text-surface-400">Preferred Format</label>
-                                <select id="format" class="w-full bg-surface-50 dark:bg-black border border-surface-200 dark:border-surface-800 rounded-lg h-9 px-3 text-xs font-bold appearance-none cursor-pointer" bind:value={options.format}>
-                                    <option value="opus">Opus (Standard)</option>
-                                    <option value="mp3">MPEG-3 (MP3)</option>
-                                    <option value="flac">Lossless (FLAC)</option>
-                                </select>
+                            <div class="space-y-2">
+                                <label for="format" class="text-[10px] font-black uppercase tracking-widest text-surface-400 px-1">Target Encoding</label>
+                                <div class="relative">
+                                    <select id="format" class="w-full bg-surface-100 dark:bg-black border border-surface-300 dark:border-surface-800/50 rounded-xl h-11 px-4 text-xs font-bold appearance-none cursor-pointer pr-10 hover:border-primary-500/50 transition-colors" bind:value={options.format}>
+                                        <option value="opus">Opus (Reference Grade)</option>
+                                        <option value="mp3">MPEG-3 (Global Standard)</option>
+                                        <option value="flac">FLAC (High Fidelity Lossless)</option>
+                                    </select>
+                                    <ChevronDown class="absolute right-4 top-1/2 -translate-y-1/2 size-4 text-surface-400 pointer-events-none" />
+                                </div>
                             </div>
-                            <div class="space-y-3 pt-1">
-                                <label class="flex items-center gap-3 cursor-pointer group">
+                            <div class="grid grid-cols-2 gap-3 pt-2">
+                                <label class="flex items-center gap-3 p-3 bg-surface-100 dark:bg-black/40 border border-surface-200/50 dark:border-surface-800/50 rounded-xl cursor-pointer group hover:border-primary-500/30 transition-all active:scale-95">
                                     <input 
                                         type="checkbox" 
-                                        class="checkbox" 
+                                        class="checkbox size-4 accent-primary-600" 
                                         bind:checked={options.playlist} 
                                         onchange={(e) => { if (url.trim()) fetchMeta(url, e.currentTarget.checked); }}
                                     />
-                                    <span class="text-[10px] font-bold uppercase tracking-widest text-surface-500">Album</span>
+                                    <span class="text-[10px] font-black uppercase tracking-widest text-surface-500 group-hover:text-primary-500">Album</span>
                                 </label>
-                                <label class="flex items-center gap-3 cursor-pointer group">
-                                    <input type="checkbox" class="checkbox" bind:checked={options.embedThumbnail} />
-                                    <span class="text-[10px] font-bold uppercase tracking-widest text-surface-500">Cover Art</span>
+                                <label class="flex items-center gap-3 p-3 bg-surface-100 dark:bg-black/40 border border-surface-200/50 dark:border-surface-800/50 rounded-xl cursor-pointer group hover:border-primary-500/30 transition-all active:scale-95">
+                                    <input type="checkbox" class="checkbox size-4 accent-primary-600" bind:checked={options.embedThumbnail} />
+                                    <span class="text-[10px] font-black uppercase tracking-widest text-surface-500 group-hover:text-primary-500">Cover Art</span>
                                 </label>
+                            </div>
+                        {/if}
+                    </div>
+
+                    <!-- Advanced Panel - Minimalist Toggles -->
+                    <div class="pt-4 border-t border-surface-200/50 dark:border-surface-800/50">
+                        <button
+                            type="button"
+                            class="w-full flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-surface-400 hover:text-primary-500 transition-all group"
+                            onclick={() => showAdvanced = !showAdvanced}
+                        >
+                           <div class="flex items-center gap-2">
+                             <Command class="size-3.5 group-hover:rotate-12 transition-transform" />
+                             Advanced Overrides
+                           </div>
+                           <ChevronDown class="size-4 transition-transform duration-300 {showAdvanced ? 'rotate-180 text-primary-500' : ''}" />
+                        </button>
+
+                        {#if showAdvanced}
+                            <div transition:slide={{ duration: 300 }} class="space-y-4 pt-6">
+                                {#if mediaType === 'image'}
+                                    <div class="space-y-2">
+                                        <label for="password" class="text-[10px] font-black uppercase tracking-widest text-surface-400 px-1">Session Key</label>
+                                        <input id="password" type="password" class="w-full bg-surface-100 dark:bg-black border border-surface-300 dark:border-surface-800/50 rounded-xl h-11 px-4 text-sm tracking-widest focus:ring-2 focus:ring-primary-500/30" bind:value={options.password} placeholder="••••••••" />
+                                    </div>
+                                {/if}
+                                <div class="space-y-2">
+                                    <label for="extraArgs" class="text-[10px] font-black uppercase tracking-widest text-surface-400 px-1">CLI Directives</label>
+                                    <textarea
+                                        id="extraArgs"
+                                        class="w-full bg-surface-100 dark:bg-black border border-surface-300 dark:border-surface-800/50 rounded-xl p-4 font-mono text-[10px] focus:ring-2 focus:ring-primary-500/30 h-24 resize-none leading-relaxed"
+                                        bind:value={options.extraArgs}
+                                        placeholder="--cookies-from-browser firefox ..."
+                                    ></textarea>
+                                </div>
                             </div>
                         {/if}
                     </div>
                 </div>
 
-                <!-- Advanced Refined Toggle -->
-                <button
-                    type="button"
-                    class="w-full h-10 flex items-center justify-center gap-2 text-[9px] font-bold uppercase tracking-widest text-surface-400 hover:text-primary-500 transition-all"
-                    onclick={() => showAdvanced = !showAdvanced}
-                >
-                    <Command class="size-3.5" />
-                    Advanced Overrides
-                    <ChevronDown class="size-3.5 transition-transform {showAdvanced ? 'rotate-180' : ''}" />
-                </button>
-
-                {#if showAdvanced}
-                    <div transition:slide={{ duration: 250 }} class="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-xl p-4 space-y-4 shadow-sm">
-                        {#if mediaType === 'image'}
-                            <div class="space-y-1.5">
-                                <label for="password" class="text-[9px] font-bold uppercase tracking-widest text-surface-400">Session Password</label>
-                                <input id="password" type="password" class="w-full bg-surface-50 dark:bg-black border border-surface-100 dark:border-surface-800 rounded-lg h-9 px-3 text-sm focus:ring-1 focus:ring-primary-500" bind:value={options.password} placeholder="••••••••" />
+                <!-- Capture Log Summary (Floating Badge Style) -->
+                {#if downloadedFiles.length > 0 && !isLoading}
+                    <div transition:fade={{ duration: 300 }} class="card bg-success-500/10 border border-success-500/30 p-4 rounded-2xl flex items-center justify-between shadow-lg shadow-success-500/5">
+                        <div class="flex items-center gap-3">
+                            <div class="size-10 rounded-xl bg-success-500 shadow-lg shadow-success-500/20 flex items-center justify-center">
+                                <Download class="size-5 text-white" />
                             </div>
-                        {/if}
-                        <div class="space-y-1.5">
-                            <label for="extraArgs" class="text-[9px] font-bold uppercase tracking-widest text-surface-400">Terminal Commands</label>
-                            <input
-                                id="extraArgs"
-                                type="text"
-                                class="w-full bg-surface-50 dark:bg-black border border-surface-100 dark:border-surface-800 rounded-lg h-9 px-3 font-mono text-[10px] focus:ring-1 focus:ring-primary-500"
-                                bind:value={options.extraArgs}
-                                placeholder="--cookies-from-browser ..."
-                            />
+                            <div>
+                                <p class="text-[11px] font-black text-success-700 dark:text-success-400 uppercase tracking-widest">Capture Success</p>
+                                <p class="text-[9px] font-bold text-success-600/60 dark:text-success-400/50 uppercase tracking-tight">{downloadedFiles.length} file(s) initialized</p>
+                            </div>
                         </div>
+                        <button class="size-8 rounded-full border border-success-500/30 flex items-center justify-center text-success-600 hover:bg-success-500 hover:text-white transition-all" onclick={() => downloadedFiles = []}>
+                            <ChevronDown class="size-4 rotate-45" />
+                        </button>
                     </div>
                 {/if}
 
-            </div>
+            </aside>
         </div>
     </div>
-</div>
 
 <style>
     @keyframes indeterminate {
