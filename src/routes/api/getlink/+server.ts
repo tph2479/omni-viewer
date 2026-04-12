@@ -1,8 +1,8 @@
 import type { RequestHandler } from "./$types";
 import { json } from "@sveltejs/kit";
-import { spawn } from "child_process";
+import { spawn } from "node:child_process";
 import { getDefaultAppPath, getToolPath } from "$lib/server/database/db";
-import { join } from "path";
+import { join } from "node:path";
 
 export const POST: RequestHandler = async ({ request }) => {
     try {

@@ -543,6 +543,7 @@
                 <!-- Media Type Picker - Compact -->
                 <div class="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-xl p-1 flex gap-1 shadow-sm">
                     {#each mediaOptions as option}
+                        {@const Icon = option.icon}
                         <button
                             type="button"
                             class="flex-1 flex flex-col items-center gap-1.5 py-3 rounded-lg transition-all
@@ -551,7 +552,7 @@
                                     : 'text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800'}"
                             onclick={() => (mediaType = option.value as any)}
                         >
-                            <svelte:component this={option.icon} class="size-5" />
+                            <Icon class="size-5" />
                             <span class="text-[9px] uppercase font-bold tracking-widest">{option.label}</span>
                         </button>
                     {/each}
@@ -567,17 +568,17 @@
                     <div class="space-y-4">
                         {#if mediaType === 'image'}
                             <div class="space-y-1.5">
-                                <label class="text-[9px] font-bold uppercase tracking-widest text-surface-400">Username</label>
-                                <input type="text" class="w-full bg-surface-50 dark:bg-black border border-surface-200 dark:border-surface-800 rounded-lg h-9 px-3 text-sm font-medium" bind:value={options.username} placeholder="Username..." />
+                                <label for="username" class="text-[9px] font-bold uppercase tracking-widest text-surface-400">Username</label>
+                                <input id="username" type="text" class="w-full bg-surface-50 dark:bg-black border border-surface-200 dark:border-surface-800 rounded-lg h-9 px-3 text-sm font-medium" bind:value={options.username} placeholder="Username..." />
                             </div>
                             <div class="space-y-1.5">
-                                <label class="text-[9px] font-bold uppercase tracking-widest text-surface-400">Chapters</label>
-                                <input type="text" class="w-full bg-surface-50 dark:bg-black border border-surface-200 dark:border-surface-800 rounded-lg h-9 px-3 font-mono text-xs font-bold" bind:value={options.chapterRange} placeholder="e.g. >=10" />
+                                <label for="chapters" class="text-[9px] font-bold uppercase tracking-widest text-surface-400">Chapters</label>
+                                <input id="chapters" type="text" class="w-full bg-surface-50 dark:bg-black border border-surface-200 dark:border-surface-800 rounded-lg h-9 px-3 font-mono text-xs font-bold" bind:value={options.chapterRange} placeholder="e.g. >=10" />
                             </div>
                         {:else if mediaType === 'video'}
                             <div class="space-y-1.5">
-                                <label class="text-[9px] font-bold uppercase tracking-widest text-surface-400">Max Resolution</label>
-                                <select class="w-full bg-surface-50 dark:bg-black border border-surface-200 dark:border-surface-800 rounded-lg h-9 px-3 text-xs font-bold appearance-none cursor-pointer" bind:value={options.resolution}>
+                                <label for="resolution" class="text-[9px] font-bold uppercase tracking-widest text-surface-400">Max Resolution</label>
+                                <select id="resolution" class="w-full bg-surface-50 dark:bg-black border border-surface-200 dark:border-surface-800 rounded-lg h-9 px-3 text-xs font-bold appearance-none cursor-pointer" bind:value={options.resolution}>
                                     <option value="best">Best Available</option>
                                     <option value="2160">4K Ultra HD</option>
                                     <option value="1080">1080p Full HD</option>
@@ -601,8 +602,8 @@
                             </div>
                         {:else if mediaType === 'audio'}
                             <div class="space-y-1.5">
-                                <label class="text-[9px] font-bold uppercase tracking-widest text-surface-400">Preferred Format</label>
-                                <select class="w-full bg-surface-50 dark:bg-black border border-surface-200 dark:border-surface-800 rounded-lg h-9 px-3 text-xs font-bold appearance-none cursor-pointer" bind:value={options.format}>
+                                <label for="format" class="text-[9px] font-bold uppercase tracking-widest text-surface-400">Preferred Format</label>
+                                <select id="format" class="w-full bg-surface-50 dark:bg-black border border-surface-200 dark:border-surface-800 rounded-lg h-9 px-3 text-xs font-bold appearance-none cursor-pointer" bind:value={options.format}>
                                     <option value="opus">Opus (Standard)</option>
                                     <option value="mp3">MPEG-3 (MP3)</option>
                                     <option value="flac">Lossless (FLAC)</option>
@@ -642,13 +643,14 @@
                     <div transition:slide={{ duration: 250 }} class="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-xl p-4 space-y-4 shadow-sm">
                         {#if mediaType === 'image'}
                             <div class="space-y-1.5">
-                                <label class="text-[9px] font-bold uppercase tracking-widest text-surface-400">Session Password</label>
-                                <input type="password" class="w-full bg-surface-50 dark:bg-black border border-surface-100 dark:border-surface-800 rounded-lg h-9 px-3 text-sm focus:ring-1 focus:ring-primary-500" bind:value={options.password} placeholder="••••••••" />
+                                <label for="password" class="text-[9px] font-bold uppercase tracking-widest text-surface-400">Session Password</label>
+                                <input id="password" type="password" class="w-full bg-surface-50 dark:bg-black border border-surface-100 dark:border-surface-800 rounded-lg h-9 px-3 text-sm focus:ring-1 focus:ring-primary-500" bind:value={options.password} placeholder="••••••••" />
                             </div>
                         {/if}
                         <div class="space-y-1.5">
-                            <label class="text-[9px] font-bold uppercase tracking-widest text-surface-400">Terminal Commands</label>
+                            <label for="extraArgs" class="text-[9px] font-bold uppercase tracking-widest text-surface-400">Terminal Commands</label>
                             <input
+                                id="extraArgs"
                                 type="text"
                                 class="w-full bg-surface-50 dark:bg-black border border-surface-100 dark:border-surface-800 rounded-lg h-9 px-3 font-mono text-[10px] focus:ring-1 focus:ring-primary-500"
                                 bind:value={options.extraArgs}
@@ -679,7 +681,7 @@
         background: #e2e8f0;
         border-radius: 10px;
     }
-    .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    :global(.dark) .custom-scrollbar::-webkit-scrollbar-thumb {
         background: #1e293b;
     }
 </style>
