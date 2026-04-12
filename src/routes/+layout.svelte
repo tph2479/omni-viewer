@@ -12,6 +12,7 @@
         Link,
     } from "lucide-svelte";
     import { Navigation, Portal, Tooltip } from "@skeletonlabs/skeleton-svelte";
+    import { afterNavigate } from "$app/navigation";
     import GalleryModals from "$lib/components/browser/modals/GalleryModals.svelte";
     import BrowserNotifications from "$lib/components/browser/ui/BrowserNotifications.svelte";
     import type { Snippet } from "svelte";
@@ -42,22 +43,31 @@
         localStorage.setItem("mode", mode);
     };
 
-    // --- GLOBAL BUTTON FOCUS PREVENTION ---
+    // --- GLOBAL FOCUS MANAGEMENT ---
+    // After every SvelteKit client-side navigation, or after clicking sidebar items,
+    // we explicitly move focus to the <main> element. This ensures that global
+    // keyboard shortcuts like the Space bar will correctly scroll the content area.
+    const focusMain = () => {
+        const main = document.querySelector("main");
+        if (main) main.focus();
+    };
+
+    afterNavigate(() => {
+        // Short delay to ensure focus is moved after SvelteKit's default focus management
+        setTimeout(focusMain, 0);
+    });
+
     $effect(() => {
-        const handlePointerDown = (e: PointerEvent) => {
-            const button = (e.target as HTMLElement).closest("button");
-            if (button) {
-                // We use setTimeout to blur after the click event has processed
-                setTimeout(() => {
-                    if (document.activeElement === button) {
-                        button.blur();
-                    }
-                }, 0);
+        const handleMouseDown = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            // If clicking sidebar or theme toggle, focus main after the interaction
+            if (target.closest("nav") || target.closest(".w-16")) {
+                setTimeout(focusMain, 0);
             }
         };
-        window.addEventListener("pointerdown", handlePointerDown);
-        return () =>
-            window.removeEventListener("pointerdown", handlePointerDown);
+
+        window.addEventListener("mousedown", handleMouseDown);
+        return () => window.removeEventListener("mousedown", handleMouseDown);
     });
 
     // --- CẤU HÌNH LINKS ---
@@ -210,7 +220,10 @@
     </div>
 
     <!-- Main Content -->
-    <main class="h-full overflow-y-scroll w-full relative z-0">
+    <main
+        tabindex="-1"
+        class="h-full overflow-y-scroll w-full relative z-0 focus:outline-none"
+    >
         {@render children()}
     </main>
 

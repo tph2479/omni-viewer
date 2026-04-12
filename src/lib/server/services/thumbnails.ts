@@ -5,7 +5,6 @@ import sharp from "sharp";
 import {
   isHeifBuffer,
   isAvifBuffer,
-  getThumbnailPath,
   ensureHeicConverted,
   THUMB_CACHE_DIR,
 } from "./imageUtils";
@@ -14,12 +13,263 @@ import { isVideoFile, isAudioFile, isImageFile, isPdfFile } from "$lib/utils/fil
 import { renderPdfFirstPage } from "$lib/server/pdf/pdfRenderer";
 import { getToolPath } from "$lib/server/database/db";
 
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+type FfmpegResult = { stdout: Buffer | null; stderr: string };
+
+// ---------------------------------------------------------------------------
+// De-duplicate in-flight requests for the same output path.
+// ---------------------------------------------------------------------------
+
 const ongoingGenerations = new Map<string, Promise<boolean>>();
-function ensureThumbDir() {
-  if (!fs.existsSync(THUMB_CACHE_DIR)) {
-    fs.mkdirSync(THUMB_CACHE_DIR, { recursive: true });
-  }
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function ensureThumbDir(): void {
+  // mkdirSync with recursive:true is a no-op when the directory already exists.
+  fs.mkdirSync(THUMB_CACHE_DIR, { recursive: true });
 }
+
+/**
+ * Shared sharp pipeline: EXIF-rotate → cover-crop 200×200 → save as WebP.
+ * Used by every source type so quality and size are consistent.
+ */
+async function saveThumbWebp(input: Buffer | string, outputPath: string): Promise<void> {
+  ensureThumbDir();
+  await sharp(input)
+    .rotate()
+    .resize(200, 200, { fit: "cover", fastShrinkOnLoad: true })
+    .webp({ quality: 65, effort: 0 })
+    .toFile(outputPath);
+}
+
+// ---------------------------------------------------------------------------
+// FFmpeg runner — Bun and Node paths separated for clarity
+// ---------------------------------------------------------------------------
+
+/**
+ * FFmpeg args shared between video and audio thumbnail extraction.
+ *
+ * Key speed flags (all before -i):
+ *   -skip_frame noref  — skip B/P frames during seek, decode only keyframes
+ *   -noaccurate_seek   — snap to nearest keyframe, no forward-decode to exact ts
+ *   -threads 1         — avoid thread-pool overhead for a single-frame job
+ *
+ * Output pipeline:
+ *   scale=300:-2       — pre-downscale in FFmpeg; pipe carries ~10 KB not 6 MB
+ *   -q:v 5             — fast MJPEG encode (sharp re-encodes to WebP anyway)
+ *   -pix_fmt yuv420p   — fixes swscaler error -129 on videos with non-standard
+ *                        color primaries / transfer characteristics
+ */
+function buildFfmpegArgs(inputPath: string, isVideo: boolean): string[] {
+  return [
+    "-hide_banner", "-loglevel", "error",
+    "-skip_frame", "noref",
+    "-noaccurate_seek",
+    "-threads", "1",
+    "-an", "-sn",
+    ...(isVideo ? ["-ss", "00:00:02"] : []),
+    "-i", inputPath,
+    "-map", "0:v:0",
+    "-vf", "scale=300:-2:sws_flags=bilinear",
+    "-pix_fmt", "yuv420p",
+    "-frames:v", "1",
+    "-q:v", "5",
+    "-f", "image2",
+    "-vcodec", "mjpeg",
+    "pipe:1",
+  ];
+}
+
+async function runFfmpegBun(
+  ffmpegPath: string,
+  args: string[],
+  signal?: AbortSignal,
+): Promise<FfmpegResult> {
+  const Bun = (globalThis as any).Bun;
+  const proc = Bun.spawn([ffmpegPath, ...args], { stdout: "pipe", stderr: "pipe" });
+
+  const onAbort = () => proc.kill();
+  signal?.addEventListener("abort", onAbort, { once: true });
+
+  const [stdoutBuf, stderr] = await Promise.all([
+    new Response(proc.stdout).arrayBuffer(),
+    new Response(proc.stderr).text(),
+  ]);
+
+  await proc.exited;
+  signal?.removeEventListener("abort", onAbort);
+
+  if (proc.exitCode !== 0 || stdoutBuf.byteLength === 0) {
+    return { stdout: null, stderr };
+  }
+  return { stdout: Buffer.from(stdoutBuf), stderr };
+}
+
+async function runFfmpegNode(
+  ffmpegPath: string,
+  args: string[],
+  signal?: AbortSignal,
+): Promise<FfmpegResult> {
+  const { spawn } = await import("node:child_process");
+  const proc = spawn(ffmpegPath, args, { stdio: ["ignore", "pipe", "pipe"] });
+
+  // stdio is always "pipe" here, but the ChildProcess types are nullable.
+  if (!proc.stdout || !proc.stderr) {
+    throw new Error("[FFmpeg] Failed to open stdio streams");
+  }
+
+  const chunks: Buffer[] = [];
+  let stderrStr = "";
+  proc.stdout.on("data", (d: Buffer) => chunks.push(d));
+  proc.stderr.on("data", (d: Buffer) => (stderrStr += d.toString()));
+
+  const onAbort = () => proc.kill("SIGKILL");
+  signal?.addEventListener("abort", onAbort, { once: true });
+
+  const exitCode = await new Promise<number>((resolve) => {
+    proc.on("close", (code) => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve(code ?? 1);
+    });
+  });
+
+  if (exitCode !== 0 || chunks.length === 0) {
+    return { stdout: null, stderr: stderrStr };
+  }
+  return { stdout: Buffer.concat(chunks), stderr: stderrStr };
+}
+
+/**
+ * Run FFmpeg and return { stdout, stderr }.
+ * stdout is null if the process failed or produced no output.
+ * Dispatches to the Bun or Node implementation depending on the runtime.
+ * Kills the process if the AbortSignal fires.
+ */
+async function runFfmpeg(
+  ffmpegPath: string,
+  args: string[],
+  signal?: AbortSignal,
+): Promise<FfmpegResult> {
+  if ((globalThis as any).Bun) {
+    return runFfmpegBun(ffmpegPath, args, signal);
+  }
+  return runFfmpegNode(ffmpegPath, args, signal);
+}
+
+// ---------------------------------------------------------------------------
+// Per-type thumbnail extractors
+// ---------------------------------------------------------------------------
+
+/** Extract a frame from a video file and save it as a WebP thumbnail. */
+async function extractVideoFrame(
+  inputPath: string,
+  outputPath: string,
+  signal?: AbortSignal,
+): Promise<boolean> {
+  const ffmpegBin = (await getToolPath("ffmpeg")) || "ffmpeg";
+  const result = await runFfmpeg(ffmpegBin, buildFfmpegArgs(inputPath, true), signal);
+
+  if (!result.stdout) {
+    console.error(`[FFmpeg/Video] ${inputPath}: ${result.stderr.trim()}`);
+    return false;
+  }
+
+  await saveThumbWebp(result.stdout, outputPath);
+  return true;
+}
+
+/**
+ * Extract embedded cover art from an audio file.
+ * Audio without cover art silently returns false — that is not an error.
+ */
+async function extractAudioCover(
+  inputPath: string,
+  outputPath: string,
+  signal?: AbortSignal,
+): Promise<boolean> {
+  const ffmpegBin = (await getToolPath("ffmpeg")) || "ffmpeg";
+  const result = await runFfmpeg(ffmpegBin, buildFfmpegArgs(inputPath, false), signal);
+
+  if (!result.stdout) {
+    const isExpectedNoArt =
+      !result.stderr ||
+      result.stderr.trim() === "" ||
+      result.stderr.includes("Output file is empty") ||
+      result.stderr.includes("matches no streams");
+
+    if (!isExpectedNoArt) {
+      console.error(`[FFmpeg/Audio] ${inputPath}: ${result.stderr.trim()}`);
+    }
+    return false;
+  }
+
+  await saveThumbWebp(result.stdout, outputPath);
+  return true;
+}
+
+/** Render the first page of a PDF as a WebP thumbnail. */
+async function renderPdfThumb(inputPath: string, outputPath: string): Promise<boolean> {
+  const buf = await renderPdfFirstPage(inputPath, 250);
+  await saveThumbWebp(buf, outputPath);
+  return true;
+}
+
+/**
+ * Render an image file (including HEIC/HEIF) as a WebP thumbnail.
+ * Also handles archive paths (e.g. "archive.cbz::page.jpg").
+ */
+async function renderImageThumb(
+  inputPath: string,
+  outputPath: string,
+  mtimeMs: number,
+  signal?: AbortSignal,
+): Promise<boolean> {
+  let sharpInput: string | Buffer = inputPath;
+
+  if (inputPath.includes("::")) {
+    // Archive path — ensureHeicConverted handles extraction.
+    sharpInput = await ensureHeicConverted(inputPath, mtimeMs, signal);
+  } else {
+    const lowerPath = inputPath.toLowerCase();
+    let isHeif = lowerPath.endsWith(".heic") || lowerPath.endsWith(".heif");
+
+    // Sniff magic bytes for HEIF containers with an unexpected extension.
+    if (!isHeif && isImageFile(inputPath)) {
+      try {
+        const header = Buffer.alloc(256);
+        const fd = fs.openSync(inputPath, "r");
+        fs.readSync(fd, header, 0, 256, 0);
+        fs.closeSync(fd);
+        isHeif = isHeifBuffer(header) && !isAvifBuffer(header);
+      } catch { /* non-fatal */ }
+    }
+
+    if (isHeif) {
+      sharpInput = await ensureHeicConverted(inputPath, mtimeMs, signal);
+    }
+  }
+
+  if (signal?.aborted) return false;
+
+  try {
+    await saveThumbWebp(sharpInput, outputPath);
+  } catch (err) {
+    console.error("[Sharp Thumb Error]", err);
+    // Partial writes may still be usable; only rethrow if nothing was written.
+    if (!fs.existsSync(outputPath)) throw err;
+  }
+
+  return true;
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
 
 export async function generateThumbnail(
   inputPath: string,
@@ -27,203 +277,64 @@ export async function generateThumbnail(
   mtimeMs: number,
   signal?: AbortSignal,
 ): Promise<boolean> {
-  if (ongoingGenerations.has(outputPath))
-    return ongoingGenerations.get(outputPath) as Promise<boolean>;
+  // Reuse an in-flight promise for the same output path.
+  const existing = ongoingGenerations.get(outputPath);
+  if (existing) return existing;
 
-  const generationPromise = (async (): Promise<boolean> => {
-    try {
-      if (signal?.aborted) return false;
-
-      const ext = path.extname(inputPath).toLowerCase();
-
-      if (isVideoFile(ext) || isAudioFile(ext)) {
-        try {
-          const res = await globalTaskSemaphore.run(async () => {
-            if (signal?.aborted) throw new Error("Aborted");
-            const resolvedFfmpeg = await getToolPath("ffmpeg");
-            const ffmpegPath = resolvedFfmpeg || "ffmpeg";
-
-            const ffmpegArgs = [
-              "-hide_banner",
-              "-loglevel",
-              "error",
-              "-an",
-              "-sn",
-              ...(isVideoFile(ext) ? ["-ss", "00:00:02"] : []),
-              "-i",
-              inputPath,
-              "-map",
-              "0:v:0",
-              "-frames:v",
-              "1",
-              "-f",
-              "image2",
-              "-vcodec",
-              "mjpeg",
-              "pipe:1",
-            ];
-
-            // @ts-ignore
-            if (globalThis.Bun) {
-              // Use Bun.spawn for better efficiency on Windows when using Bun
-              // @ts-ignore
-              const proc = Bun.spawn([ffmpegPath, ...ffmpegArgs], {
-                stdout: "pipe",
-                stderr: "pipe",
-                onExit: (proc: any) => {
-                  if (signal?.aborted) proc.kill();
-                },
-              });
-
-              if (signal)
-                signal.addEventListener("abort", () => proc.kill(), {
-                  once: true,
-                });
-
-              const stdoutPromise = new Response(proc.stdout).arrayBuffer();
-              const stderrPromise = new Response(proc.stderr).text();
-
-              await proc.exited;
-
-              const stdout = await stdoutPromise;
-              const stderr = await stderrPromise;
-
-              if (proc.exitCode !== 0 || stdout.byteLength === 0) {
-                const isNoCoverArt =
-                  isAudioFile(ext) &&
-                  (stderr.includes("Output file is empty") ||
-                    stderr.includes("matches no streams") ||
-                    (stdout.byteLength === 0 && stderr.trim() === ""));
-                if (!isNoCoverArt) {
-                  console.error(
-                    `[FFmpeg Error] ${inputPath}: ${stderr.trim()}`,
-                  );
-                }
-                return false;
-              }
-
-              ensureThumbDir();
-              await sharp(Buffer.from(stdout))
-                .rotate()
-                .resize(200, 200, { fit: "cover", fastShrinkOnLoad: true })
-                .webp({ quality: 65, effort: 0 })
-                .toFile(outputPath);
-            } else {
-              // Fallback for non-Bun environments (Node.js)
-              const { spawn } = await import("node:child_process");
-              const ffmpeg = spawn(ffmpegPath, ffmpegArgs, {
-                stdio: ["ignore", "pipe", "pipe"],
-              });
-              const chunks: Buffer[] = [];
-              let stderrStr = "";
-
-              ffmpeg.stdout.on("data", (d) => chunks.push(d));
-              ffmpeg.stderr.on("data", (d) => {
-                stderrStr += d.toString();
-              });
-
-              const killFFmpeg = () => ffmpeg.kill("SIGKILL");
-              if (signal)
-                signal.addEventListener("abort", killFFmpeg, { once: true });
-
-              const success = await new Promise<boolean>((resolve) => {
-                ffmpeg.on("close", (code) => {
-                  if (signal) signal.removeEventListener("abort", killFFmpeg);
-                  resolve(code === 0 && chunks.length > 0);
-                });
-              });
-
-              if (!success || signal?.aborted) return false;
-
-              ensureThumbDir();
-              await sharp(Buffer.concat(chunks))
-                .rotate()
-                .resize(200, 200, { fit: "cover", fastShrinkOnLoad: true })
-                .webp({ quality: 65, effort: 0 })
-                .toFile(outputPath);
-            }
-            return true;
-          });
-          if (!res) return false;
-        } catch (e) {
-          return false;
-        }
-      } else if (isPdfFile(ext)) {
-        try {
-          const res = await globalTaskSemaphore.run(async () => {
-            if (signal?.aborted) throw new Error("Aborted");
-            const buf = await renderPdfFirstPage(inputPath, 250);
-            ensureThumbDir();
-            await sharp(buf)
-                .rotate()
-                .resize(200, 200, { fit: "cover", fastShrinkOnLoad: true })
-                .webp({ quality: 65, effort: 0 })
-                .toFile(outputPath);
-            return true;
-          });
-          if (!res) return false;
-        } catch (e: any) {
-          if (e instanceof Error && e.message === "Aborted") return false;
-          console.error(`[PDF Render Error] ${inputPath}:`, e);
-          return false;
-        }
-      } else {
-        let sharpInput: any = inputPath;
-        let isHeif = ext === ".heic" || ext === ".heif";
-
-        if (inputPath.includes("::")) {
-          sharpInput = await ensureHeicConverted(inputPath, mtimeMs, signal);
-        } else {
-          if (!isHeif && isImageFile(inputPath)) {
-            try {
-              const header = Buffer.alloc(256);
-              const fd = fs.openSync(inputPath, "r");
-              fs.readSync(fd, header, 0, 256, 0);
-              fs.closeSync(fd);
-              isHeif = isHeifBuffer(header);
-              if (isAvifBuffer(header)) isHeif = false;
-            } catch (e) {}
-          }
-          if (isHeif) {
-            sharpInput = await ensureHeicConverted(inputPath, mtimeMs, signal);
-          }
-        }
-
-        if (signal?.aborted) return false;
-
-        try {
-          ensureThumbDir();
-          await sharp(sharpInput)
-            .rotate()
-            .resize(200, 200, { fit: "cover", fastShrinkOnLoad: true })
-            .webp({ quality: 65, effort: 0 })
-            .toFile(outputPath);
-        } catch (sharpErr) {
-          console.error(`[Sharp Thumb Error]`, sharpErr);
-          if (!fs.existsSync(outputPath)) throw sharpErr;
-        }
-        sharpInput = null;
-      }
-
-      if (signal?.aborted) return false;
-
-      if (mtimeMs) {
-        const atime = Date.now() / 1000;
-        const mtime = mtimeMs / 1000;
-        await fsp.utimes(outputPath, atime, mtime).catch(() => {});
-      }
-      return true;
-    } catch (err) {
-      if (err instanceof Error && err.message === "Aborted") return false;
-      console.error(`[Thumbnail Error] ${inputPath}:`, err);
-      return false;
-    }
-  })();
-
-  ongoingGenerations.set(outputPath, generationPromise);
+  const work = _generate(inputPath, outputPath, mtimeMs, signal);
+  ongoingGenerations.set(outputPath, work);
   try {
-    return await generationPromise;
+    return await work;
   } finally {
     ongoingGenerations.delete(outputPath);
+  }
+}
+
+async function _generate(
+  inputPath: string,
+  outputPath: string,
+  mtimeMs: number,
+  signal?: AbortSignal,
+): Promise<boolean> {
+  if (signal?.aborted) return false;
+
+  const ext = path.extname(inputPath).toLowerCase();
+
+  try {
+    let ok: boolean;
+
+    if (isVideoFile(ext)) {
+      ok = await globalTaskSemaphore.run(async () => {
+        if (signal?.aborted) return false;
+        return extractVideoFrame(inputPath, outputPath, signal);
+      });
+    } else if (isAudioFile(ext)) {
+      ok = await globalTaskSemaphore.run(async () => {
+        if (signal?.aborted) return false;
+        return extractAudioCover(inputPath, outputPath, signal);
+      });
+    } else if (isPdfFile(ext)) {
+      ok = await globalTaskSemaphore.run(async () => {
+        if (signal?.aborted) return false;
+        return renderPdfThumb(inputPath, outputPath);
+      });
+    } else {
+      ok = await renderImageThumb(inputPath, outputPath, mtimeMs, signal);
+    }
+
+    if (!ok || signal?.aborted) return false;
+
+    // Stamp the output file with the source's mtime so cache invalidation works.
+    if (mtimeMs) {
+      await fsp
+        .utimes(outputPath, Date.now() / 1000, mtimeMs / 1000)
+        .catch(() => {});
+    }
+
+    return true;
+  } catch (err) {
+    if (err instanceof Error && err.message === "Aborted") return false;
+    console.error(`[Thumbnail Error] ${inputPath}:`, err);
+    return false;
   }
 }
