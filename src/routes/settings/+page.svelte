@@ -7,11 +7,11 @@
         Settings2Icon,
         TerminalIcon
     } from "lucide-svelte";
-    import { cacheVersion } from "$lib/stores/system/cache.svelte";
+    import { cacheVersion } from "$lib/client/stores/system/cache.svelte";
     import { enhance } from "$app/forms";
-    import FolderPicker from "$lib/components/browser/modals/FolderPicker.svelte";
-    import { browserStore } from "$lib/stores/browser/index.svelte";
-    import { toaster } from "$lib/stores/ui/toaster";
+    import FolderPicker from "$lib/client/components/browser/modals/FolderPicker.svelte";
+    import { browserStore } from "$lib/client/stores/browser/index.svelte";
+    import { toaster } from "$lib/client/stores/ui/toaster";
     import { untrack, tick } from "svelte";
     import { goto } from "$app/navigation";
     import { fade } from "svelte/transition";
@@ -229,7 +229,7 @@
                                 <button
                                     type="button"
                                     class="flex items-center justify-center w-12 h-12 hover:bg-surface-200 dark:hover:bg-surface-800 transition-colors text-surface-600 dark:text-surface-400"
-                                    onclick={openPicker}
+                                    onclick={() => openPicker("library")}
                                     title="Browse folders"
                                 >
                                     <FolderIcon size={20} />
@@ -424,7 +424,7 @@
         availableDrives={browserStore.ui.availableDrives}
         isDrivesLoading={browserStore.ui.isDrivesLoading}
         onRefreshDrives={browserStore.actions.refreshDrives}
-        onSelect={async (path) => {
+        onSelect={async (path: string) => {
             if (pickingFor === "library") {
                 pickerPath = path;
                 await tick();

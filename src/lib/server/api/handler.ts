@@ -22,7 +22,7 @@ export interface ApiHandlerContext extends RequestEvent {
     internalPath: string | null;
     isArchivePath: boolean;
     normalizedPath: string;
-    
+
     // Semantic Pagination (Flattened)
     page: number;
     limit: number;
@@ -35,14 +35,14 @@ export interface ApiHandlerContext extends RequestEvent {
  * Standard API wrapper to reduce boilerplate.
  * Handles path validation, pagination parsing, and consistent error reporting.
  */
-export function createApiHandler(
+export function defineHandler(
     logic: (ctx: ApiHandlerContext) => Promise<any>,
     options: ApiRequestOptions = {}
 ) {
     return async (event: RequestEvent) => {
         try {
             // Initialize basic context
-            const ctx: ApiHandlerContext = { 
+            const ctx: ApiHandlerContext = {
                 ...event,
                 absolutePath: '',
                 internalPath: null,
@@ -57,7 +57,7 @@ export function createApiHandler(
             // 1. Path resolution
             if (pathMode !== 'none') {
                 const rawParam = event.url.searchParams.get('path') || event.url.searchParams.get('folder');
-                
+
                 if (pathMode === 'required' && !rawParam) {
                     throw error(400, 'Path is required');
                 }

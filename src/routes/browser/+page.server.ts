@@ -1,4 +1,4 @@
-import { getDefaultAppPath } from '$lib/server/database/db';
+import { getDefaultAppPath } from '$lib/server/database/database';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ url }) => {

@@ -18,6 +18,8 @@
 		"@sveltejs/vite-plugin-svelte": "^7.0.0",
 		"@tailwindcss/typography": "^0.5.19",
 		"@tailwindcss/vite": "^4.2.2",
+		"@types/heic-convert": "^2.1.0",
+		"@types/yauzl-promise": "^4.0.1",
 		"svelte": "^5.54.1",
 		"svelte-adapter-bun": "^1.0.1",
 		"svelte-check": "^4.4.5",

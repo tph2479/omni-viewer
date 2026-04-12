@@ -13,8 +13,8 @@
     } from "lucide-svelte";
     import { Navigation, Portal, Tooltip } from "@skeletonlabs/skeleton-svelte";
     import { afterNavigate } from "$app/navigation";
-    import GalleryModals from "$lib/components/browser/modals/GalleryModals.svelte";
-    import BrowserNotifications from "$lib/components/browser/ui/BrowserNotifications.svelte";
+    import GalleryModals from "$lib/client/components/browser/modals/GalleryModals.svelte";
+    import BrowserNotifications from "$lib/client/components/browser/ui/BrowserNotifications.svelte";
     import type { Snippet } from "svelte";
     import { fade, scale } from "svelte/transition";
 

@@ -1,22 +1,33 @@
+/**
+ * Media API — single endpoint that serves images, video, audio, and thumbnails.
+ *
+ * Routing logic (parsed from query params):
+ *   ?metadata=true           → Return JSON metadata (dimensions, size, etc.)
+ *   ?thumbnail=true          → Return a cached WebP thumbnail (generate if missing)
+ *   (default)                → Stream the raw media file; video/audio use byte-range
+ *
+ * Archive paths (.cbz::entry) are forwarded to the ebook API.
+ * DELETE /api/media          → Purges the thumbnail cache directory.
+ */
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
-import path from 'node:path';
 
-import { getContentType } from '$lib/utils/fileUtils';
-import { THUMB_CACHE_DIR, getThumbnailPath } from '$lib/server/services/imageUtils';
-import { createApiHandler } from '$lib/server/api/handler';
+import { getContentType } from '$lib/shared/utils/fileUtils';
+import { THUMB_CACHE_DIR, getThumbnailPath } from '$lib/server/utils/heicConverter';
+import { defineHandler } from '$lib/server/api/handler';
 import { serveFileResponse, CACHE_IMMUTABLE } from '$lib/server/api/responseUtils';
-import { detectImageRealType } from '$lib/server/utils/fileDetection';
-import { findFolderCover } from '$lib/server/services/files';
-import { getMediaMetadata, serveMediaImage, streamMedia } from '$lib/server/services/media';
-import { generateThumbnail } from '$lib/server/services/thumbnails';
+import { detectImageRealType } from '$lib/server/utils/mediaSniffer';
+import { locateDirectoryCoverImage } from '$lib/server/services/file/visualsResolver';
+import { extractMediaFileMetadata } from '$lib/server/services/media/metadataExtractor';
+import { serveStaticImageResponse, createByteRangeStreamResponse } from '$lib/server/services/media/streamingResponder';
+import { generateThumbnail } from '$lib/server/services/media/thumbnails';
 
-export const GET = createApiHandler(async ({ absolutePath: rawPath, normalizedPath, isArchivePath, url, request }) => {
-    const isThumbnail = url.searchParams.get('thumbnail') === 'true';
-    const getMetadataOnly = url.searchParams.get('metadata') === 'true';
-    const isRetry = !!url.searchParams.get('retry');
+export const GET = defineHandler(async ({ absolutePath: rawPath, normalizedPath, isArchivePath, url, request }) => {
+    const requestsThumbnailImage = url.searchParams.get('thumbnail') === 'true';
+    const requestsMetadataOnly   = url.searchParams.get('metadata')  === 'true';
+    const forceRegenerate        = !!url.searchParams.get('retry');
 
-    // Archive paths redirect to ebook API
+    // Archive paths are handled by the ebook API
     if (isArchivePath) {
         return new Response(null, {
             status: 307,
@@ -24,55 +35,78 @@ export const GET = createApiHandler(async ({ absolutePath: rawPath, normalizedPa
         });
     }
 
-    let absolutePath = rawPath;
-    let stat = await fsp.stat(absolutePath);
+    let resolvedFilePath = rawPath;
+    let systemFileStats  = await fsp.stat(resolvedFilePath);
 
-    // Handle directory thumbnails (covers)
-    if (stat.isDirectory() && isThumbnail) {
-        const coverPath = await findFolderCover(absolutePath);
-        if (!coverPath) return new Response(null, { status: 204 });
-        absolutePath = coverPath;
-        stat = await fsp.stat(absolutePath);
+    // For directory thumbnails, resolve the cover image first
+    if (systemFileStats.isDirectory() && requestsThumbnailImage) {
+        const coverImagePath = await locateDirectoryCoverImage(resolvedFilePath);
+        if (!coverImagePath) return new Response(null, { status: 204 });
+        resolvedFilePath = coverImagePath;
+        systemFileStats  = await fsp.stat(resolvedFilePath);
     }
 
-    const filename = path.basename(absolutePath);
-    const ext = path.extname(filename).toLowerCase().replace('.', '');
-    
-    // Real type detection
-    let { isHeic, isAvif } = await detectImageRealType(absolutePath);
-    if (ext === 'heic' || ext === 'heif') isHeic = true;
-    if (ext === 'avif') { isAvif = true; isHeic = false; }
+    const fileExtension = resolvedFilePath.split('.').pop()?.toLowerCase() ?? '';
 
-    // Metadata Mode
-    if (getMetadataOnly) {
-        return await getMediaMetadata(absolutePath, normalizedPath, stat, ext, isHeic, request.signal, isRetry);
+    // Detect real image format from file header (not just extension)
+    let { isHeic: detectedAsHeic, isAvif: detectedAsAvif } = await detectImageRealType(resolvedFilePath);
+    // Override with explicit extension when present
+    if (fileExtension === 'heic' || fileExtension === 'heif') detectedAsHeic = true;
+    if (fileExtension === 'avif') { detectedAsAvif = true; detectedAsHeic = false; }
+
+    // ── Metadata Mode ────────────────────────────────────────────────────────
+    if (requestsMetadataOnly) {
+        return await extractMediaFileMetadata(
+            resolvedFilePath,
+            normalizedPath,
+            systemFileStats,
+            fileExtension,
+            detectedAsHeic,
+            request.signal,
+            forceRegenerate,
+        );
     }
 
-    // Thumbnail Mode
-    if (isThumbnail) {
-        const thumbPath = await getThumbnailPath(absolutePath, stat.mtimeMs);
-        if (!fs.existsSync(thumbPath)) {
-            const ok = await generateThumbnail(absolutePath, thumbPath, stat.mtimeMs, request.signal);
-            if (!ok) return new Response(null, { status: 204 });
+    // ── Thumbnail Mode ───────────────────────────────────────────────────────
+    if (requestsThumbnailImage) {
+        const thumbnailCachePath = await getThumbnailPath(resolvedFilePath, systemFileStats.mtimeMs);
+        if (!fs.existsSync(thumbnailCachePath)) {
+            const thumbnailGenerated = await generateThumbnail(
+                resolvedFilePath, thumbnailCachePath, systemFileStats.mtimeMs, request.signal
+            );
+            if (!thumbnailGenerated) return new Response(null, { status: 204 });
         }
-        return serveFileResponse(thumbPath, { 'Content-Type': 'image/webp', ...CACHE_IMMUTABLE });
+        return serveFileResponse(thumbnailCachePath, { 'Content-Type': 'image/webp', ...CACHE_IMMUTABLE });
     }
 
-    // Serving Mode
-    const realContentType = isAvif ? 'image/avif' : getContentType('.' + ext);
-    const isVideo = realContentType.startsWith('video/');
-    const isAudio = realContentType.startsWith('audio/');
+    // ── Streaming / Static Serve Mode ────────────────────────────────────────
+    const mimeType   = detectedAsAvif ? 'image/avif' : getContentType('.' + fileExtension);
+    const isVideo    = mimeType.startsWith('video/');
+    const isAudio    = mimeType.startsWith('audio/');
 
     if (isVideo || isAudio) {
-        return streamMedia(absolutePath, stat, realContentType, request.headers.get('range'), request.signal);
+        return createByteRangeStreamResponse(
+            resolvedFilePath,
+            systemFileStats,
+            mimeType,
+            request.headers.get('range'),
+            request.signal,
+        );
     }
 
-    return serveMediaImage(absolutePath, stat, realContentType, isHeic, request.signal, isRetry);
+    return serveStaticImageResponse(
+        resolvedFilePath,
+        systemFileStats,
+        mimeType,
+        detectedAsHeic,
+        request.signal,
+        forceRegenerate,
+    );
 }, {
     path: 'required'
 });
 
-export const DELETE = createApiHandler(async () => {
+export const DELETE = defineHandler(async () => {
     if (fs.existsSync(THUMB_CACHE_DIR)) {
         await fsp.rm(THUMB_CACHE_DIR, { recursive: true, force: true });
         await fsp.mkdir(THUMB_CACHE_DIR, { recursive: true });

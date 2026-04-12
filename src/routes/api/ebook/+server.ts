@@ -1,13 +1,13 @@
 import fsp from 'node:fs/promises';
-import { createApiHandler } from '$lib/server/api/handler';
+import { defineHandler } from '$lib/server/api/handler';
 import {
     getEbookMetadata,
     buildEbookCoverResponse,
-    buildArchiveEntryResponse,
     buildEbookFileResponse,
-} from '$lib/server/services/ebook';
+} from '$lib/server/services/ebook/ebookService';
+import { buildArchiveEntryResponse } from '$lib/server/services/ebook/archiveReader';
 
-export const GET = createApiHandler(async ({ absolutePath, internalPath, isArchivePath, normalizedPath, url, request }) => {
+export const GET = defineHandler(async ({ absolutePath, internalPath, isArchivePath, normalizedPath, url, request }) => {
     const isCover = url.searchParams.get('cover') === 'true';
     const isThumbnail = url.searchParams.get('thumbnail') === 'true';
     const getMetadataOnly = url.searchParams.get('metadata') === 'true';

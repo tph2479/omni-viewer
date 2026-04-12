@@ -1,6 +1,6 @@
 <script lang="ts">
-    import BrowserView from "$lib/components/browser/BrowserView.svelte";
-    import { browserStore as s } from "$lib/stores/browser/index.svelte";
+    import BrowserView from "$lib/client/components/browser/BrowserView.svelte";
+    import { browserStore as s } from "$lib/client/stores/browser/index.svelte";
 
     let wasModalOpen = $state(false);
 

@@ -1,6 +1,6 @@
 import type { RequestHandler } from "./$types";
 import { spawn } from "node:child_process";
-import { getToolPath } from "$lib/server/database/db";
+import { getToolPath } from '$lib/server/database/database';
 
 export const GET: RequestHandler = async ({ url }) => {
     const targetUrl = url.searchParams.get("url");

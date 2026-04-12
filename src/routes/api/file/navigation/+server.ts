@@ -1,8 +1,7 @@
-import { createApiHandler } from '$lib/server/api/handler';
-import { getNavigation } from '$lib/server/services/files';
+import { defineHandler } from '$lib/server/api/handler';
+import { browseContainerHierarchy } from '$lib/server/services/file/storageExplorer';
 
-export const GET = createApiHandler(async ({ normalizedPath }) => {
-    return await getNavigation(normalizedPath);
-}, {
-    path: 'optional'
+export const GET = defineHandler(async ({ url }) => {
+    const requestedPath = url.searchParams.get('path') ?? null;
+    return await browseContainerHierarchy(requestedPath);
 });

@@ -3,8 +3,9 @@
         Link, Image, Video, Music, Loader2, Settings2, Download,
         ChevronDown, ChevronRight, Command, Clock
     } from "lucide-svelte";
-    import LazyImage from "$lib/components/LazyImage.svelte";
-    import { toaster } from "$lib/stores/ui/toaster";
+    import LazyImage from "$lib/client/components/LazyImage.svelte";
+    import { toaster } from "$lib/client/stores/ui/toaster";
+    import { api } from '$lib/client/api/client';
     import { slide, fade } from "svelte/transition";
 
     let url = $state("");
@@ -60,7 +61,7 @@
         metaLoading = true;
         
         try {
-            const res = await fetch(`/api/getlink/info?url=${encodeURIComponent(targetUrl)}&type=${mediaType}&playlist=${isPlaylist}`, { signal });
+            const res = await api.getDownloadInfo(targetUrl, mediaType, isPlaylist, { signal });
             
             if (!res.ok || !res.body) {
                 meta = null;
@@ -277,11 +278,7 @@
         lastWasAudio = false;
 
         try {
-            const response = await fetch("/api/getlink", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ url: downloadUrl, type: targetType, options }),
-            });
+            const response = await api.startDownload({ url: downloadUrl, type: targetType, options });
 
             if (!response.ok || !response.body) {
                 const data = await response.json().catch(() => ({}));
@@ -451,7 +448,7 @@
                                     {#if meta.entries && meta.entries.length === 1}
                                         <button 
                                             class="flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-600 hover:bg-primary-500 text-white shadow-lg shadow-primary-500/20 transition-all active:scale-95"
-                                            onclick={() => handleSubmit(meta.entries ? meta.entries[0].url : url)}
+                                            onclick={() => handleSubmit(meta?.entries ? meta.entries[0].url : url)}
                                             disabled={isLoading}
                                         >
                                             <Download class="size-3.5" /> 

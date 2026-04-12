@@ -1,6 +1,6 @@
 <script lang="ts">
-    import GalleryToolbar from "$lib/components/browser/ui/GalleryToolbar.svelte";
-    import { browserStore as s } from "$lib/stores/browser/index.svelte";
+    import GalleryToolbar from "$lib/client/components/browser/ui/GalleryToolbar.svelte";
+    import { browserStore as s } from "$lib/client/stores/browser/index.svelte";
 
     const toolbarActions = $derived({
         onLoad: async () => {
